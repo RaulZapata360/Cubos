@@ -1,0 +1,24 @@
+# Node modules
+node_modules/
+
+# Android build files
+android/
+.gradle/
+*.iml
+.idea/
+local.properties
+
+# Capacitor
+.capacitor/
+
+# Build outputs
+build/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

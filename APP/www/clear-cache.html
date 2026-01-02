@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiar Caché - Conteo Camiones</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .status {
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .details ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🧹 Limpiar Caché y Sesión</h1>
+
+        <div class="info status">
+            Esta herramienta limpiará todos los datos de sesión almacenados y te redirigirá al login.
+        </div>
+
+        <div class="details">
+            <strong>Se eliminarán:</strong>
+            <ul>
+                <li>Tokens de autenticación</li>
+                <li>Datos de sesión de Supabase</li>
+                <li>Configuración local</li>
+                <li>Caché del navegador</li>
+            </ul>
+        </div>
+
+        <button onclick="clearAllData()">Limpiar Todo y Reiniciar</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function clearAllData() {
+            const resultDiv = document.getElementById('result');
+
+            try {
+                // Limpiar localStorage
+                localStorage.clear();
+
+                // Limpiar sessionStorage
+                sessionStorage.clear();
+
+                // Limpiar cookies
+                document.cookie.split(";").forEach(function (c) {
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
+
+                // Mostrar mensaje de éxito
+                resultDiv.innerHTML = '<div class="success status">✅ Caché limpiado exitosamente<br>Redirigiendo al login...</div>';
+
+                // Esperar 2 segundos y redirigir
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="status" style="background: #f8d7da; color: #721c24;">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Auto-limpiar si se pasa el parámetro ?auto=true
+        if (window.location.search.includes('auto=true')) {
+            clearAllData();
+        }
+    </script>
+</body>
+
+</html>

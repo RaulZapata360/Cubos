@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Ejecutivo - Conteo de Camiones</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#5048e5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#121121",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-card {
+            background: rgba(30, 30, 35, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-nav {
+            background: rgba(18, 17, 33, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .neon-shadow {
+            box-shadow: 0 0 20px -5px rgba(80, 72, 229, 0.15);
+        }
+
+        .pb-safe {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+        }
+
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Modal styles */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        select option {
+            background: #1e293b;
+            color: white;
+        }
+
+        /* Bottom Nav styles */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .fab-button {
+            background: linear-gradient(135deg, #5048e5 0%, #7c3aed 100%);
+            box-shadow: 0 4px 15px rgba(80, 72, 229, 0.4);
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+
+            .fixed,
+            .glass-nav,
+            .fab-button,
+            #loadingOverlay,
+            #updateIndicator,
+            .shrink-0 {
+                display: none !important;
+            }
+
+            .tab-content {
+                display: block !important;
+            }
+
+            .glass-card {
+                background: white !important;
+                border: 1px solid #eee !important;
+                box-shadow: none !important;
+                color: black !important;
+            }
+
+            .text-white {
+                color: black !important;
+            }
+
+            .text-slate-400,
+            .text-slate-500 {
+                color: #666 !important;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            .grid {
+                display: block !important;
+            }
+
+            .mb-6 {
+                margin-bottom: 20px !important;
+            }
+
+            section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary selection:text-white">
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] opacity-30">
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-background-dark/80 backdrop-blur-sm z-50 flex items-center justify-center"
+        style="display: none;">
+        <div class="glass-card rounded-2xl p-8 flex flex-col items-center gap-4">
+            <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <p class="text-white text-sm">Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- Create Obra Modal -->
+    <div id="createObraModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="closeCreateObraModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-white">Nueva Obra</h2>
+                    <button onclick="closeCreateObraModal()" class="text-slate-400 hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form id="createObraForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
+                        <input type="text" name="nombre" required
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Ubicación</label>
+                        <input type="text" name="ubicacion"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Descripción</label>
+                        <textarea name="descripcion" rows="3"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Fecha de Inicio</label>
+                        <input type="date" name="fecha_inicio"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2 font-bold uppercase text-[10px] tracking-widest">Asignar
+                            Apuntadores</label>
+                        <div id="createObraUsersList"
+                            class="space-y-2 max-h-40 overflow-y-auto p-2 bg-white/5 rounded-lg border border-white/10">
+                            <p class="text-slate-500 text-[10px] text-center py-2">Cargando apuntadores...</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeCreateObraModal()"
+                            class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-2 bg-primary hover:bg-indigo-600 rounded-lg text-white font-medium transition-colors">
+                            Crear Obra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Users Modal -->
+    <div id="assignUsersModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="closeAssignUsersModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-white">Asignar Apuntadores</h2>
+                    <button onclick="closeAssignUsersModal()" class="text-slate-400 hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Obra</label>
+                    <select id="assignObraSelect"
+                        class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                        <option value="">Seleccionar obra...</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Apuntadores</label>
+                    <div id="usersList" class="space-y-2 max-h-64 overflow-y-auto">
+                        <!-- Users will be loaded here -->
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeAssignUsersModal()"
+                        class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors">
+                        Cancelar
+                    </button>
+                    <button onclick="saveUserAssignments()"
+                        class="flex-1 px-4 py-2 bg-primary hover:bg-indigo-600 rounded-lg text-white font-medium transition-colors">
+                        Guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content Wrapper -->
+    <div class="relative z-10 flex flex-col min-h-screen pb-safe max-w-md mx-auto lg:max-w-4xl">
+
+        <!-- Tab: Inicio -->
+        <div id="view-inicio" class="tab-content active">
+            <!-- Header -->
+            <header class="p-4 pt-6">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex flex-col flex-1 min-w-0">
+                        <p class="text-slate-400 text-[10px] font-bold tracking-[0.2em] uppercase mb-0.5">Control de
+                            Obra</p>
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <h1 class="text-xl font-bold tracking-tight text-white truncate shrink-0">Dashboard</h1>
+                            <div class="glass-card rounded-lg px-2 py-1 flex-1 max-w-[150px] overflow-hidden">
+                                <select id="headerObraFilter" onchange="handleHeaderObraFilterChange()"
+                                    class="w-full bg-transparent border-none text-white text-[11px] font-bold focus:ring-0 focus:outline-none py-0 px-0">
+                                    <option value="">Todas las Obras</option>
+                                </select>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-normal shrink-0">v3.1.1</span>
+                        </div>
+                        <p class="text-slate-500 text-[10px] mt-0.5" id="currentDate">Cargando...</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="refreshData()"
+                            class="glass-card p-2 rounded-lg hover:bg-white/10 transition-all active:scale-95 neon-shadow">
+                            <span class="material-symbols-outlined text-primary text-[18px]">refresh</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- KPIs Grid -->
+            <section class="px-4 mb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="col-span-2 glass-card rounded-xl p-4 neon-shadow relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-5xl">local_shipping</span>
+                        </div>
+                        <p class="text-slate-400 text-xs font-medium mb-1">Vueltas del Día</p>
+                        <h2 class="text-3xl font-bold text-white tracking-tight" id="kpiTotalTrips">0</h2>
+                        <div class="mt-3 flex items-center gap-3 text-[10px]">
+                            <div class="flex items-center gap-0.5">
+                                <span class="material-symbols-outlined text-[14px] text-emerald-400">south_east</span>
+                                <span class="text-slate-400">Entrada: <span class="text-white font-semibold"
+                                        id="kpiIncoming">0</span></span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-amber-400">north_east</span>
+                                <span class="text-slate-400">Salida: <span class="text-white font-semibold"
+                                        id="kpiOutgoing">0</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Tiempo</p>
+                        <p class="text-lg font-bold text-white" id="kpiOperatingTime">0h 0m</p>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Promedio</p>
+                        <p class="text-lg font-bold text-white" id="kpiAvgPerHour">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hourly Activity -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Actividad por Hora
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="hourlyActivity" class="space-y-3"></div>
+            </section>
+
+            <!-- Truck Performance -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Rendimiento por Camión
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="performanceList"></div>
+            </section>
+
+            <!-- Movement History -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Actividad Reciente
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="movementList"></div>
+            </section>
+        </div>
+
+        <!-- Tab: Obras -->
+        <div id="view-obras" class="tab-content">
+            <header class="p-4 pt-6">
+                <h1 class="text-xl font-bold tracking-tight text-white mb-4">Gestión de Obra</h1>
+            </header>
+
+            <section class="px-4 mb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-l-emerald-500 neon-shadow">
+                        <p class="text-slate-400 text-xs font-medium">Volumen Relleno</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="dashFillVolume">+0 <span
+                                class="text-sm font-normal text-slate-500">m³</span></p>
+                        <div class="mt-3 space-y-1" id="dashFillBreakdown"></div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 border-l-4 border-l-amber-500 neon-shadow">
+                        <p class="text-slate-400 text-xs font-medium">Volumen Excavación</p>
+                        <p class="text-2xl font-bold text-white mt-1" id="dashExcavationVolume">-0 <span
+                                class="text-sm font-normal text-slate-500">m³</span></p>
+                        <div class="mt-3 space-y-1" id="dashExcavationBreakdown"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Logística por Ubicación
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-emerald-400 text-[10px] font-bold mb-2 uppercase tracking-wider">Orígenes</p>
+                        <div id="dashIncomingLocations" class="space-y-2"></div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-amber-400 text-[10px] font-bold mb-2 uppercase tracking-wider">Destinos</p>
+                        <div id="dashOutgoingLocations" class="space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab: Reportes -->
+        <div id="view-reportes" class="tab-content">
+            <header class="p-4 pt-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h1 class="text-xl font-bold tracking-tight text-white">Reportes</h1>
+                    <button onclick="exportToPDF()"
+                        class="glass-card flex items-center gap-2 px-3 py-1.5 rounded-lg text-primary hover:bg-white/10 transition-all text-xs font-bold">
+                        <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+                        EXPORTAR PDF
+                    </button>
+                </div>
+                <div class="glass-card rounded-2xl p-4 mb-6">
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="glass-card rounded-2xl p-4 flex flex-col items-center">
+                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Hoy vs Media</p>
+                            <p id="reportComparison" class="text-xl font-bold text-emerald-400">+0%</p>
+                            <p class="text-[9px] text-slate-500">Volumen diario</p>
+                        </div>
+                        <div class="glass-card rounded-2xl p-4 flex flex-col items-center">
+                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Eficiencia</p>
+                            <p id="reportEfficiency" class="text-xl font-bold text-blue-400">0</p>
+                            <p class="text-[9px] text-slate-500">Vueltas/Hora</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 mb-6 relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Volumen Semanal
+                            </p>
+                            <div class="flex gap-2">
+                                <div class="flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span
+                                        class="text-[8px] text-slate-500">RELLENO</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div><span
+                                        class="text-[8px] text-slate-500">EXCAV.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <canvas id="weeklyVolumeChart" height="200"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-card rounded-2xl p-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Mix de
+                                Materiales (Top 5)</p>
+                            <canvas id="materialDistChart" height="250"></canvas>
+                        </div>
+                        <div class="glass-card rounded-2xl p-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Volumen por
+                                Botadero (m³)</p>
+                            <canvas id="destinationsChart" height="250"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 mt-6">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Volumen por Obra
+                            (m³)</p>
+                        <canvas id="obrasVolumeChart" height="200"></canvas>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <!-- Tab: Ajustes -->
+        <div id="view-ajustes" class="tab-content">
+            <header class="p-4 pt-6">
+                <h1 class="text-xl font-bold tracking-tight text-white mb-6">Ajustes</h1>
+
+                <!-- Profile Card -->
+                <div class="glass-card rounded-3xl p-6 mb-8 neon-shadow flex flex-col items-center">
+                    <div class="relative mb-4">
+                        <img id="userAvatar"
+                            src="https://ui-avatars.com/api/?name=User&background=5048e5&color=fff&size=256"
+                            class="w-20 h-20 rounded-full border-4 border-white/10 object-cover shadow-2xl"
+                            alt="Profile">
+                        <div
+                            class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-[#121121] rounded-full">
+                        </div>
+                    </div>
+                    <h2 id="userName" class="text-lg font-bold text-white mb-1">Cargando...</h2>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest mb-4">Supervisor de Obra</p>
+                    <button
+                        class="px-6 py-1.5 bg-white/5 hover:bg-white/10 rounded-full text-primary font-bold text-xs transition-all border border-white/5">
+                        Editar Perfil
+                    </button>
+                </div>
+
+                <!-- Settings Menu -->
+                <div class="space-y-3">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] px-2 mb-2">Preferencia</p>
+
+                    <div class="flex items-center justify-between p-4 glass-card rounded-2xl"
+                        onclick="toggleAppearance()">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                                <span class="material-symbols-outlined text-[20px]" id="appearanceIcon">dark_mode</span>
+                            </div>
+                            <span class="text-sm font-medium">Modo Oscuro</span>
+                        </div>
+                        <span id="appearanceText" class="text-[10px] text-slate-500 font-bold uppercase">Activado</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 glass-card rounded-2xl">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                            </div>
+                            <span class="text-sm font-medium">Notificaciones</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked>
+                            <div
+                                class="w-10 h-5 bg-white/10 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5">
+                            </div>
+                        </label>
+                    </div>
+
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] px-2 mt-6 mb-2">Cuenta</p>
+
+                    <button onclick="logout()"
+                        class="w-full flex items-center gap-3 p-4 glass-card rounded-2xl text-red-400">
+                        <div class="p-2 rounded-xl bg-red-500/10">
+                            <span class="material-symbols-outlined text-[20px]">logout</span>
+                        </div>
+                        <span class="text-sm font-bold">Cerrar Sesión</span>
+                    </button>
+                </div>
+            </header>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 z-50 glass-nav pb-safe p-2 px-6 flex justify-between items-center max-w-md mx-auto lg:max-w-4xl lg:rounded-t-3xl border-t border-white/5">
+        <button onclick="switchTab('inicio')" class="nav-item flex flex-col items-center gap-1 flex-1 active"
+            id="nav-inicio">
+            <span class="material-symbols-outlined text-[24px]">grid_view</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Inicio</span>
+        </button>
+        <button onclick="switchTab('obras')" class="nav-item flex flex-col items-center gap-1 flex-1" id="nav-obras">
+            <span class="material-symbols-outlined text-[24px]">apartment</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Obras</span>
+        </button>
+
+        <div class="relative -top-6">
+            <button onclick="openCreateObraModal()"
+                class="fab-button w-14 h-14 rounded-2xl flex items-center justify-center text-white rotate-45 transition-transform active:scale-90">
+                <span class="material-symbols-outlined text-[32px] -rotate-45">add</span>
+            </button>
+        </div>
+
+        <button onclick="switchTab('reportes')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-reportes">
+            <span class="material-symbols-outlined text-[24px]">bar_chart</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Reportes</span>
+        </button>
+        <button onclick="switchTab('ajustes')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-ajustes">
+            <span class="material-symbols-outlined text-[24px]">person</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- Update Indicator -->
+    <div id="updateIndicator"
+        class="fixed bottom-20 right-4 glass-card rounded-lg px-4 py-2 neon-shadow transition-all duration-300 opacity-0 translate-y-4"
+        style="pointer-events: none;">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-emerald-400 rounded-full pulse-glow"></div>
+            <span class="text-xs text-white font-medium">Actualizando...</span>
+        </div>
+    </div>
+
+    <script>
+        // Global functions that need to be accessible from onclick handlers
+        window.switchTab = function (tabId) {
+            // Update UI
+            document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+
+            // View specific logic
+            if (tabId === 'reportes') renderCharts();
+            if (tabId === 'ajustes') updateAjustesView();
+        };
+
+        window.toggleAppearance = function () {
+            const isDark = document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('appearanceIcon');
+            const text = document.getElementById('appearanceText');
+
+            if (isDark) {
+                icon.textContent = 'dark_mode';
+                text.textContent = 'Modo Oscuro';
+            } else {
+                icon.textContent = 'light_mode';
+                text.textContent = 'Modo Claro';
+            }
+        };
+
+        function updateAjustesView() {
+            // Basic persistence for username (optional)
+            const session = window.bossDashboardService.cachedSession || {};
+            const user = session.user || {};
+            document.getElementById('userName').textContent = user.user_metadata?.nombre || 'Usuario Boss';
+            if (user.user_metadata?.avatar_url) {
+                document.getElementById('userAvatar').src = user.user_metadata.avatar_url;
+            }
+        }
+
+        let volumeChart = null;
+        let materialChart = null;
+        let destinationsChart = null;
+        let obrasVolumeChart = null;
+
+        window.renderCharts = async function () {
+            const ctx1 = document.getElementById('weeklyVolumeChart')?.getContext('2d');
+            const ctx2 = document.getElementById('materialDistChart')?.getContext('2d');
+            const ctx3 = document.getElementById('destinationsChart')?.getContext('2d');
+            const ctx4 = document.getElementById('obrasVolumeChart')?.getContext('2d');
+
+            if (!ctx1 || !ctx2 || !ctx3 || !ctx4) return;
+
+            // Show loading state if charts exist
+            if (volumeChart) volumeChart.options.plugins.title = { display: true, text: 'Cargando...' };
+            if (materialChart) materialChart.options.plugins.title = { display: true, text: 'Cargando...' };
+
+            try {
+                // Fetch real data
+                const [weeklyData, mixData] = await Promise.all([
+                    window.bossDashboardService.getWeeklyVolumeData(window.selectedObraId),
+                    window.bossDashboardService.getMaterialMixData(window.selectedObraId)
+                ]);
+
+                // Destroy previous instances
+                if (volumeChart) volumeChart.destroy();
+                if (materialChart) materialChart.destroy();
+
+                volumeChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: weeklyData.labels,
+                        datasets: [{
+                            label: 'Relleno (m³)',
+                            data: weeklyData.incoming,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#10b981'
+                        }, {
+                            label: 'Excavación (m³)',
+                            data: weeklyData.outgoing,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#f59e0b'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        interaction: { intersect: false, mode: 'index' },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                                titleColor: '#fff',
+                                bodyColor: '#94a3b8',
+                                padding: 10,
+                                cornerRadius: 8
+                            }
+                        },
+                        scales: {
+                            y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b', font: { size: 9 } } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } }
+                        }
+                    }
+                });
+
+                materialChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: mixData.labels,
+                        datasets: [{
+                            data: mixData.data,
+                            backgroundColor: ['#5048e5', '#10b981', '#f59e0b', '#3b82f6', '#8b5cf6'],
+                            borderWidth: 0,
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#94a3b8', font: { size: 10, weight: 'bold' }, padding: 30, usePointStyle: true }
+                            },
+                        },
+                        cutout: '75%'
+                    }
+                });
+
+                // Destinations Chart
+                const destData = await window.bossDashboardService.getDestinationsVolumeData(window.selectedObraId);
+                if (destinationsChart) destinationsChart.destroy();
+                destinationsChart = new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: destData.labels,
+                        datasets: [{
+                            data: destData.data,
+                            backgroundColor: '#f59e0b',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                            y: { grid: { display: false }, ticks: { color: '#64748b' } }
+                        }
+                    }
+                });
+
+                // Obras Volume Chart
+                const obrasData = await window.bossDashboardService.getObrasVolumeData();
+                if (obrasVolumeChart) obrasVolumeChart.destroy();
+                obrasVolumeChart = new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: obrasData.labels,
+                        datasets: [{
+                            data: obrasData.data,
+                            backgroundColor: '#5048e5',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } },
+                            x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                        }
+                    }
+                });
+
+                // Update comparison metrics
+                const todayVol = weeklyData.incoming[weeklyData.incoming.length - 1] + weeklyData.outgoing[weeklyData.outgoing.length - 1];
+                const weekAvg = (weeklyData.incoming.reduce((a, b) => a + b, 0) + weeklyData.outgoing.reduce((a, b) => a + b, 0)) / 7;
+
+                const compElement = document.getElementById('reportComparison');
+                if (compElement) {
+                    const diff = weekAvg > 0 ? ((todayVol - weekAvg) / weekAvg * 100).toFixed(0) : 0;
+                    const prefix = diff >= 0 ? '+' : '';
+                    compElement.textContent = `${prefix}${diff}%`;
+                    compElement.className = `text-xl font-bold ${diff >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                }
+
+                // Efficiency (last movements)
+                const effElement = document.getElementById('reportEfficiency');
+                if (effElement) {
+                    const kpis = window.bossDashboardService.calculateKPIs(window.currentMovements || []);
+                    effElement.textContent = kpis.avgPerHour || '0';
+                }
+
+            } catch (error) {
+                console.error('Error rendering real charts:', error);
+            }
+        };
+
+        window.exportToPDF = function () {
+            // Using browser print for better compatibility in Capacitor apps without extra libs
+            window.print();
+        };
+
+        window.openCreateObraModal = async function () {
+            document.getElementById('createObraModal').classList.remove('hidden');
+            if (window.loadUsersForCreationFn) {
+                await window.loadUsersForCreationFn();
+            }
+        };
+
+        window.closeCreateObraModal = function () {
+            document.getElementById('createObraModal').classList.add('hidden');
+            document.getElementById('createObraForm').reset();
+        };
+
+        window.openAssignUsersModal = function () {
+            document.getElementById('assignUsersModal').classList.remove('hidden');
+            // Trigger load users in the module
+            if (window.loadUsersForAssignmentFn) {
+                window.loadUsersForAssignmentFn();
+            }
+        };
+
+        window.closeAssignUsersModal = function () {
+            document.getElementById('assignUsersModal').classList.add('hidden');
+        };
+
+        window.saveUserAssignments = function () {
+            if (window.saveUserAssignmentsFn) {
+                window.saveUserAssignmentsFn();
+            }
+        };
+
+        window.handleHeaderObraFilterChange = function () {
+            if (window.handleHeaderObraFilterChangeFn) {
+                window.handleHeaderObraFilterChangeFn();
+            }
+        };
+
+        window.logout = function () {
+            if (window.logoutFn) {
+                window.logoutFn();
+            }
+        };
+
+        window.refreshData = function () {
+            if (window.refreshDataFn) {
+                window.refreshDataFn();
+            }
+        };
+
+        window.openMaterialsModal = function () {
+            document.getElementById('materialsModal').classList.remove('hidden');
+        };
+
+        window.closeMaterialsModal = function () {
+            document.getElementById('materialsModal').classList.add('hidden');
+        };
+
+        window.loadMaterialsForEdit = function () {
+            if (window.loadMaterialsForEditFn) {
+                window.loadMaterialsForEditFn();
+            }
+        };
+
+        window.deleteMaterial = function (id) {
+            if (window.deleteMaterialFn) {
+                window.deleteMaterialFn(id);
+            }
+        };
+    </script>
+
+    <script type="module">
+        import { supabaseClient } from './supabase-client.js';
+        import { authService } from './auth-service.js';
+        import { bossDashboardService } from './boss-dashboard-service.js';
+        import { obrasService } from './obras-service.js';
+
+        let realtimeChannel = null;
+        let allObras = [];
+        let allUsers = [];
+        window.selectedObraId = null;
+        window.currentMovements = [];
+
+        // Assign module functions to global scope
+        window.logoutFn = async function () {
+            await authService.logout();
+            window.location.href = 'login.html';
+        };
+
+        window.refreshDataFn = async function () {
+            await loadDashboard(true);
+        };
+
+        window.handleHeaderObraFilterChangeFn = function () {
+            const select = document.getElementById('headerObraFilter');
+            window.selectedObraId = select.value || null;
+            loadDashboard(false);
+        };
+
+        window.loadUsersForAssignmentFn = loadUsersForAssignment;
+        window.saveUserAssignmentsFn = saveUserAssignments;
+        window.loadUsersForCreationFn = loadUsersForCreationModal;
+        window.loadMaterialsForEditFn = loadMaterialsForEdit;
+        window.deleteMaterialFn = deleteMaterial;
+
+        // Internal functions
+        async function loadMaterialsForEdit() {
+            const obraId = document.getElementById('materialObraSelect').value;
+            const container = document.getElementById('materialsEditList');
+
+            if (!obraId) {
+                container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">Selecciona una obra para ver materiales</p>';
+                return;
+            }
+
+            container.innerHTML = '<div class="flex justify-center p-4"><div class="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div></div>';
+
+            try {
+                const materials = await bossDashboardService.getMaterialsByObra(obraId);
+
+                if (materials.length === 0) {
+                    container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay materiales registrados</p>';
+                    return;
+                }
+
+                container.innerHTML = materials.map(mat => `
+                    <div class="flex items-center justify-between p-3 glass-card rounded-lg border-l-4 ${mat.tipo === 'incoming' ? 'border-l-emerald-500' : 'border-l-amber-500'}">
+                        <div>
+                            <p class="text-white text-sm font-medium">${mat.nombre}</p>
+                            <p class="text-slate-500 text-[10px] uppercase">${mat.tipo === 'incoming' ? 'Relleno' : 'Excavación'}</p>
+                        </div>
+                        <button onclick="deleteMaterial('${mat.id}')" class="text-red-400 hover:text-red-300 transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading materials for edit:', error);
+                container.innerHTML = '<p class="text-center text-red-400 text-sm py-4">Error al cargar materiales</p>';
+            }
+        }
+
+        async function deleteMaterial(materialId) {
+            if (!confirm('¿Estás seguro de eliminar este material?')) return;
+
+            try {
+                await bossDashboardService.deleteMaterial(materialId);
+                await loadMaterialsForEdit();
+                showUpdateIndicator();
+            } catch (error) {
+                alert('Error al eliminar material: ' + error.message);
+            }
+        }
+
+        // Add Material Form Handler
+        document.getElementById('addMaterialForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const obraId = document.getElementById('materialObraSelect').value;
+            const nombre = document.getElementById('newMaterialName').value;
+            const tipo = document.getElementById('newMaterialType').value;
+
+            if (!obraId) {
+                alert('Selecciona una obra primero');
+                return;
+            }
+
+            try {
+                await bossDashboardService.addMaterial(obraId, nombre, tipo);
+                document.getElementById('newMaterialName').value = '';
+                await loadMaterialsForEdit();
+                showUpdateIndicator();
+            } catch (error) {
+                alert('Error al agregar material: ' + error.message);
+            }
+        });
+
+        // Internal functions
+        async function saveUserAssignments() {
+            const obraId = document.getElementById('assignObraSelect').value;
+            if (!obraId) {
+                alert('Por favor selecciona una obra');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#usersList input[type="checkbox"]');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                for (const checkbox of checkboxes) {
+                    const userId = checkbox.value;
+                    const isAssigned = checkbox.checked;
+                    const wasAssigned = checkbox.dataset.wasAssigned === 'true';
+
+                    if (isAssigned && !wasAssigned) {
+                        await obrasService.assignUserToObra(userId, obraId);
+                    } else if (!isAssigned && wasAssigned) {
+                        await obrasService.unassignUserFromObra(userId, obraId);
+                    }
+                }
+
+                closeAssignUsersModal();
+                showUpdateIndicator();
+            } catch (error) {
+                console.error('Error saving assignments:', error);
+                alert('Error al guardar asignaciones');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        };
+
+        // Create obra form handler
+        document.getElementById('createObraForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const obraData = {
+                nombre: formData.get('nombre'),
+                ubicacion: formData.get('ubicacion'),
+                descripcion: formData.get('descripcion'),
+                fecha_inicio: formData.get('fecha_inicio') || new Date().toISOString().split('T')[0]
+            };
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                const result = await obrasService.createObra(obraData);
+                if (result.success) {
+                    const newObraId = result.data.id;
+
+                    // Assign selected users
+                    const selectedCheckboxes = document.querySelectorAll('#createObraUsersList input[type="checkbox"]:checked');
+                    for (const checkbox of selectedCheckboxes) {
+                        await obrasService.assignUserToObra(checkbox.value, newObraId);
+                    }
+
+                    closeCreateObraModal();
+                    await loadObras();
+                    await loadDashboard(true);
+                    showUpdateIndicator();
+                } else {
+                    alert('Error al crear obra: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error creating obra:', error);
+                alert('Error al crear obra');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        });
+
+        // Load obras for filter
+        async function loadObras() {
+            try {
+                const result = await obrasService.getObras();
+                console.log('Obras loaded:', result);
+
+                if (result.success) {
+                    allObras = result.data;
+                    const select = document.getElementById('headerObraFilter');
+                    const assignSelect = document.getElementById('assignObraSelect');
+                    const materialSelect = document.getElementById('materialObraSelect');
+
+                    if (select) select.innerHTML = '<option value="">Todas las Obras</option>';
+                    if (assignSelect) assignSelect.innerHTML = '<option value="">Seleccionar obra...</option>';
+                    if (materialSelect) materialSelect.innerHTML = '<option value="">Seleccionar obra...</option>';
+
+                    allObras.forEach(obra => {
+                        const option = `<option value="${obra.id}">${obra.nombre}</option>`;
+                        if (select) {
+                            const optEl = document.createElement('option');
+                            optEl.value = obra.id;
+                            optEl.textContent = obra.nombre;
+                            select.appendChild(optEl);
+                        }
+                        if (assignSelect) assignSelect.innerHTML += option;
+                        if (materialSelect) materialSelect.innerHTML += option;
+                    });
+
+                    console.log(`Populated ${allObras.length} obras in filters`);
+                }
+            } catch (error) {
+                console.error('Error in loadObras:', error);
+            }
+        }
+
+        async function loadUsersForCreationModal() {
+            const container = document.getElementById('createObraUsersList');
+            if (!container) return;
+
+            try {
+                const usersResult = await obrasService.getAllUsers();
+                if (usersResult.success) {
+                    const contadores = usersResult.data.filter(u => u.rol === 'contador');
+                    if (contadores.length === 0) {
+                        container.innerHTML = '<p class="text-slate-500 text-[10px] text-center py-2">No hay apuntadores disponibles</p>';
+                        return;
+                    }
+
+                    container.innerHTML = contadores.map(user => `
+                        <label class="flex items-center gap-2 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
+                            <input type="checkbox" value="${user.id}" class="w-3.5 h-3.5 text-primary bg-white/10 border-white/20 rounded focus:ring-primary">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-white text-[10px] font-medium truncate">${user.nombre_completo}</p>
+                                <p class="text-slate-500 text-[9px] truncate">${user.email}</p>
+                            </div>
+                        </label>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading users for creation:', error);
+                container.innerHTML = '<p class="text-red-400 text-[10px] text-center py-2">Error cargando usuarios</p>';
+            }
+        }
+
+        // Load users for assignment
+        async function loadUsersForAssignment() {
+            const obraId = document.getElementById('assignObraSelect').value;
+            if (!obraId) {
+                document.getElementById('usersList').innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Selecciona una obra primero</p>';
+                return;
+            }
+
+            const [usersResult, assignedResult] = await Promise.all([
+                obrasService.getAllUsers(),
+                obrasService.getObraUsers(obraId)
+            ]);
+
+            if (usersResult.success) {
+                allUsers = usersResult.data;
+                const assignedUserIds = assignedResult.success ? assignedResult.data.map(u => u.id) : [];
+                const contadores = allUsers.filter(u => u.rol === 'contador');
+
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = contadores.map(user => {
+                    const isAssigned = assignedUserIds.includes(user.id);
+                    return `
+                        <label class="flex items-center gap-3 p-3 glass-card rounded-lg hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" value="${user.id}" ${isAssigned ? 'checked' : ''} data-was-assigned="${isAssigned}" class="w-4 h-4 text-primary bg-white/5 border-white/10 rounded focus:ring-primary focus:ring-2">
+                            <div class="flex-1">
+                                <p class="text-white text-sm font-medium">${user.nombre_completo}</p>
+                                <p class="text-slate-500 text-xs">${user.email}</p>
+                            </div>
+                        </label>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Listen for obra selection change in assign modal
+        document.getElementById('assignObraSelect').addEventListener('change', loadUsersForAssignment);
+
+        // Update date
+        function updateDate() {
+            const dateElement = document.getElementById('currentDate');
+            if (!dateElement) return;
+            // Force Chilean timezone (UTC-3 for current date)
+            const today = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                timeZone: 'America/Santiago'
+            };
+            dateElement.textContent = today.toLocaleDateString('es-CL', options);
+        }
+
+        // Show update indicator
+        function showUpdateIndicator() {
+            const indicator = document.getElementById('updateIndicator');
+            indicator.style.opacity = '1';
+            indicator.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translateY(1rem)';
+            }, 2000);
+        }
+
+        // Render material breakdown
+        function renderMaterialBreakdown(elementId, breakdown) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const materials = Object.keys(breakdown);
+            if (materials.length === 0) {
+                element.innerHTML = '<p class="text-[10px] text-slate-500 italic">Sin materiales</p>';
+                return;
+            }
+
+            element.innerHTML = materials
+                .sort((a, b) => breakdown[b] - breakdown[a])
+                .slice(0, 3)
+                .map(material => `
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="text-slate-400 truncate">${material}</span>
+                        <span class="text-white font-semibold ml-2">${breakdown[material].toFixed(0)}m³</span>
+                    </div>
+                `).join('');
+        }
+
+        function renderLocationBreakdown(containerId, breakdown, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const keys = Object.keys(breakdown);
+
+            if (keys.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-[10px]">Sin datos</p>';
+                return;
+            }
+
+            container.innerHTML = keys
+                .sort((a, b) => breakdown[b] - breakdown[a])
+                .map(loc => `
+                    <div class="fade-in">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-white text-[10px] font-medium truncate flex-1">${loc}</span>
+                            <span class="text-${color}-400 font-bold text-[10px] ml-2">${breakdown[loc].toFixed(0)}m³</span>
+                        </div>
+                        <div class="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-${color}-500/50 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+
+        // Filter data by obra
+        function filterDataByObra(data) {
+            if (!window.selectedObraId) return data;
+
+            return {
+                obras: data.obras.filter(o => o.id === window.selectedObraId),
+                camiones: data.camiones.filter(c => c.obra_id === window.selectedObraId),
+                movements: data.movements.filter(m => m.obra_id === window.selectedObraId),
+                timestamp: data.timestamp
+            };
+        }
+
+        // Load dashboard
+        async function loadDashboard(forceRefresh = false) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (forceRefresh) loadingOverlay.style.display = 'flex';
+
+            try {
+                const rawData = await bossDashboardService.getConsolidatedData(forceRefresh);
+                const data = filterDataByObra(rawData);
+                window.currentMovements = data.movements;
+
+                // KPIs
+                const kpis = bossDashboardService.calculateKPIs(data.movements);
+                document.getElementById('kpiTotalTrips').textContent = kpis.totalTrips;
+                document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
+                document.getElementById('kpiAvgPerHour').textContent = kpis.avgPerHour;
+
+                // Incoming/Outgoing counts
+                const incomingCount = data.movements.filter(m => m.tipo === 'incoming').length;
+                const outgoingCount = data.movements.filter(m => m.tipo === 'outgoing').length;
+                document.getElementById('kpiIncoming').textContent = incomingCount;
+                document.getElementById('kpiOutgoing').textContent = outgoingCount;
+
+                // Volume Balance
+                const fillVolume = bossDashboardService.calculateVolume(data.movements, 'incoming');
+                const excavationVolume = bossDashboardService.calculateVolume(data.movements, 'outgoing');
+
+                document.getElementById('dashFillVolume').innerHTML = `+${fillVolume.toFixed(0)} <span class="text-sm font-normal text-slate-500">m³</span>`;
+                document.getElementById('dashExcavationVolume').innerHTML = `-${excavationVolume.toFixed(0)} <span class="text-sm font-normal text-slate-500">m³</span>`;
+
+                const fillBreakdown = bossDashboardService.calculateMaterialBreakdown(data.movements, 'incoming');
+                const excavationBreakdown = bossDashboardService.calculateMaterialBreakdown(data.movements, 'outgoing');
+
+                renderMaterialBreakdown('dashFillBreakdown', fillBreakdown);
+                renderMaterialBreakdown('dashExcavationBreakdown', excavationBreakdown);
+
+                // Location Breakdown
+                const incomingLocs = bossDashboardService.calculateLocationBreakdown(data.movements, 'incoming');
+                const outgoingLocs = bossDashboardService.calculateLocationBreakdown(data.movements, 'outgoing');
+
+                renderLocationBreakdown('dashIncomingLocations', incomingLocs, 'emerald');
+                renderLocationBreakdown('dashOutgoingLocations', outgoingLocs, 'amber');
+
+                // Hourly Activity
+                renderHourlyActivity(data.movements);
+
+                // Truck Performance
+                renderTruckPerformance(data.camiones, data.movements);
+
+                // Movement History
+                renderMovementHistory(data.movements);
+
+                // Update charts if they are visible
+                if (document.getElementById('view-reportes').classList.contains('active')) {
+                    renderCharts();
+                }
+
+                if (forceRefresh) showUpdateIndicator();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Render hourly activity
+        function renderHourlyActivity(movements) {
+            const container = document.getElementById('hourlyActivity');
+            if (!container) return;
+            if (movements.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay datos disponibles</p>';
+                return;
+            }
+
+            const hourlyData = bossDashboardService.groupMovementsByHour(movements);
+            const maxCount = Math.max(...Object.values(hourlyData));
+            const hours = Object.keys(hourlyData).sort((a, b) => a - b);
+
+            container.innerHTML = hours.map(hour => {
+                const count = hourlyData[hour];
+                const percentage = (count / maxCount) * 100;
+                const displayHour = parseInt(hour) % 12 || 12;
+                const period = parseInt(hour) >= 12 ? 'PM' : 'AM';
+
+                return `
+                    <div class="flex items-center gap-3 fade-in">
+                        <span class="text-xs text-slate-400 w-12">${displayHour} ${period}</span>
+                        <div class="flex-1 h-6 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-primary to-purple-600 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="text-xs text-white font-semibold w-8 text-right">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render truck performance
+        function renderTruckPerformance(camiones, movements) {
+            const container = document.getElementById('performanceList');
+            if (!container) return;
+            if (camiones.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay camiones registrados</p>';
+                return;
+            }
+
+            const performance = bossDashboardService.getTruckPerformance(camiones, movements);
+            const topTrucks = performance.slice(0, 10);
+
+            container.innerHTML = topTrucks.map((truck, index) => {
+                const isTop = index === 0;
+                const rankClass = isTop ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white' : 'bg-white/5 text-slate-400';
+
+                return `
+                    <div class="glass-card rounded-lg p-4 mb-3 neon-shadow hover:bg-white/5 transition-all fade-in">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm shrink-0">
+                                ${index + 1}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-white text-sm font-semibold truncate">${truck.nombre}</h4>
+                                <p class="text-slate-500 text-xs truncate">${truck.patente} • ${truck.capacidad}m³ • ${truck.obraName}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-white text-lg font-bold">${truck.totalTrips}</p>
+                                <p class="text-[10px] text-slate-500">vueltas</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-emerald-500/10 rounded-lg p-2">
+                                <p class="text-emerald-400 text-sm font-bold">${truck.incomingCount}</p>
+                                <p class="text-[10px] text-slate-500">Relleno</p>
+                            </div>
+                            <div class="bg-amber-500/10 rounded-lg p-2">
+                                <p class="text-amber-400 text-sm font-bold">${truck.outgoingCount}</p>
+                                <p class="text-[10px] text-slate-500">Excavación</p>
+                            </div>
+                            <div class="bg-blue-500/10 rounded-lg p-2">
+                                <p class="text-blue-400 text-sm font-bold">${truck.totalVolume.toFixed(0)}</p>
+                                <p class="text-[10px] text-slate-500">m³</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render movement history
+        function renderMovementHistory(movements) {
+            const container = document.getElementById('movementList');
+            if (!container) return;
+            if (movements.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay movimientos registrados</p>';
+                return;
+            }
+
+            const displayMovements = movements.slice(0, 20);
+
+            container.innerHTML = displayMovements.map(movement => {
+                const date = new Date(movement.timestamp);
+                const hours = date.getHours() % 12 || 12;
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const period = date.getHours() >= 12 ? 'PM' : 'AM';
+                const timeStr = `${hours}:${minutes} ${period}`;
+
+                const isIncoming = movement.tipo === 'incoming';
+                const typeText = isIncoming ? 'Entrante' : 'Saliente';
+                const typeColor = isIncoming ? 'emerald' : 'amber';
+                const icon = isIncoming ? 'south_east' : 'north_east';
+                const obraName = movement.obras?.nombre || 'Sin obra';
+                const truckName = movement.camiones?.nombre || movement.camion_nombre || 'Sin nombre';
+                const truckPlate = movement.camiones?.patente || movement.camion_patente || 'Sin patente';
+
+                return `
+                    <div class="glass-card rounded-lg p-3 mb-2 border-l-4 border-l-${typeColor}-500 neon-shadow fade-in">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-${typeColor}-400 text-[16px]">${icon}</span>
+                                <span class="text-white text-sm font-semibold">${truckName}</span>
+                            </div>
+                            <span class="text-xs text-slate-500">${timeStr}</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-slate-500 text-[14px]">badge</span>
+                                <span class="text-slate-400">${truckPlate}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-slate-500 text-[14px]">apartment</span>
+                                <span class="text-slate-400 truncate">${obraName}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-slate-500 text-[14px]">category</span>
+                                <span class="text-slate-400 truncate">${movement.material || 'Sin material'} ${movement.destino ? `➜ <span class="text-slate-300">${movement.destino}</span>` : ''}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-slate-500 text-[14px]">location_on</span>
+                                <span class="text-slate-400 truncate">${movement.ubicacion || 'Sin especificar'}</span>
+                            </div>
+                            <div class="flex items-center gap-1 justify-end">
+                                <span class="text-${typeColor}-400 font-bold">${isIncoming ? '+' : '-'}${parseFloat(movement.capacidad).toFixed(1)} m³</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        async function init() {
+            updateDate();
+            await loadObras();
+            await loadDashboard(true);
+
+            // Fetch user info for Ajustes
+            const { data } = await supabaseClient.auth.getSession();
+            window.bossDashboardService.cachedSession = data.session;
+            updateAjustesView();
+
+            // Real-time subscription
+            realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
+                showUpdateIndicator();
+                await loadDashboard(true);
+            });
+
+            // Auto-refresh every 30s
+            setInterval(() => loadDashboard(false), 30000);
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (realtimeChannel) {
+                bossDashboardService.unsubscribe(realtimeChannel);
+            }
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

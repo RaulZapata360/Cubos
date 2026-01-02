@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico de Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+
+        .log {
+            background: #000;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #00ff00;
+        }
+
+        .error {
+            border-left-color: #ff0000;
+            color: #ff6666;
+        }
+
+        .success {
+            border-left-color: #00ff00;
+        }
+
+        .info {
+            border-left-color: #00aaff;
+            color: #66ccff;
+        }
+
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #00cc00;
+        }
+
+        pre {
+            background: #222;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Diagnóstico de Autenticación Supabase</h1>
+
+    <div>
+        <button onclick="runFullDiagnostic()">🚀 Ejecutar Diagnóstico Completo</button>
+        <button onclick="testLogin()">🔐 Probar Login</button>
+        <button onclick="clearAll()">🗑️ Limpiar Todo</button>
+    </div>
+
+    <div id="logs"></div>
+
+    <script type="module">
+        import { supabaseClient } from './supabase-client.js';
+        import { authService } from './auth-service.js';
+
+        let logContainer = document.getElementById('logs');
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logContainer.appendChild(div);
+            console.log(message);
+        }
+
+        window.runFullDiagnostic = async function () {
+            logContainer.innerHTML = '';
+            log('🔍 Iniciando diagnóstico completo...', 'info');
+
+            // 1. Verificar configuración de Supabase
+            log('1️⃣ Verificando configuración de Supabase...', 'info');
+            try {
+                const { data, error } = await supabaseClient.from('usuarios').select('count').limit(1);
+                if (error) {
+                    log(`❌ Error de configuración: ${error.message}`, 'error');
+                } else {
+                    log('✅ Configuración de Supabase correcta', 'success');
+                }
+            } catch (e) {
+                log(`❌ Excepción en configuración: ${e.message}`, 'error');
+            }
+
+            // 2. Verificar sesión actual
+            log('2️⃣ Verificando sesión actual...', 'info');
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    log(`✅ Sesión activa encontrada`, 'success');
+                    log(`<pre>${JSON.stringify(session.user, null, 2)}</pre>`, 'info');
+                } else {
+                    log('⚠️ No hay sesión activa', 'info');
+                }
+            } catch (e) {
+                log(`❌ Error al verificar sesión: ${e.message}`, 'error');
+            }
+
+            // 3. Verificar perfil de usuario
+            log('3️⃣ Verificando perfil de usuario...', 'info');
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+                if (user) {
+                    log(`✅ Usuario autenticado: ${user.email}`, 'success');
+
+                    const { data: profile, error } = await supabaseClient
+                        .from('usuarios')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (error) {
+                        log(`❌ Error al obtener perfil: ${error.message}`, 'error');
+                        log(`<pre>${JSON.stringify(error, null, 2)}</pre>`, 'error');
+                    } else if (profile) {
+                        log(`✅ Perfil encontrado`, 'success');
+                        log(`<pre>${JSON.stringify(profile, null, 2)}</pre>`, 'success');
+                    } else {
+                        log(`❌ Perfil no encontrado en la base de datos`, 'error');
+                    }
+                } else {
+                    log('⚠️ No hay usuario autenticado', 'info');
+                }
+            } catch (e) {
+                log(`❌ Excepción al verificar perfil: ${e.message}`, 'error');
+            }
+
+            // 4. Verificar políticas RLS
+            log('4️⃣ Probando acceso a tabla usuarios...', 'info');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('usuarios')
+                    .select('*')
+                    .limit(5);
+
+                if (error) {
+                    log(`❌ Error de RLS: ${error.message}`, 'error');
+                } else {
+                    log(`✅ Acceso a usuarios OK (${data.length} registros)`, 'success');
+                }
+            } catch (e) {
+                log(`❌ Excepción en RLS: ${e.message}`, 'error');
+            }
+
+            log('✅ Diagnóstico completo', 'success');
+        };
+
+        window.testLogin = async function () {
+            logContainer.innerHTML = '';
+            log('🔐 Probando login con jefe@demo.com...', 'info');
+
+            try {
+                const result = await authService.login('jefe@demo.com', 'Demo123!');
+
+                if (result.success) {
+                    log('✅ Login exitoso!', 'success');
+                    log(`<pre>${JSON.stringify(result, null, 2)}</pre>`, 'success');
+                    log(`Rol: ${result.rol}`, 'success');
+
+                    setTimeout(() => {
+                        log('🔄 Redirigiendo a boss.html...', 'info');
+                        window.location.href = 'boss.html';
+                    }, 2000);
+                } else {
+                    log(`❌ Login fallido: ${result.error}`, 'error');
+                }
+            } catch (e) {
+                log(`❌ Excepción en login: ${e.message}`, 'error');
+            }
+        };
+
+        window.clearAll = function () {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('🗑️ Storage limpiado', 'info');
+            setTimeout(() => location.reload(), 1000);
+        };
+
+        // Auto-ejecutar diagnóstico al cargar
+        setTimeout(() => runFullDiagnostic(), 500);
+    </script>
+</body>
+
+</html>

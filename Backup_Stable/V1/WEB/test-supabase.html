@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Supabase Connection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <h1>Test de Conexión Supabase</h1>
+    <button onclick="testConnection()">Probar Conexión</button>
+    <button onclick="testCreateObra()">Crear Obra de Prueba</button>
+    <button onclick="testGetObras()">Obtener Obras</button>
+    <pre id="result"></pre>
+
+    <script type="module">
+        import { supabaseConfig } from './supabase-config.js';
+
+        const { createClient } = supabase;
+        const client = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+
+        window.testConnection = async function () {
+            const result = document.getElementById('result');
+            result.textContent = 'Probando conexión...';
+
+            try {
+                // Verificar sesión
+                const { data: { session }, error: sessionError } = await client.auth.getSession();
+
+                if (sessionError) {
+                    result.textContent = '❌ Error de sesión: ' + JSON.stringify(sessionError, null, 2);
+                    return;
+                }
+
+                if (!session) {
+                    result.textContent = '⚠️ No hay sesión activa. Debes hacer login primero.';
+                    return;
+                }
+
+                result.textContent = '✅ Sesión activa:\n' + JSON.stringify({
+                    user_id: session.user.id,
+                    email: session.user.email
+                }, null, 2);
+
+            } catch (error) {
+                result.textContent = '❌ Error: ' + error.message;
+            }
+        };
+
+        window.testGetObras = async function () {
+            const result = document.getElementById('result');
+            result.textContent = 'Obteniendo obras...';
+
+            try {
+                const { data, error } = await client
+                    .from('obras')
+                    .select('*');
+
+                if (error) {
+                    result.textContent = '❌ Error al obtener obras:\n' + JSON.stringify(error, null, 2);
+                    return;
+                }
+
+                result.textContent = `✅ Obras obtenidas (${data.length}):\n` + JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                result.textContent = '❌ Error: ' + error.message;
+            }
+        };
+
+        window.testCreateObra = async function () {
+            const result = document.getElementById('result');
+            result.textContent = 'Creando obra de prueba...';
+
+            try {
+                const { data, error } = await client
+                    .from('obras')
+                    .insert([{
+                        nombre: 'Obra Test ' + new Date().toISOString(),
+                        ubicacion: 'Test',
+                        descripcion: 'Prueba de conexión',
+                        estado: 'activa'
+                    }])
+                    .select()
+                    .single();
+
+                if (error) {
+                    result.textContent = '❌ Error al crear obra:\n' + JSON.stringify(error, null, 2);
+                    return;
+                }
+
+                result.textContent = '✅ Obra creada:\n' + JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                result.textContent = '❌ Error: ' + error.message;
+            }
+        };
+    </script>
+</body>
+
+</html>

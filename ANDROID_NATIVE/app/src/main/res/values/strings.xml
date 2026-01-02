@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Conteo Camiones</string>
+    
+    <!-- Login Screen -->
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="login_email">Correo electrónico</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="login_error">Error al iniciar sesión</string>
+    
+    <!-- Site Selector -->
+    <string name="site_selector_title">Seleccionar Obra</string>
+    <string name="site_selector_subtitle">Elige la obra en la que trabajarás hoy</string>
+    <string name="site_selector_empty">No tienes obras asignadas</string>
+    
+    <!-- Counter Screen -->
+    <string name="counter_title">Conteo de Camiones</string>
+    <string name="counter_incoming">Entrante</string>
+    <string name="counter_outgoing">Saliente</string>
+    <string name="counter_register">Registrar</string>
+    <string name="counter_truck">Camión</string>
+    <string name="counter_material">Material</string>
+    
+    <!-- Boss Dashboard -->
+    <string name="boss_title">Dashboard Ejecutivo</string>
+    <string name="boss_subtitle">Vista consolidada de todas las obras</string>
+    <string name="boss_all_obras">Todas las Obras</string>
+    <string name="boss_new_obra">Nueva Obra</string>
+    <string name="boss_assign_users">Asignar Usuarios</string>
+    
+    <!-- KPIs -->
+    <string name="kpi_total_trips">Vueltas del Día</string>
+    <string name="kpi_operating_time">Tiempo de Operación</string>
+    <string name="kpi_avg_per_hour">Promedio/Hora</string>
+    
+    <!-- Common -->
+    <string name="common_logout">Cerrar Sesión</string>
+    <string name="common_refresh">Actualizar</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_save">Guardar</string>
+    <string name="common_delete">Eliminar</string>
+    <string name="common_edit">Editar</string>
+    <string name="common_loading">Cargando...</string>
+    <string name="common_error">Error</string>
+    <string name="common_success">Éxito</string>
+</resources>

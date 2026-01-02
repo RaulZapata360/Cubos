@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Contador de Camiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script type="module">
+        import { authService } from './auth-service.js';
+        import { obrasService } from './obras-service.js';
+
+        // Verify authentication and role
+        (async () => {
+            const session = await authService.checkSession();
+
+            if (!session.authenticated || session.rol !== 'contador') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Verify obra is selected
+            if (!obrasService.hasSelectedObra()) {
+                window.location.href = 'site-selector.html';
+                return;
+            }
+
+            console.log('✅ Contador authenticated, obra selected');
+        })();
+    </script>
+</head>
+
+<body>
+    <div class="mobile-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>🚛 Conteo de Camiones <span
+                            style="font-size: 10px; opacity: 0.5; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px; vertical-align: middle;">v3.1.1</span>
+                    </h1>
+                    <p class="date" id="currentDate"></p>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-secondary" onclick="openHistoryModal()" title="Ver historial anterior">📅
+                        Historial</button>
+                    <button class="btn-secondary" onclick="authService.logout()" title="Cerrar sesión">Salir</button>
+                </div>
+            </div>
+        </header>
+
+
+
+        <!-- Tab Navigation -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="resumen">
+                <span class="tab-icon">📊</span>
+                <span class="tab-label">Resumen</span>
+            </button>
+            <button class="tab-btn" data-tab="movimiento">
+                <span class="tab-icon">📋</span>
+                <span class="tab-label">Movimiento</span>
+            </button>
+            <button class="tab-btn" data-tab="analisis">
+                <span class="tab-icon">📈</span>
+                <span class="tab-label">Análisis</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="app-content">
+            <!-- Tab: Resumen -->
+
+            <div class="tab-content active" id="tab-resumen">
+                <!-- Quick Action Buttons -->
+                <section class="quick-actions">
+                    <!-- Incoming Trucks -->
+                    <button class="action-btn incoming-btn" id="incomingBtn" title="Presiona E">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                <polyline points="9 22 9 12 15 12 15 22" />
+                                <path d="M12 2v10m-4-4l4-4 4 4" stroke-width="3" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-label">ENTRANTE</div>
+                            <div class="action-count" id="incomingCount">0</div>
+                            <div class="action-subtitle">Seleccionar camión</div>
+                        </div>
+                    </button>
+
+                    <!-- Outgoing Trucks -->
+                    <button class="action-btn outgoing-btn" id="outgoingBtn" title="Presiona S">
+                        <div class="action-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                <polyline points="9 22 9 12 15 12 15 22" />
+                                <path d="M12 12v10m-4-4l4 4 4-4" stroke-width="3" />
+                            </svg>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-label">SALIENTE</div>
+                            <div class="action-count" id="outgoingCount">0</div>
+                            <div class="action-subtitle">Seleccionar camión</div>
+                        </div>
+                    </button>
+                </section>
+
+                <!-- Floating Add Button -->
+                <button class="floating-add-btn" id="addTruckBtn" title="Agregar Camión">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                </button>
+
+                <!-- Volume Stats -->
+                <section class="stats-section">
+                    <div class="stat-card incoming-stat">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Vol. Entrante</div>
+                            <div class="stat-value" id="incomingVolume">0 m³</div>
+                        </div>
+                    </div>
+                    <div class="stat-card outgoing-stat">
+                        <div class="stat-icon">🚚</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Vol. Saliente</div>
+                            <div class="stat-value" id="outgoingVolume">0 m³</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Truck Roster Section -->
+                <section class="roster-section">
+                    <div class="roster-header">
+                        <h3>📋 Nómina de Camiones</h3>
+                        <div class="roster-summary">
+                            <span class="total-badge" id="totalTrucks">0</span>
+                        </div>
+                    </div>
+                    <div class="truck-list" id="truckList">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p>No hay camiones registrados</p>
+                            <p class="empty-hint">Toca el botón "+" para agregar</p>
+                        </div>
+                    </div>
+                    <button class="pdf-report-btn" onclick="truckManager.generatePDFReport()"
+                        title="Generar Reporte PDF">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>REPORTE PDF</span>
+                    </button>
+                </section>
+
+                <!-- Summary Footer -->
+                <section class="summary-footer">
+                    <div class="summary-item">
+                        <div class="summary-icon">🚛</div>
+                        <div class="summary-data">
+                            <div class="summary-label">Total Camiones</div>
+                            <div class="summary-value" id="totalTrucksFooter">0</div>
+                        </div>
+                    </div>
+                    <div class="summary-divider"></div>
+                    <div class="summary-item">
+                        <div class="summary-icon">📊</div>
+                        <div class="summary-data">
+                            <div class="summary-label">Volumen Total</div>
+                            <div class="summary-value" id="totalVolume">0 m³</div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Resumen -->
+
+            <!-- Tab: Movimiento del Día -->
+            <div class="tab-content" id="tab-movimiento">
+                <section class="movement-section">
+                    <div class="section-header">
+                        <h2>📋 Movimiento del Día</h2>
+                        <div class="movement-stats">
+                            <span class="stat-pill incoming-pill">
+                                <span class="pill-icon">📥</span>
+                                <span id="movementIncomingCount">0</span>
+                            </span>
+                            <span class="stat-pill outgoing-pill">
+                                <span class="pill-icon">📤</span>
+                                <span id="movementOutgoingCount">0</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="movement-log" id="movementLog">
+                        <div class="empty-movement">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p>No hay movimientos registrados</p>
+                            <p class="empty-hint">Los movimientos aparecerán aquí cuando registres vueltas
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Movimiento -->
+
+            <!-- Tab: Análisis -->
+            <div class="tab-content" id="tab-analisis">
+                <section class="analytics-section">
+                    <h2>📈 Análisis del Día</h2>
+
+                    <!-- Volume Balance -->
+                    <div class="analytics-card">
+                        <h3>Balance de Volumen</h3>
+                        <div class="volume-balance">
+                            <div class="balance-item incoming-balance">
+                                <div class="balance-icon">📦</div>
+                                <div class="balance-info">
+                                    <div class="balance-label">Relleno</div>
+                                    <div class="balance-value" id="analyticsFillVolume">+0.0 m³</div>
+                                </div>
+                            </div>
+                            <div class="balance-item outgoing-balance">
+                                <div class="balance-icon">🚚</div>
+                                <div class="balance-info">
+                                    <div class="balance-label">Excavación</div>
+                                    <div class="balance-value" id="analyticsExcavationVolume">-0.0 m³</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Truck Performance -->
+                    <div class="analytics-card">
+                        <h3>Rendimiento por Camión</h3>
+                        <div class="truck-performance" id="truckPerformance">
+                            <p class="analytics-empty">Registra vueltas para ver estadísticas</p>
+                        </div>
+                    </div>
+
+                    <!-- Activity Timeline -->
+                    <div class="analytics-card">
+                        <h3>Actividad por Hora</h3>
+                        <div class="hourly-activity" id="hourlyActivity">
+                            <p class="analytics-empty">Registra vueltas para ver actividad</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="analytics-card">
+                        <h3>Resumen General</h3>
+                        <div class="summary-stats">
+                            <div class="stat-row">
+                                <span class="stat-label">Primera vuelta:</span>
+                                <span class="stat-value" id="firstTrip">--:--</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Última vuelta:</span>
+                                <span class="stat-value" id="lastTrip">--:--</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Tiempo operando:</span>
+                                <span class="stat-value" id="operatingTime">0h 0m</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Promedio vueltas/hora:</span>
+                                <span class="stat-value" id="avgTripsPerHour">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Análisis -->
+        </main>
+    </div>
+
+    <!-- Modal for Selecting Truck -->
+    <div class="modal" id="truckSelectorModal">
+        <div class="modal-content selector-modal">
+            <div class="modal-header">
+                <h3 id="selectorTitle">🚛 Seleccionar Camión</h3>
+                <button class="close-btn" id="closeSelectorModal" title="Presiona ESC">&times;</button>
+            </div>
+            <div class="truck-selector-list" id="truckSelectorList">
+                <!-- Trucks will be populated here -->
+            </div>
+
+            <!-- Link to add new truck if not in list -->
+            <div style="padding: 16px; border-top: 1px solid var(--border-color); text-align: center;">
+                <button
+                    onclick="document.getElementById('truckSelectorModal').classList.remove('active'); document.getElementById('addTruckModal').classList.add('active');"
+                    style="background: none; border: 1px dashed var(--accent-blue); color: var(--accent-blue); padding: 12px; border-radius: 12px; width: 100%; font-weight: 600; cursor: pointer;">
+                    ➕ AGREGAR CAMIÓN A LA NÓMINA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Material Selection (after truck selected) -->
+    <div class="modal" id="materialSelectorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="materialSelectorTitle">🏗️ Seleccionar Material</h3>
+                <button class="close-btn" id="closeMaterialSelectorModal" title="Presiona ESC">&times;</button>
+            </div>
+
+            <!-- Refined Location Input Group -->
+            <div class="location-input-group">
+                <label
+                    style="font-size: 11px; color: var(--text-secondary); display: block; margin-bottom: 8px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">
+                    📍 Ubicación de la vuelta (Opcional)
+                </label>
+                <div class="location-input-wrapper">
+                    <input type="text" id="tripLocation" placeholder="Ej: Sector A, Relleno Sur..." autocomplete="off">
+                </div>
+            </div>
+
+            <div class="material-grid" id="materialSelectorList">
+                <!-- Materials will be populated here -->
+            </div>
+
+            <!-- New Material Form (Hidden by default) -->
+            <div id="newMaterialFormContainer"
+                style="display: none; padding: 16px; border-top: 1px solid var(--border-color);">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 13px;">Nombre del Nuevo Material:</label>
+                    <input type="text" id="customMaterialName" placeholder="Ej: Escombros, Arena Fina..."
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button id="cancelNewMaterialBtn" class="btn-secondary"
+                        style="flex: 1; padding: 10px;">Cancelar</button>
+                    <button id="saveNewMaterialBtn" class="btn-primary" style="flex: 1; padding: 10px;">Registrar y
+                        Usar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Destination Selection (after material selected, only for outgoing) -->
+    <div class="modal" id="destinoSelectorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="destinoSelectorTitle">📍 Seleccionar Destino</h3>
+                <button class="close-btn" onclick="closeAllModals()">&times;</button>
+            </div>
+
+            <div class="material-grid" id="destinoSelectorList">
+                <!-- Destinations will be populated here -->
+            </div>
+
+            <!-- New Destination Form (Hidden by default) -->
+            <div id="newDestinoFormContainer"
+                style="display: none; padding: 16px; border-top: 1px solid var(--border-color);">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 13px;">Nombre del Nuevo Destino:</label>
+                    <input type="text" id="customDestinoName" placeholder="Ej: Botadero 1, Cantera Norte..."
+                        style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary);">
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="toggleNewDestinoForm(false)" class="btn-secondary"
+                        style="flex: 1; padding: 10px;">Cancelar</button>
+                    <button id="saveNewDestinoBtn" class="btn-primary" style="flex: 1; padding: 10px;">Guardar y
+                        Usar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Daily History -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📅 Historial de Cierres Diarios</h3>
+                <button class="close-btn"
+                    onclick="document.getElementById('historyModal').classList.remove('active')">&times;</button>
+            </div>
+            <div id="historyList" class="truck-selector-list">
+                <!-- Records populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Truck -->
+    <div class="modal" id="truckModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>➕ Registrar Nuevo Camión</h3>
+                <button class="close-btn" id="closeModal" title="Presiona ESC">&times;</button>
+            </div>
+
+            <!-- Frequent Trucks Button -->
+            <div style="padding: 0 20px 16px 20px; border-bottom: 1px solid var(--border-color);">
+                <button type="button" id="showFrequentTrucksBtn" class="btn-secondary"
+                    style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        style="width: 20px; height: 20px;">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                        <path d="M2 17l10 5 10-5" />
+                        <path d="M2 12l10 5 10-5" />
+                    </svg>
+                    <span>⚡ Camiones Frecuentes</span>
+                </button>
+            </div>
+
+            <form id="truckForm">
+                <div class="form-group">
+                    <label for="truckName">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        Identificador del Camión
+                    </label>
+                    <input type="text" id="truckName" placeholder="Ej: Camión 1, Volvo A40" required autofocus>
+                </div>
+                <div class="form-group">
+                    <label for="licensePlate">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="6" width="18" height="12" rx="2" />
+                            <line x1="7" y1="10" x2="17" y2="10" />
+                            <line x1="7" y1="14" x2="17" y2="14" />
+                        </svg>
+                        Patente
+                    </label>
+                    <input type="text" id="licensePlate" placeholder="Ej: ABC123" required>
+                </div>
+                <div class="form-group">
+                    <label for="capacity">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path
+                                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                        </svg>
+                        Capacidad (m³)
+                    </label>
+                    <input type="number" id="capacity" placeholder="Ej: 15" min="1" step="0.5" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="8.5" cy="7" r="4" />
+                            <polyline points="17 11 19 13 23 9" />
+                        </svg>
+                        Tipo de Operación
+                    </label>
+                    <div class="radio-group">
+                        <label class="radio-label incoming-label">
+                            <input type="radio" name="truckType" value="incoming" checked>
+                            <div class="radio-card">
+                                <div class="radio-icon">📥</div>
+                                <div class="radio-text">
+                                    <div class="radio-title">Relleno</div>
+                                    <div class="radio-desc">Trae material</div>
+                                </div>
+                                <div class="radio-check"></div>
+                            </div>
+                        </label>
+                        <label class="radio-label outgoing-label">
+                            <input type="radio" name="truckType" value="outgoing">
+                            <div class="radio-card">
+                                <div class="radio-icon">📤</div>
+                                <div class="radio-text">
+                                    <div class="radio-title">Excavación</div>
+                                    <div class="radio-desc">Lleva material</div>
+                                </div>
+                                <div class="radio-check"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelBtn">
+                        <span>Cancelar</span>
+
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        <span>Registrar</span>
+
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Frequent Trucks -->
+    <div class="modal" id="frequentTrucksModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚡ Camiones Frecuentes</h3>
+                <button class="close-btn" id="closeFrequentTrucksModal" title="Presiona ESC">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                    Selecciona un camión frecuente para agregarlo rápidamente a la nómina
+                </p>
+                <div id="frequentTrucksList" class="truck-selector-list">
+                    <!-- Frequent trucks will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Managing Materials -->
+    <div class="modal" id="materialModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏗️ Gestionar Materiales</h3>
+                <button class="close-btn" id="closeMaterialModal" title="Presiona ESC">&times;</button>
+            </div>
+            <div class="material-tabs">
+                <button class="material-tab-btn active" data-type="incoming">📥 Relleno</button>
+                <button class="material-tab-btn" data-type="outgoing">📤 Excavación</button>
+            </div>
+            <div class="material-list" id="materialList"></div>
+            <div class="add-material-form">
+                <input type="text" id="newMaterialName" placeholder="Nombre del material (ej: Arena, Ripio...)" />
+                <button class="btn-primary" id="addMaterialBtn">Agregar</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <script type="module">
+        import { supabaseClient } from './supabase-client.js';
+        import { authService } from './auth-service.js';
+        import { obrasService } from './obras-service.js';
+
+        let currentObraId = null;
+        let trucks = [];
+        let movements = [];
+        let materials = [];
+        let destinos = []; // Added destinos array
+
+        // Initialize
+        async function init() {
+            try {
+                const session = await authService.checkSession();
+                if (!session.authenticated) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentObraId = obrasService.getSelectedObraId();
+                if (!currentObraId) {
+                    window.location.href = 'site-selector.html';
+                    return;
+                }
+
+                // NEW: Automatic archival of previous days
+                await autoArchivePreviousDays();
+
+                setupEventListeners(); // Restore event listeners
+                await loadTrucks();
+                await loadMovements();
+                await loadMaterials();
+                await loadDestinos(); // Added loading destinos
+                updateDateTime();
+                setInterval(updateDateTime, 60000);
+
+                console.log('✅ Counter dashboard fully initialized');
+            } catch (err) {
+                console.error('Init Error:', err);
+            }
+        }
+
+        function setupEventListeners() {
+            // Tab Switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+
+                    // Update buttons
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Update content
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `tab-${tabId}`) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    if (tabId === 'movimiento') loadMovements();
+                    if (tabId === 'analisis') updateAnalytics();
+                });
+            });
+
+            // Quick Actions (Buttons at the top)
+            document.getElementById('incomingBtn')?.addEventListener('click', () => openTruckSelector('incoming'));
+            document.getElementById('outgoingBtn')?.addEventListener('click', () => openTruckSelector('outgoing'));
+
+            // Add Truck Modal (Multiple buttons possible)
+            document.querySelectorAll('#addTruckBtn, #addTruckBtnEmpty').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('truckModal').classList.add('active');
+                });
+            });
+
+            // Truck Form Submit
+            document.getElementById('truckForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await registerNewTruck();
+            });
+
+            // Modal Closing
+            document.querySelectorAll('.close-btn, #cancelBtn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const modal = e.target.closest('.modal');
+                    if (modal) modal.classList.remove('active');
+                });
+            });
+
+            // Legacy PDF button handler (optional fix)
+            window.truckManager = {
+                generatePDFReport: () => alert('Generando reporte PDF...')
+            };
+        }
+
+        async function registerNewTruck() {
+            const btn = document.querySelector('#truckForm button[type="submit"]');
+            const originalText = btn.textContent;
+
+            try {
+                btn.textContent = 'Guardando...';
+                btn.disabled = true;
+
+                const name = document.getElementById('truckName').value;
+                const plate = document.getElementById('licensePlate').value;
+                const cap = parseFloat(document.getElementById('capacity').value);
+                // The database expects 'incoming', 'outgoing', or 'mixed' (lowercase based on migration check constraint)
+                const type = document.querySelector('input[name="truckType"]:checked').value;
+
+                console.log('Registering truck:', { name, plate, cap, type });
+
+                const { error } = await supabaseClient
+                    .from('camiones')
+                    .insert([{
+                        obra_id: currentObraId,
+                        nombre: name,
+                        patente: plate,
+                        capacidad: cap,
+                        tipo_registrado: type, // CORRECT COLUMN NAME
+                        contador_entrante: 0,
+                        contador_saliente: 0
+                    }]);
+
+                if (error) throw error;
+
+                document.getElementById('truckModal').classList.remove('active');
+                document.getElementById('truckForm').reset();
+                await loadTrucks();
+
+                // Haptic feedback
+                if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+            } catch (err) {
+                console.error('Error registering truck:', err);
+                alert('No se pudo registrar: ' + err.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function loadTrucks() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('camiones')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                trucks = data || [];
+                renderTruckList();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading trucks:', error);
+            }
+        }
+
+        async function loadMovements() {
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const { data, error } = await supabaseClient
+                    .from('movimientos')
+                    .select(`
+                        *,
+                        camiones (nombre, patente)
+                    `)
+                    .eq('obra_id', currentObraId)
+                    .eq('fecha', today)
+                    .order('timestamp', { ascending: false });
+
+                if (error) throw error;
+                movements = data || [];
+                renderMovementLog();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading movements:', error);
+            }
+        }
+
+        async function loadMaterials() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('materiales')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                materials = data || [];
+            } catch (error) {
+                console.error('Error loading materials:', error);
+            }
+        }
+
+        async function loadDestinos() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('destinos')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                destinos = data || [];
+            } catch (error) {
+                console.error('Error loading destinos:', error);
+            }
+        }
+
+        function renderTruckList() {
+            const container = document.getElementById('truckList');
+            if (!container) return;
+
+            if (trucks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <p>No hay camiones registrados en esta obra</p>
+                        <p class="empty-hint">Usa el botón "NUEVO CAMIÓN" de abajo</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = trucks.map(truck => {
+                const truckMovs = movements.filter(m => m.camion_id === truck.id);
+                const inc = truckMovs.filter(m => m.tipo === 'incoming').length;
+                const out = truckMovs.filter(m => m.tipo === 'outgoing').length;
+
+                const type = (truck.tipo_registrado || '').toLowerCase();
+                const isIncoming = type === 'incoming' || type === 'mixed';
+                const isOutgoing = type === 'outgoing' || type === 'mixed';
+
+                return `
+                    <div class="truck-item ${type}-truck">
+                        <div class="truck-info">
+                            <div class="truck-name">${truck.nombre}</div>
+                            <div class="truck-details">${truck.patente} • ${truck.capacidad} m³</div>
+                            <div class="truck-breakdown">
+                                <span class="breakdown-incoming">📥 ${inc}</span>
+                                <span class="breakdown-outgoing">📤 ${out}</span>
+                            </div>
+                        </div>
+                        <div class="truck-actions-inline">
+                            ${isIncoming ? `<button class="inline-btn inc" onclick="openMaterialSelector('${truck.id}', 'incoming', ${truck.capacidad})">📥</button>` : ''}
+                            ${isOutgoing ? `<button class="inline-btn out" onclick="openMaterialSelector('${truck.id}', 'outgoing', ${truck.capacidad})">📤</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderMovementLog() {
+            const container = document.getElementById('movementLog');
+            if (!container) return;
+
+            if (movements.length === 0) {
+                container.innerHTML = '<div class="empty-movement"><p>Sin movimientos hoy</p></div>';
+                return;
+            }
+
+            container.innerHTML = movements.map(mov => `
+                <div class="movement-item ${mov.tipo === 'incoming' ? 'incoming' : 'outgoing'}">
+                    <div class="mov-header">
+                        <strong>${mov.camiones?.nombre || 'Desconocido'}</strong>
+                        <span>${new Date(mov.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div class="mov-details">
+                        ${mov.tipo === 'incoming' ? '📥 Relleno' : '📤 Excavación'} • ${mov.capacidad} m³
+                        ${mov.material ? `<br><small>📦 ${mov.material}</small>` : ''}
+                        ${mov.ubicacion ? `<br><small>📍 ${mov.ubicacion}</small>` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Update pills
+            document.getElementById('movementIncomingCount').textContent = movements.filter(m => m.tipo === 'incoming').length;
+            document.getElementById('movementOutgoingCount').textContent = movements.filter(m => m.tipo === 'outgoing').length;
+        }
+
+        function updateSummary() {
+            const incMovs = movements.filter(m => m.tipo === 'incoming');
+            const outMovs = movements.filter(m => m.tipo === 'outgoing');
+
+            const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+            const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+
+            document.getElementById('incomingCount').textContent = incMovs.length;
+            document.getElementById('outgoingCount').textContent = outMovs.length;
+            document.getElementById('incomingVolume').textContent = `${incVol.toFixed(1)} m³`;
+            document.getElementById('outgoingVolume').textContent = `${outVol.toFixed(1)} m³`;
+            document.getElementById('totalTrucks').textContent = trucks.length;
+            document.getElementById('totalTrucksFooter').textContent = trucks.length;
+            document.getElementById('totalVolume').textContent = `${(incVol + outVol).toFixed(1)} m³`;
+        }
+
+        function openTruckSelector(tipo) {
+            console.log('Opening Truck Selector for:', tipo);
+            const modal = document.getElementById('truckSelectorModal');
+            const list = document.getElementById('truckSelectorList');
+            document.getElementById('selectorTitle').textContent = tipo === 'incoming' ? '📥 Seleccionar Camión (Relleno)' : '📤 Seleccionar Camión (Excavación)';
+
+            modal.classList.add('active');
+
+            list.innerHTML = trucks.map(truck => `
+                <div class="selector-item" onclick="openMaterialSelector('${truck.id}', '${tipo}', ${truck.capacidad})">
+                    <div class="selector-item-info">
+                        <strong>${truck.nombre}</strong>
+                        <span>${truck.patente} • ${truck.capacidad}m³</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.openMaterialSelector = function (camionId, tipo, capacidad) {
+            console.log('--- Material Selector Triggered ---');
+            console.log('Camion:', camionId, 'Tipo:', tipo);
+            // alert('Seleccionaste camión: ' + camionId + '. Abriendo materiales...'); // Debug alert
+
+            // 1. Force close the truck selector
+            document.getElementById('truckSelectorModal').classList.remove('active');
+
+            const modal = document.getElementById('materialSelectorModal');
+            const list = document.getElementById('materialSelectorList');
+            const formContainer = document.getElementById('newMaterialFormContainer');
+
+            // Reset location field in the material modal for each trip
+            const locationInput = document.getElementById('tripLocation');
+            locationInput.value = '';
+
+            // Reset UI
+            formContainer.style.display = 'none';
+            list.style.display = 'block';
+
+            // Filter materials by type (incoming/outgoing)
+            const filteredMaterials = materials.filter(m => m.tipo === tipo);
+            console.log('Available materials for this type:', filteredMaterials.length);
+
+            modal.classList.add('active');
+
+            // Icon mapping helper
+            const getMatIcon = (name) => {
+                const n = name.toLowerCase();
+                if (n.includes('arena')) return '🏜️';
+                if (n.includes('grava') || n.includes('piedra') || n.includes('ripio')) return '🪨';
+                if (n.includes('tierra') || n.includes('base')) return '🪴';
+                if (n.includes('escombro')) return '🧱';
+                if (n.includes('asfalto')) return '🛣️';
+                if (n.includes('concreto') || n.includes('hormigon')) return '🏗️';
+                return '📦';
+            };
+
+            let html = filteredMaterials.map(mat => `
+                <div class="material-card" onclick="registerAndClose('${camionId}', '${tipo}', ${capacidad}, '${mat.nombre}')">
+                    <div class="mat-icon">${getMatIcon(mat.nombre)}</div>
+                    <div class="mat-name">${mat.nombre}</div>
+                </div>
+            `).join('');
+
+            if (filteredMaterials.length === 0) {
+                html = '<div style="grid-column: span 2; padding: 20px; text-align: center; color: var(--text-secondary); font-size: 14px;">No hay materiales configurados.</div>';
+            }
+
+            // Add "Nuevo Material" button as a premium card
+            html += `
+                <div class="material-card new-material-btn" onclick="toggleNewMaterialForm(true)">
+                    <div class="mat-icon" style="color: var(--accent-blue);">➕</div>
+                    <div class="mat-name">OTRO / NUEVO</div>
+                </div>
+            `;
+
+            list.innerHTML = html;
+
+            // Helper to handle flow
+            window.registerAndClose = async (cid, t, cap, matName) => {
+                const loc = document.getElementById('tripLocation').value;
+
+                if (t === 'outgoing') {
+                    // If outgoing, we ask for destination FIRST
+                    openDestinoSelector(cid, t, cap, matName, loc);
+                } else {
+                    // If incoming, register immediately
+                    await registerMovement(cid, t, cap, matName, null, loc);
+                    closeAllModals();
+                }
+            };
+
+            // Setup listeners for the new material form
+            const saveBtn = document.getElementById('saveNewMaterialBtn');
+            const cancelBtn = document.getElementById('cancelNewMaterialBtn');
+            const input = document.getElementById('customMaterialName');
+
+            saveBtn.onclick = async () => {
+                const materialName = input.value.trim();
+                const loc = document.getElementById('tripLocation').value;
+                if (!materialName) {
+                    alert('Ingresa un nombre para el material');
+                    return;
+                }
+
+                try {
+                    // Save and register
+                    const { error } = await supabaseClient.from('materiales').insert([{
+                        obra_id: currentObraId,
+                        nombre: materialName,
+                        tipo: tipo
+                    }]);
+                    if (error) throw error;
+
+                    await loadMaterials();
+                    await registerMovement(camionId, tipo, capacidad, materialName, loc);
+                    input.value = '';
+                    closeAllModals();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+
+            cancelBtn.onclick = () => toggleNewMaterialForm(false);
+        }
+
+        window.toggleNewMaterialForm = function (show) {
+            const list = document.getElementById('materialSelectorList');
+            const form = document.getElementById('newMaterialFormContainer');
+            if (show) {
+                list.style.display = 'none';
+                form.style.display = 'block';
+                document.getElementById('customMaterialName').focus();
+            } else {
+                list.style.display = 'block';
+                form.style.display = 'none';
+            }
+        }
+
+        window.closeAllModals = function () {
+            document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+            if (document.getElementById('tripLocation')) {
+                document.getElementById('tripLocation').value = '';
+            }
+        }
+
+        window.openDestinoSelector = function (camionId, tipo, capacidad, material, ubicacion) {
+            console.log('--- Destination Selector Triggered ---');
+            const modal = document.getElementById('destinoSelectorModal');
+            const list = document.getElementById('destinoSelectorList');
+            const formContainer = document.getElementById('newDestinoFormContainer');
+
+            // Reset UI
+            formContainer.style.display = 'none';
+            list.style.display = 'grid';
+
+            modal.classList.add('active');
+
+            let html = destinos.map(dest => `
+                <div class="material-card" onclick="finalRegisterAndClose('${camionId}', '${tipo}', ${capacidad}, '${material}', '${dest.nombre}', '${ubicacion}')">
+                    <div class="mat-icon">📍</div>
+                    <div class="mat-name">${dest.nombre}</div>
+                </div>
+            `).join('');
+
+            if (destinos.length === 0) {
+                html = '<div style="grid-column: span 2; padding: 20px; text-align: center; color: var(--text-secondary);">No hay destinos configurados.</div>';
+            }
+
+            // Add "Nuevo Destino" card
+            html += `
+                <div class="material-card new-material-btn" onclick="toggleNewDestinoForm(true)">
+                    <div class="mat-icon" style="color: var(--accent-blue);">➕</div>
+                    <div class="mat-name">NUEVO DESTINO</div>
+                </div>
+            `;
+
+            list.innerHTML = html;
+
+            window.finalRegisterAndClose = async (cid, t, cap, mat, dest, loc) => {
+                await registerMovement(cid, t, cap, mat, dest, loc);
+                closeAllModals();
+            };
+
+            const saveBtn = document.getElementById('saveNewDestinoBtn');
+            const input = document.getElementById('customDestinoName');
+
+            saveBtn.onclick = async () => {
+                const destinoName = input.value.trim();
+                if (!destinoName) return alert('Ingresa un nombre');
+
+                try {
+                    const { error } = await supabaseClient.from('destinos').insert([{
+                        obra_id: currentObraId,
+                        nombre: destinoName
+                    }]);
+                    if (error) throw error;
+
+                    await loadDestinos();
+                    await registerMovement(camionId, tipo, capacidad, material, destinoName, ubicacion);
+                    input.value = '';
+                    closeAllModals();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+        };
+
+        window.toggleNewDestinoForm = function (show) {
+            const list = document.getElementById('destinoSelectorList');
+            const form = document.getElementById('newDestinoFormContainer');
+            if (show) {
+                list.style.display = 'none';
+                form.style.display = 'block';
+                document.getElementById('customDestinoName').focus();
+            } else {
+                list.style.display = 'grid';
+                form.style.display = 'none';
+            }
+        };
+
+        window.registerMovement = async function (camionId, tipo, capacidad, material = null, destino = null, ubicacion = null) {
+            try {
+                const session = await supabaseClient.auth.getSession();
+                const userId = session.data.session?.user?.id;
+
+                if (!userId) {
+                    alert('Sesión expirada');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const now = new Date();
+                const { error } = await supabaseClient
+                    .from('movimientos')
+                    .insert([{
+                        obra_id: currentObraId,
+                        camion_id: camionId,
+                        usuario_id: userId,
+                        tipo: tipo,
+                        capacidad: parseFloat(capacidad),
+                        material: material,
+                        destino: destino,
+                        ubicacion: ubicacion,
+                        fecha: now.toISOString().split('T')[0],
+                        timestamp: now.toISOString()
+                    }]);
+
+                if (error) throw error;
+
+
+                // Audio/Visual Feedback (simple)
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                await loadMovements();
+                renderTruckList();
+            } catch (err) {
+                console.error('Save Error:', err);
+                alert('No se pudo guardar: ' + err.message);
+            }
+        };
+
+        // ============================================
+        // AUTOMATIC DAILY ARCHIVAL
+        // ============================================
+
+        async function autoArchivePreviousDays() {
+            try {
+                console.group('🔍 Checking for pending archives...');
+                const today = new Date().toISOString().split('T')[0];
+
+                // 1. Fetch movements from PREVIOUS days (not today)
+                const { data: pendingMovs, error: movError } = await supabaseClient
+                    .from('movimientos')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .neq('fecha', today);
+
+                if (movError) throw movError;
+
+                if (!pendingMovs || pendingMovs.length === 0) {
+                    console.log('✅ All previous days are already archived.');
+                    console.groupEnd();
+                    return;
+                }
+
+                // 2. Group by date
+                const groupedByDate = {};
+                pendingMovs.forEach(mov => {
+                    if (!groupedByDate[mov.fecha]) groupedByDate[mov.fecha] = [];
+                    groupedByDate[mov.fecha].push(mov);
+                });
+
+                console.log(`📌 Found movements for ${Object.keys(groupedByDate).length} previous days.`);
+
+                for (const fecha in groupedByDate) {
+                    const dayMovs = groupedByDate[fecha];
+                    const incMovs = dayMovs.filter(m => m.tipo === 'incoming');
+                    const outMovs = dayMovs.filter(m => m.tipo === 'outgoing');
+
+                    const summary = {
+                        obra_id: currentObraId,
+                        fecha: fecha,
+                        total_camiones: trucks.length || 0,
+                        total_vueltas: dayMovs.length,
+                        vueltas_entrantes: incMovs.length,
+                        vueltas_salientes: outMovs.length,
+                        volumen_relleno: incMovs.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                        volumen_excavacion: outMovs.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                        datos_completos: { movements: dayMovs }
+                    };
+
+                    console.log(`💾 Archiving ${fecha}... Vueltas: ${dayMovs.length}`);
+
+                    const { error: upsertError } = await supabaseClient
+                        .from('historial_diario')
+                        .upsert([summary], { onConflict: 'obra_id, fecha' });
+
+                    if (upsertError) throw upsertError;
+                }
+
+                console.log('🚀 Automatic archival complete.');
+                console.groupEnd();
+
+                // Re-load to ensure clean slate for today
+                await loadMovements();
+            } catch (err) {
+                console.error('❌ Auto-Archive Error:', err);
+                console.groupEnd();
+            }
+        }
+
+        window.openHistoryModal = async function () {
+            const modal = document.getElementById('historyModal');
+            const list = document.getElementById('historyList');
+
+            modal.classList.add('active');
+            list.innerHTML = '<div class="loading-inline">Cargando historial...</div>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('historial_diario')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('fecha', { ascending: false })
+                    .limit(30);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="empty-selector"><p>No hay cierres previos</p></div>';
+                    return;
+                }
+
+                list.innerHTML = data.map(record => `
+                    <div class="selector-item" style="flex-direction: column; align-items: flex-start;">
+                        <div style="display: flex; justify-content: space-between; width: 100%; margin-bottom: 4px;">
+                            <strong>📅 ${formatDateStr(record.fecha)}</strong>
+                            <span class="badge" style="background: var(--accent-blue); font-size: 10px;">${record.total_vueltas} Vueltas</span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-secondary); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;">
+                            <div>📥 Relleno: ${record.volumen_relleno}m³</div>
+                            <div>📤 Exc.: ${record.volumen_excavacion}m³</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="error-inline">Error: ${err.message}</div>`;
+            }
+        }
+
+        function formatDateStr(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        function updateDateTime() {
+            const now = new Date();
+            const el = document.getElementById('currentDate');
+            if (el) el.textContent = now.toLocaleDateString('es-AR', {
+                weekday: 'long', day: 'numeric', month: 'long'
+            });
+        }
+
+        window.logout = () => authService.logout();
+
+        init();
+    </script>
+</body>
+
+</html>

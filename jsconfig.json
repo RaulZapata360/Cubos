@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES6",
+        "module": "commonjs",
+        "allowSyntheticDefaultImports": true
+    },
+    "exclude": [
+        "node_modules",
+        "**/node_modules",
+        "**/dist",
+        "**/build",
+        "**/.gradle",
+        "**/.idea",
+        "**/*.hprof",
+        "ANDROID_NATIVE/java_pid*",
+        "APP/android",
+        "APP/www"
+    ]
+}

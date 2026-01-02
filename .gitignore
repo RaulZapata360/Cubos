@@ -1,0 +1,37 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Build outputs
+dist/
+build/
+*.log
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Capacitor
+android/app/build/
+android/.gradle/
+ios/App/Pods/
+ios/App/build/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Archivos de diagnóstico temporales
+DIAGNOSTICO_*.sql
+FIX_*.sql

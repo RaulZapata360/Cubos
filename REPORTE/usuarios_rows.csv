@@ -1,0 +1,5 @@
+id,nombre_completo,rol,email,telefono,created_at
+0acd45e7-0adb-4deb-9974-7b62624ec930,Pedro González,contador,contador2@demo.com,+56912345680,2025-12-27 16:01:46.508003+00
+3a677477-7cfa-43f1-b755-00663eabc887,María López,contador,contador3@demo.com,+56912345681,2025-12-27 16:01:46.508003+00
+420087d5-383a-41e0-8387-e974efc8d6d6,Carlos Rodríguez,jefe,jefe@demo.com,+56912345678,2025-12-27 16:01:46.508003+00
+c2fcf75d-bb0b-467e-918a-4220154fca85,Ana Martínez,contador,contador1@demo.com,+56912345679,2025-12-27 16:01:46.508003+00

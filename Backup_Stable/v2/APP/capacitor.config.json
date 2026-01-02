@@ -1,0 +1,15 @@
+{
+    "appId": "com.antigravity.conteocamiones",
+    "appName": "Conteo Camiones",
+    "webDir": "www",
+    "bundledWebRuntime": false,
+    "android": {
+        "buildOptions": {
+            "keystorePath": "",
+            "keystoreAlias": ""
+        }
+    },
+    "server": {
+        "androidScheme": "https"
+    }
+}

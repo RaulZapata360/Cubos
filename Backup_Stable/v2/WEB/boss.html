@@ -1,0 +1,2590 @@
+<!DOCTYPE html>
+<html class="dark" lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Camiones | Consolidado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect">
+    <link crossorigin href="https://fonts.gstatic.com" rel="preconnect">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'var(--primary)',
+                        'primary-dark': 'var(--primary-dark)',
+                        accent: 'var(--accent)',
+                        success: 'var(--success)',
+                        warning: 'var(--warning)',
+                        danger: 'var(--danger)',
+                        main: 'var(--text-main)',
+                        'text-muted': 'var(--text-muted)',
+                        border: 'var(--border)',
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+
+            /* Dark Theme (Default) */
+            --bg-body: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(51, 65, 85, 0.8);
+            --bg-item: rgba(255, 255, 255, 0.05);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(12px);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-card-hover: #ffffff;
+            --bg-item: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: rgba(0, 0, 0, 0.05);
+            --glass-blur: blur(8px);
+            --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-nav {
+            background: rgba(18, 17, 33, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .neon-shadow {
+            box-shadow: 0 0 20px -5px rgba(80, 72, 229, 0.15);
+        }
+
+        .pb-safe {
+            padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+        }
+
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Modal styles */
+        .modal-backdrop {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        select option {
+            background: var(--bg-card-hover);
+            color: var(--text-main);
+        }
+
+        /* Responsive Improvements */
+        @media (max-width: 640px) {
+            .glass-card {
+                border-radius: 20px;
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.875rem !important;
+            }
+        }
+
+        /* Bottom Nav styles */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-item.active .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+
+        .fab-button {
+            background: linear-gradient(135deg, #5048e5 0%, #7c3aed 100%);
+            box-shadow: 0 4px 15px rgba(80, 72, 229, 0.4);
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+
+            .fixed,
+            .glass-nav,
+            .fab-button,
+            #loadingOverlay,
+            #updateIndicator,
+            .shrink-0 {
+                display: none !important;
+            }
+
+            .tab-content {
+                display: block !important;
+            }
+
+            .glass-card {
+                background: white !important;
+                border: 1px solid #eee !important;
+                box-shadow: none !important;
+                color: black !important;
+            }
+
+            .text-white {
+                color: black !important;
+            }
+
+            .text-slate-400,
+            .text-slate-500 {
+                color: #666 !important;
+            }
+
+            canvas {
+                max-width: 100% !important;
+                height: auto !important;
+            }
+
+            .grid {
+                display: block !important;
+            }
+
+            .mb-6 {
+                margin-bottom: 20px !important;
+            }
+
+            section {
+                page-break-inside: avoid;
+            }
+        }
+
+        .report-sub-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .report-sub-content.active {
+            display: block;
+        }
+
+        .active-subtab {
+            background: #5048e5;
+            color: white;
+            box-shadow: 0 4px 10px rgba(80, 72, 229, 0.3);
+        }
+
+        /* Carousel styles */
+        .carousel-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .carousel-content {
+            transition: transform 0.3s ease-out;
+        }
+
+        .carousel-nav-btn {
+            transition: all 0.2s ease;
+        }
+
+        .carousel-nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .carousel-indicator {
+            font-size: 10px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .carousel-page-dots {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .carousel-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .carousel-dot.active {
+            background: #5048e5;
+            width: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary selection:text-white">
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] opacity-30">
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-background-dark/80 backdrop-blur-sm z-50 flex items-center justify-center"
+        style="display: none;">
+        <div class="glass-card rounded-2xl p-8 flex flex-col items-center gap-4">
+            <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <p class="text-white text-sm">Cargando datos...</p>
+        </div>
+    </div>
+
+    <!-- Create Obra Modal -->
+    <div id="createObraModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="closeCreateObraModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold text-white">Nueva Obra</h2>
+                    <button onclick="closeCreateObraModal()" class="text-slate-400 hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form id="createObraForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
+                        <input type="text" name="nombre" required
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Ubicación</label>
+                        <input type="text" name="ubicacion"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Descripción</label>
+                        <textarea name="descripcion" rows="3"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-1">Fecha de Inicio</label>
+                        <input type="date" name="fecha_inicio"
+                            class="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-primary focus:ring-1 focus:ring-primary">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-300 mb-2 font-bold uppercase text-[10px] tracking-widest">Asignar
+                            Apuntadores</label>
+                        <div id="createObraUsersList"
+                            class="space-y-2 max-h-40 overflow-y-auto p-2 bg-white/5 rounded-lg border border-white/10">
+                            <p class="text-slate-500 text-[10px] text-center py-2">Cargando apuntadores...</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeCreateObraModal()"
+                            class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-2 bg-primary hover:bg-indigo-600 rounded-lg text-white font-medium transition-colors">
+                            Crear Obra
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Users Modal -->
+    <div id="assignUsersModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-backdrop absolute inset-0" onclick="closeAssignUsersModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow border border-border">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-black text-main tracking-tight">Asignar Apuntadores</h2>
+                    <button onclick="closeAssignUsersModal()" class="text-text-muted hover:text-main transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Obra
+                            Seleccionada</label>
+                        <select id="assignObraSelect"
+                            class="w-full px-4 py-3 bg-item border border-border rounded-xl text-main font-bold focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                            <option value="">Seleccionar obra...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Personal
+                            de Obra</label>
+                        <div id="usersList"
+                            class="space-y-2 max-h-64 overflow-y-auto p-2 bg-black/5 rounded-xl border border-border">
+                            <!-- Users will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-6">
+                        <button onclick="closeAssignUsersModal()"
+                            class="flex-1 px-4 py-3 bg-item hover:bg-white/10 rounded-xl text-main font-bold text-sm transition-all border border-border">
+                            Cancelar
+                        </button>
+                        <button onclick="saveUserAssignments()"
+                            class="flex-1 px-4 py-3 bg-primary hover:bg-primary-dark rounded-xl text-white font-bold text-sm transition-all shadow-lg shadow-primary/20">
+                            Guardar Cambios
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content Wrapper -->
+    <div class="relative z-10 flex flex-col min-h-screen pb-safe max-w-md mx-auto lg:max-w-4xl">
+
+        <!-- Tab: Inicio -->
+        <div id="view-inicio" class="tab-content active">
+            <!-- Header -->
+            <header class="p-4 pt-8">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.2.0</span>
+                        </p>
+                        <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <button onclick="toggleTheme()"
+                            class="p-3 bg-item hover:bg-white/10 rounded-2xl transition-all group border border-border"
+                            title="Cambiar Tema">
+                            <span id="theme-icon"
+                                class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all">light_mode</span>
+                        </button>
+                        <button onclick="window.loadDashboard(true)"
+                            class="p-3 bg-item hover:bg-white/10 rounded-2xl transition-all group border border-border"
+                            title="Actualizar">
+                            <span
+                                class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all">refresh</span>
+                        </button>
+                        <div
+                            class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20 border border-white/10 relative">
+                            BO
+                            <div
+                                class="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 border-4 border-bg-body rounded-full">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-1">
+                    <p class="text-slate-500 text-[10px] font-bold tracking-[0.15em] uppercase mb-3">Filtrar por Obra
+                    </p>
+                    <div
+                        class="glass-card rounded-2xl p-4 flex items-center justify-between neon-shadow group cursor-pointer active:scale-[0.98] transition-all">
+                        <div class="flex items-center gap-4 flex-1">
+                            <div class="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-primary">apartment</span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <select id="headerObraFilter" onchange="handleHeaderObraFilterChange()"
+                                    class="w-full bg-transparent border-none text-main text-base font-bold focus:ring-0 focus:outline-none py-0 px-0 appearance-none cursor-pointer">
+                                    <option value="">Todas las Obras (Vista Global)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-slate-500 group-hover:text-white transition-colors">unfold_more</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Day Navigation for Inicio -->
+            <section class="px-4 mb-6">
+                <div id="dayDisplayInicioContainer"
+                    class="glass-card rounded-xl p-3 flex items-center justify-between neon-shadow border border-border">
+                    <button onclick="changeDayInicio(-1)"
+                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+                    <div class="flex-1 text-center">
+                        <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">Fecha</p>
+                        <p id="dayDisplayInicio" class="text-main text-sm font-black">Hoy</p>
+                    </div>
+                    <button onclick="changeDayInicio(1)"
+                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted" id="nextDayBtnInicio">
+                        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- KPIs Grid -->
+            <section class="px-4 mb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div
+                        class="col-span-2 glass-card rounded-2xl p-5 neon-shadow relative overflow-hidden group border border-border">
+                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-5xl text-main">local_shipping</span>
+                        </div>
+                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-2">Resumen de
+                            Vueltas</p>
+                        <h2 class="text-4xl font-black text-main tracking-tight leading-none" id="kpiTotalTrips">0</h2>
+                        <div class="mt-4 flex items-center gap-6">
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px] text-success">south_east</span>
+                                <div class="flex flex-col">
+                                    <span class="text-text-muted text-[9px] font-bold uppercase">Entrada</span>
+                                    <span class="text-main font-black text-sm leading-none" id="kpiIncoming">0</span>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-[18px] text-warning">north_east</span>
+                                <div class="flex flex-col">
+                                    <span class="text-text-muted text-[9px] font-bold uppercase">Salida</span>
+                                    <span class="text-main font-black text-sm leading-none" id="kpiOutgoing">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border">
+                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Tiempo Operación</p>
+                        <p class="text-2xl font-black text-main" id="kpiOperatingTime">0h 0m</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border">
+                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Promedio General</p>
+                        <p class="text-2xl font-black text-main" id="kpiAvgPerHour">0 <span
+                                class="text-xs font-normal text-text-muted">vueltas/h</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Hourly Activity -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Actividad por Hora
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="hourlyActivity" class="space-y-3"></div>
+            </section>
+
+            <!-- Truck Performance -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Rendimiento por Camión
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="performanceList"></div>
+            </section>
+
+            <!-- Movement History -->
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Actividad Reciente
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div id="movementList"></div>
+            </section>
+        </div>
+
+        <!-- Tab: Obras -->
+        <div id="view-obras" class="tab-content">
+            <header class="p-4 pt-6">
+                <h1 class="text-xl font-bold tracking-tight text-white mb-4">Gestión de Obra</h1>
+            </header>
+
+            <!-- Refresh Button -->
+            <section class="px-4 mb-4">
+                <button onclick="window.loadDashboard(true)"
+                    class="w-full glass-card rounded-xl p-3 flex items-center justify-center gap-2 neon-shadow hover:bg-white/10 transition-all border border-border">
+                    <span class="material-symbols-outlined text-text-muted text-[20px]">refresh</span>
+                    <span class="text-main text-xs font-bold uppercase tracking-wider">Actualizar Datos</span>
+                </button>
+            </section>
+
+            <!-- Day Navigation for Obras -->
+            <section class="px-4 mb-4">
+                <div id="dayDisplayObrasContainer"
+                    class="glass-card rounded-xl p-3 flex items-center justify-between neon-shadow border border-border">
+                    <button onclick="changeDayObras(-1)"
+                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                        <span class="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+                    <div class="flex-1 text-center">
+                        <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">Fecha de Gestión
+                        </p>
+                        <p id="dayDisplayObras" class="text-main text-sm font-black">Hoy</p>
+                    </div>
+                    <button onclick="changeDayObras(1)"
+                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted" id="nextDayBtnObras">
+                        <span class="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="px-4 mb-4">
+                <div class="glass-card rounded-xl px-3 py-2 flex items-center justify-between neon-shadow">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Filtrar por Obra</p>
+                    <div class="flex-1 max-w-[200px] ml-4">
+                        <select id="obrasTabFilter" onchange="handleObrasTabFilterChange()"
+                            class="w-full bg-transparent border-none text-main text-[11px] font-bold focus:ring-0 focus:outline-none py-0 px-0">
+                            <option value="">Todas las Obras</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-4 mb-6">
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500 neon-shadow border-border">
+                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider">Volumen Relleno</p>
+                        <p class="text-2xl font-black text-main mt-1" id="dashFillVolume">+0 <span
+                                class="text-sm font-normal text-text-muted">m³</span></p>
+                        <div class="mt-3 space-y-2" id="dashFillBreakdown"></div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 border-l-4 border-l-warning neon-shadow border-border">
+                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider">Volumen Excavación</p>
+                        <p class="text-2xl font-black text-main mt-1" id="dashExcavationVolume">-0 <span
+                                class="text-sm font-normal text-text-muted">m³</span></p>
+                        <div class="mt-3 space-y-2" id="dashExcavationBreakdown"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="px-4 mb-6">
+                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
+                    Logística por Ubicación
+                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                </h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-emerald-400 text-[10px] font-bold mb-2 uppercase tracking-wider">Orígenes</p>
+                        <div id="dashIncomingLocations" class="space-y-2"></div>
+                    </div>
+                    <div class="glass-card rounded-xl p-4 neon-shadow">
+                        <p class="text-amber-400 text-[10px] font-bold mb-2 uppercase tracking-wider">Destinos</p>
+                        <div id="dashOutgoingLocations" class="space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Volume Chart -->
+            <section class="px-4 mb-6">
+                <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Volumen del Día (Hora
+                            vs m³)</p>
+                        <div class="flex gap-2">
+                            <div class="flex items-center gap-1">
+                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                <span class="text-[8px] text-slate-500">RELLENO</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
+                                <span class="text-[8px] text-slate-500">EXCAV.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="height: 200px; position: relative; width: 100%;">
+                        <canvas id="dailyVolumeChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab: Reportes -->
+        <div id="view-reportes" class="tab-content">
+            <header class="p-4 pt-6">
+                <div class="flex items-center justify-between mb-8">
+                    <h1 class="text-3xl font-black text-main tracking-tight">Reportes</h1>
+                </div>
+
+                <!-- Analysis Tabs -->
+                <div class="flex gap-2 mb-6 p-1 glass-card rounded-xl border border-border">
+                    <button onclick="switchReportSubTab('diario')" id="btn-report-diario"
+                        class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all active-subtab">
+                        Análisis Diario
+                    </button>
+                    <button onclick="switchReportSubTab('semanal')" id="btn-report-semanal"
+                        class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-text-muted hover:text-main">
+                        Análisis Semanal
+                    </button>
+                </div>
+
+                <!-- Report Obra Filter -->
+                <div
+                    class="glass-card rounded-xl p-3 mb-6 flex items-center justify-between neon-shadow border border-border">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary text-[20px]">apartment</span>
+                        <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider">Obra:</p>
+                    </div>
+                    <div class="flex-1 max-w-[200px] ml-4">
+                        <select id="reportObraFilter" onchange="handleReportObraFilterChange()"
+                            class="w-full bg-transparent border-none text-main text-[12px] font-bold focus:ring-0 focus:outline-none py-0 px-0">
+                            <option value="">Todas las Obras</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Container for Daily/Weekly views -->
+                <div id="report-content-diario" class="report-sub-content active">
+                    <!-- Day Selector -->
+                    <div id="dayDisplayReportContainer"
+                        class="glass-card rounded-xl p-3 mb-6 flex items-center justify-between neon-shadow">
+                        <button onclick="changeDay(-1)" class="p-2 hover:bg-white/10 rounded-lg transition-all">
+                            <span class="material-symbols-outlined text-main text-[20px]">chevron_left</span>
+                        </button>
+                        <div class="flex-1 text-center">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Fecha</p>
+                            <p id="dayDisplay" class="text-main text-xs font-bold">Hoy</p>
+                        </div>
+                        <button id="nextDayBtnReport" onclick="changeDay(1)"
+                            class="p-2 hover:bg-white/10 rounded-lg transition-all">
+                            <span class="material-symbols-outlined text-main text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="glass-card rounded-2xl p-4 flex flex-col items-center">
+                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Hoy vs Media</p>
+                            <p id="reportComparison" class="text-xl font-bold text-emerald-400">+0%</p>
+                            <p class="text-[9px] text-slate-500">vs prom. diario última semana</p>
+                        </div>
+                        <div class="glass-card rounded-2xl p-4 flex flex-col items-center">
+                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Eficiencia</p>
+                            <p id="reportEfficiency" class="text-xl font-bold text-blue-400">0</p>
+                            <p class="text-[9px] text-slate-500">Vueltas/Hora</p>
+                        </div>
+                    </div>
+
+                    <div id="dailyStatsContainer" class="space-y-6">
+                        <!-- Today's hourly activity (mini version or detail) -->
+                        <div class="glass-card rounded-2xl p-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Actividad de
+                                Hoy (Vueltas por Hora)</p>
+                            <div id="reportHourlyActivity" class="space-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div id="report-content-semanal" class="report-sub-content">
+                    <!-- Week Selector -->
+                    <div class="glass-card rounded-xl p-3 mb-6 flex items-center justify-between neon-shadow">
+                        <button onclick="changeWeek(-1)" class="p-2 hover:bg-white/10 rounded-lg transition-all">
+                            <span class="material-symbols-outlined text-main text-[20px]">chevron_left</span>
+                        </button>
+                        <div class="flex-1 text-center">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Semana</p>
+                            <p id="weekRangeDisplay" class="text-main text-xs font-bold">Cargando...</p>
+                        </div>
+                        <button id="nextWeekBtnReport" onclick="changeWeek(1)"
+                            class="p-2 hover:bg-white/10 rounded-lg transition-all">
+                            <span class="material-symbols-outlined text-main text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 mb-6 relative overflow-hidden">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Volumen Semanal
+                            </p>
+                            <div class="flex gap-2">
+                                <div class="flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div><span
+                                        class="text-[8px] text-slate-500">RELLENO</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div><span
+                                        class="text-[8px] text-slate-500">EXCAV.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="height: 300px; position: relative; width: 100%;">
+                            <canvas id="weeklyVolumeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Material Color Legend -->
+                    <div class="glass-card rounded-2xl p-4 mb-6">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-3">Leyenda de
+                            Materiales</p>
+                        <div id="materialLegend" class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-card rounded-2xl p-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Mix de
+                                Materiales (Top 5)</p>
+                            <div style="height: 250px; position: relative; width: 100%;">
+                                <canvas id="materialDistChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-card rounded-2xl p-4">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Volumen por
+                                Botadero (m³)</p>
+                            <div style="height: 250px; position: relative; width: 100%;">
+                                <canvas id="destinationsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 mt-6">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Volumen por Obra
+                            (m³)</p>
+                        <div style="height: 200px; position: relative; width: 100%;">
+                            <canvas id="obrasVolumeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </header>
+        </div>
+
+        <!-- Tab: Ajustes -->
+        <div id="view-ajustes" class="tab-content">
+            <header class="p-4 pt-6">
+                <h1 class="text-3xl font-black tracking-tight text-main mb-6">Ajustes</h1>
+
+                <!-- Profile Card -->
+                <div
+                    class="glass-card rounded-3xl p-6 mb-8 neon-shadow flex flex-col items-center border border-border">
+                    <div class="relative mb-4">
+                        <img id="userAvatar"
+                            src="https://ui-avatars.com/api/?name=User&background=5048e5&color=fff&size=256"
+                            class="w-20 h-20 rounded-full border-4 border-border object-cover shadow-2xl" alt="Profile">
+                        <div
+                            class="absolute bottom-0 right-0 w-4 h-4 bg-emerald-500 border-2 border-border rounded-full">
+                        </div>
+                    </div>
+                    <h2 id="userName" class="text-xl font-black text-main mb-1">Cargando...</h2>
+                    <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] mb-4">Supervisor de Obra
+                    </p>
+                    <button
+                        class="px-8 py-2 bg-primary/10 hover:bg-primary/20 rounded-full text-primary font-bold text-xs transition-all border border-primary/20">
+                        Editar Perfil
+                    </button>
+                </div>
+
+                <!-- Settings Menu -->
+                <div class="space-y-3">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em] px-2 mb-2">Preferencia</p>
+
+                    <div class="flex items-center justify-between p-4 glass-card rounded-2xl cursor-pointer hover:bg-white/5 transition-all"
+                        onclick="toggleTheme()">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
+                                <span class="material-symbols-outlined text-[20px]" id="appearanceIcon">dark_mode</span>
+                            </div>
+                            <span class="text-sm font-bold text-main">Modo Visual</span>
+                        </div>
+                        <span id="appearanceText" class="text-[10px] text-text-muted font-bold uppercase">Oscuro</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 glass-card rounded-2xl border border-border">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-xl bg-blue-500/10 text-blue-400">
+                                <span class="material-symbols-outlined text-[20px]">notifications</span>
+                            </div>
+                            <span class="text-sm font-bold text-main">Notificaciones</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" checked>
+                            <div
+                                class="w-10 h-5 bg-black/10 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5">
+                            </div>
+                        </label>
+                    </div>
+
+                    <p class="text-[10px] text-text-muted font-bold uppercase tracking-[0.2em] px-2 mt-6 mb-2">Cuenta
+                    </p>
+
+                    <button onclick="supabaseClient.auth.signOut().then(() => window.location.reload())"
+                        class="w-full flex items-center justify-between p-4 glass-card rounded-2xl border border-border cursor-pointer hover:bg-danger/5 group">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="p-2 rounded-xl bg-danger/10 text-danger group-hover:bg-danger/20 transition-all">
+                                <span class="material-symbols-outlined text-[20px]">logout</span>
+                            </div>
+                            <span class="text-sm font-bold text-danger">Cerrar Sesión</span>
+                        </div>
+                        <span
+                            class="material-symbols-outlined text-text-muted group-hover:text-danger transition-all">chevron_right</span>
+                    </button>
+                </div>
+            </header>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav
+        class="fixed bottom-0 left-0 right-0 z-50 glass-nav pb-safe p-2 px-6 flex justify-between items-center max-w-md mx-auto lg:max-w-4xl lg:rounded-t-3xl border-t border-white/5">
+        <button onclick="switchTab('inicio')" class="nav-item flex flex-col items-center gap-1 flex-1 active"
+            id="nav-inicio">
+            <span class="material-symbols-outlined text-[24px]">grid_view</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Inicio</span>
+        </button>
+        <button onclick="switchTab('obras')" class="nav-item flex flex-col items-center gap-1 flex-1" id="nav-obras">
+            <span class="material-symbols-outlined text-[24px]">apartment</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Obras</span>
+        </button>
+
+        <div class="relative -top-6">
+            <button onclick="openCreateObraModal()"
+                class="fab-button w-14 h-14 rounded-2xl flex items-center justify-center text-white rotate-45 transition-transform active:scale-90">
+                <span class="material-symbols-outlined text-[32px] -rotate-45">add</span>
+            </button>
+        </div>
+
+        <button onclick="switchTab('reportes')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-reportes">
+            <span class="material-symbols-outlined text-[24px]">bar_chart</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Reportes</span>
+        </button>
+        <button onclick="switchTab('ajustes')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-ajustes">
+            <span class="material-symbols-outlined text-[24px]">person</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Ajustes</span>
+        </button>
+    </nav>
+
+    <!-- Update Indicator -->
+    <div id="updateIndicator"
+        class="fixed bottom-20 right-4 glass-card rounded-xl px-4 py-2 neon-shadow transition-all duration-300 opacity-0 translate-y-4 border border-border"
+        style="pointer-events: none;">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full pulse-glow"></div>
+            <span class="text-[10px] text-main font-bold uppercase tracking-wider">Actualizando...</span>
+        </div>
+    </div>
+
+    <script>
+        // Global functions that need to be accessible from onclick handlers
+        window.switchTab = function (tabId) {
+            // Update UI
+            document.querySelectorAll('.tab-content').forEach(view => view.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.add('active');
+
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(`nav-${tabId}`).classList.add('active');
+
+            // View specific logic
+            if (tabId === 'inicio') window.loadDashboard(false);
+            if (tabId === 'obras') window.loadDashboard(false);
+            if (tabId === 'reportes') {
+                const isDiario = document.getElementById('report-content-diario').classList.contains('active');
+                if (isDiario) window.loadDashboard(false);
+                else renderCharts();
+            }
+            if (tabId === 'ajustes') window.updateAjustesView();
+        };
+
+        window.switchReportSubTab = function (tab) {
+            const diarioBtn = document.getElementById('btn-report-diario');
+            const semanalBtn = document.getElementById('btn-report-semanal');
+            const diarioContent = document.getElementById('report-content-diario');
+            const semanalContent = document.getElementById('report-content-semanal');
+
+            if (tab === 'diario') {
+                diarioBtn.classList.add('active-subtab');
+                diarioBtn.classList.remove('text-text-muted', 'hover:text-main');
+                semanalBtn.classList.remove('active-subtab');
+                semanalBtn.classList.add('text-text-muted', 'hover:text-main');
+                diarioContent.classList.remove('hidden');
+                diarioContent.classList.add('active');
+                semanalContent.classList.add('hidden');
+                semanalContent.classList.remove('active');
+                window.loadDashboard(false); // Refresh daily report data
+            } else {
+                semanalBtn.classList.add('active-subtab');
+                semanalBtn.classList.remove('text-text-muted', 'hover:text-main');
+                diarioBtn.classList.remove('active-subtab');
+                diarioBtn.classList.add('text-text-muted', 'hover:text-main');
+                semanalContent.classList.remove('hidden');
+                semanalContent.classList.add('active');
+                diarioContent.classList.add('hidden');
+                diarioContent.classList.remove('active');
+                renderCharts(); // Re-render charts for weekly view
+            }
+        };
+
+
+        window.updateAjustesView = function () {
+            // Basic persistence for username (optional)
+            const session = window.bossDashboardService.cachedSession || {};
+            const user = session.user || {};
+            document.getElementById('userName').textContent = user.user_metadata?.nombre || 'Usuario Boss';
+            if (user.user_metadata?.avatar_url) {
+                document.getElementById('userAvatar').src = user.user_metadata.avatar_url;
+            }
+        };
+
+        let volumeChart = null;
+        let materialChart = null;
+        let destinationsChart = null;
+        let obrasVolumeChart = null;
+        let dailyVolumeChart = null;
+        let currentWeekOffset = 0;
+        let currentDayOffset = 0;
+        let currentDayOffsetInicio = 0;
+        let currentDayOffsetObras = 0;
+
+        // Configuration
+        const MATERIAL_COLORS = {
+            'Arcilla': '#6366f1',           // Indigo
+            'Base estabilizada': '#10b981', // Emerald
+            'Arena': '#f59e0b',             // Amber
+            'Basura': '#ef4444',            // Rose
+            'Grava': '#8b5cf6',             // Violet
+            'Default': '#94a3b8'            // Slate
+        };
+
+        const getMaterialColor = (mat) => MATERIAL_COLORS[mat] || MATERIAL_COLORS['Default'];
+
+        // Unified Theme Management
+        window.toggleTheme = function () {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme') || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            // Also toggle .dark class for tailwind compatibility
+            if (newTheme === 'dark') html.classList.add('dark');
+            else html.classList.remove('dark');
+
+            localStorage.setItem('dashboard-theme', newTheme);
+
+            // Update all theme icons and texts across views
+            const headerIcon = document.getElementById('theme-icon');
+            const settingsIcon = document.getElementById('appearanceIcon');
+            const settingsText = document.getElementById('appearanceText');
+
+            const isDark = newTheme === 'dark';
+            const iconName = isDark ? 'light_mode' : 'dark_mode';
+            const statusLabel = isDark ? 'Oscuro' : 'Claro';
+
+            if (headerIcon) headerIcon.textContent = iconName;
+            if (settingsIcon) settingsIcon.textContent = isDark ? 'dark_mode' : 'light_mode';
+            if (settingsText) settingsText.textContent = statusLabel;
+
+            // Re-render charts to update colors
+            if (window.renderCharts) window.renderCharts();
+        };
+
+        // Initialize Theme Correctly
+        const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+        else document.documentElement.classList.remove('dark');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const headerIcon = document.getElementById('theme-icon');
+            const settingsIcon = document.getElementById('appearanceIcon');
+            const settingsText = document.getElementById('appearanceText');
+
+            const isDark = savedTheme === 'dark';
+            if (headerIcon) headerIcon.textContent = isDark ? 'light_mode' : 'dark_mode';
+            if (settingsIcon) settingsIcon.textContent = isDark ? 'dark_mode' : 'light_mode';
+            if (settingsText) settingsText.textContent = isDark ? 'Oscuro' : 'Claro';
+        });
+
+        // Helper function to get material color
+        window.getMaterialColor = function (materialName) {
+            if (!materialName) return MATERIAL_COLORS['default'];
+            // Try exact match first
+            if (MATERIAL_COLORS[materialName]) return MATERIAL_COLORS[materialName];
+            // Try case-insensitive match
+            const lowerName = materialName.toLowerCase();
+            for (const key in MATERIAL_COLORS) {
+                if (key.toLowerCase() === lowerName) {
+                    return MATERIAL_COLORS[key];
+                }
+            }
+            return MATERIAL_COLORS['default'];
+        };
+
+        // Carousel Manager Class
+        class CarouselManager {
+            constructor(containerId, itemsPerPage, renderFunction) {
+                this.containerId = containerId;
+                this.itemsPerPage = itemsPerPage;
+                this.renderFunction = renderFunction;
+                this.currentPage = 0;
+                this.items = [];
+            }
+
+            setItems(items) {
+                this.items = items;
+                this.currentPage = 0;
+            }
+
+            get totalPages() {
+                return Math.ceil(this.items.length / this.itemsPerPage);
+            }
+
+            getCurrentItems() {
+                const start = this.currentPage * this.itemsPerPage;
+                return this.items.slice(start, start + this.itemsPerPage);
+            }
+
+            nextPage() {
+                if (this.currentPage < this.totalPages - 1) {
+                    this.currentPage++;
+                    this.render();
+                }
+            }
+
+            prevPage() {
+                if (this.currentPage > 0) {
+                    this.currentPage--;
+                    this.render();
+                }
+            }
+
+            goToPage(pageNum) {
+                if (pageNum >= 0 && pageNum < this.totalPages) {
+                    this.currentPage = pageNum;
+                    this.render();
+                }
+            }
+
+            render() {
+                const container = document.getElementById(this.containerId);
+                if (!container) return;
+
+                const currentItems = this.getCurrentItems();
+
+                if (this.items.length === 0) {
+                    container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay datos disponibles</p>';
+                    return;
+                }
+
+                // Render items using the provided render function
+                const itemsHtml = this.renderFunction(currentItems);
+
+                // Build navigation controls
+                const navHtml = this.totalPages > 1 ? `
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+                        <button onclick="window.carousels['${this.containerId}'].prevPage()" 
+                                class="carousel-nav-btn p-2 rounded-lg hover:bg-white/10 transition-all ${this.currentPage === 0 ? 'opacity-30 cursor-not-allowed' : ''}"
+                                ${this.currentPage === 0 ? 'disabled' : ''}>
+                            <span class="material-symbols-outlined text-white text-[20px]">chevron_left</span>
+                        </button>
+                        <div class="flex flex-col items-center gap-2">
+                            <span class="carousel-indicator">Página ${this.currentPage + 1} de ${this.totalPages}</span>
+                            <div class="carousel-page-dots">
+                                ${Array.from({ length: Math.min(this.totalPages, 5) }, (_, i) => {
+                    const pageIndex = this.totalPages <= 5 ? i :
+                        this.currentPage < 2 ? i :
+                            this.currentPage > this.totalPages - 3 ? this.totalPages - 5 + i :
+                                this.currentPage - 2 + i;
+                    return `<div class="carousel-dot ${pageIndex === this.currentPage ? 'active' : ''}" 
+                                                 onclick="window.carousels['${this.containerId}'].goToPage(${pageIndex})"></div>`;
+                }).join('')}
+                            </div>
+                        </div>
+                        <button onclick="window.carousels['${this.containerId}'].nextPage()" 
+                                class="carousel-nav-btn p-2 rounded-lg hover:bg-white/10 transition-all ${this.currentPage === this.totalPages - 1 ? 'opacity-30 cursor-not-allowed' : ''}"
+                                ${this.currentPage === this.totalPages - 1 ? 'disabled' : ''}>
+                            <span class="material-symbols-outlined text-white text-[20px]">chevron_right</span>
+                        </button>
+                    </div>
+                ` : '';
+
+                container.innerHTML = itemsHtml + navHtml;
+            }
+        }
+
+        // Global carousel instances
+        window.carousels = {};
+
+        // Day navigation for Inicio section
+        window.changeDayInicio = function (direction) {
+            if (direction > 0 && currentDayOffsetInicio >= 0) return;
+            currentDayOffsetInicio += direction;
+            window.updateDayDisplayInicio();
+            window.loadDashboard(false);
+        };
+
+        window.updateDayDisplayInicio = function () {
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + currentDayOffsetInicio);
+
+            const formatDate = (date) => {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            };
+
+            const displayElement = document.getElementById('dayDisplayInicio');
+            const nextBtn = document.getElementById('nextDayBtnInicio');
+
+            if (displayElement) {
+                const container = document.getElementById('dayDisplayInicioContainer');
+                if (currentDayOffsetInicio === 0) {
+                    displayElement.textContent = 'Hoy';
+                    displayElement.className = "text-main text-sm font-black";
+                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
+                } else {
+                    displayElement.textContent = currentDayOffsetInicio === -1 ? 'Ayer' : formatDate(targetDate);
+                    displayElement.className = "text-warning text-sm font-black animate-pulse";
+                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
+                }
+            }
+
+            // Disable next button if we're at today
+            if (nextBtn) {
+                if (currentDayOffsetInicio >= 0) {
+                    nextBtn.disabled = true;
+                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                }
+            }
+        };
+
+        // Day navigation for Obras section
+        window.changeDayObras = function (direction) {
+            if (direction > 0 && currentDayOffsetObras >= 0) return;
+            currentDayOffsetObras += direction;
+            window.updateDayDisplayObras();
+            window.loadDashboard(false);
+        };
+
+        window.updateDayDisplayObras = function () {
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + currentDayOffsetObras);
+
+            const formatDate = (date) => {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            };
+
+            const displayElement = document.getElementById('dayDisplayObras');
+            const nextBtn = document.getElementById('nextDayBtnObras');
+
+            if (displayElement) {
+                const container = document.getElementById('dayDisplayObrasContainer');
+                if (currentDayOffsetObras === 0) {
+                    displayElement.textContent = 'Hoy';
+                    displayElement.className = "text-main text-sm font-black";
+                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
+                } else {
+                    displayElement.textContent = currentDayOffsetObras === -1 ? 'Ayer' : formatDate(targetDate);
+                    displayElement.className = "text-warning text-sm font-black animate-pulse";
+                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
+                }
+            }
+
+            // Disable next button if we're at today
+            if (nextBtn) {
+                if (currentDayOffsetObras >= 0) {
+                    nextBtn.disabled = true;
+                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                }
+            }
+        };
+
+        window.changeDay = function (direction) {
+            if (direction > 0 && currentDayOffset >= 0) return;
+            currentDayOffset += direction;
+            window.updateDayDisplay();
+            window.loadDashboard(false);
+        };
+
+        window.updateDayDisplay = function () {
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + currentDayOffset);
+
+            const formatDate = (date) => {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                return `${day}/${month}/${year}`;
+            };
+
+            const displayElement = document.getElementById('dayDisplay');
+            const nextBtn = document.getElementById('nextDayBtnReport');
+
+            if (displayElement) {
+                const container = document.getElementById('dayDisplayReportContainer');
+                if (currentDayOffset === 0) {
+                    displayElement.textContent = 'Hoy';
+                    displayElement.className = "text-main text-sm font-black";
+                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
+                } else {
+                    displayElement.textContent = currentDayOffset === -1 ? 'Ayer' : formatDate(targetDate);
+                    displayElement.className = "text-warning text-sm font-black animate-pulse";
+                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
+                }
+            }
+
+            // Disable next button if we're at today
+            if (nextBtn) {
+                if (currentDayOffset >= 0) {
+                    nextBtn.disabled = true;
+                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                }
+            }
+        };
+
+        window.changeWeek = function (direction) {
+            if (direction > 0 && currentWeekOffset >= 0) return;
+            currentWeekOffset += direction;
+            window.updateWeekDisplay();
+            renderCharts();
+        };
+
+        window.updateWeekDisplay = function () {
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Days to go back to Monday
+
+            // Reset time to midnight local to avoid offset issues
+            const currentMonday = new Date();
+            currentMonday.setHours(0, 0, 0, 0);
+            currentMonday.setDate(currentMonday.getDate() - (currentMonday.getDay() === 0 ? 6 : currentMonday.getDay() - 1));
+
+            // Apply week offset
+            const targetMonday = new Date(currentMonday);
+            targetMonday.setDate(currentMonday.getDate() + (currentWeekOffset * 7));
+
+            // Calculate Sunday
+            const targetSunday = new Date(targetMonday);
+            targetSunday.setDate(targetMonday.getDate() + 6);
+
+            // Format display
+            const formatDate = (date) => {
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                return `${day}/${month}`;
+            };
+
+            const displayElement = document.getElementById('weekRangeDisplay');
+            const nextBtn = document.getElementById('nextWeekBtnReport');
+
+            if (displayElement) {
+                displayElement.textContent = `${formatDate(targetMonday)} - ${formatDate(targetSunday)}`;
+            }
+
+            // Disable next button if we're at current week
+            if (nextBtn) {
+                if (currentWeekOffset >= 0) {
+                    nextBtn.disabled = true;
+                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+                } else {
+                    nextBtn.disabled = false;
+                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                }
+            }
+        };
+
+        // Render material legend
+        function renderMaterialLegend(activeMaterials = []) {
+            const container = document.getElementById('materialLegend');
+            if (!container) return;
+
+            // If no active materials provided, show all
+            const materialsToShow = activeMaterials.length > 0
+                ? activeMaterials
+                : Object.keys(MATERIAL_COLORS).filter(key => key !== 'default');
+
+            if (materialsToShow.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-[10px]">No hay materiales para mostrar</p>';
+                return;
+            }
+
+            container.innerHTML = materialsToShow.map(material => {
+                const color = getMaterialColor(material);
+                return `
+                    <div class="flex items-center gap-2 p-2 bg-white/5 rounded-lg">
+                        <div class="w-4 h-4 rounded-full shrink-0" style="background-color: ${color};"></div>
+                        <span class="text-main text-[10px] font-medium truncate">${material}</span>
+                    </div>
+                    `;
+            }).join('');
+        }
+
+        window.renderCharts = async function () {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const textColor = isLight ? '#64748b' : '#94a3b8';
+            const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+            // Helper to get chart options
+            const getChartOptions = (isBar = false) => ({
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                        titleColor: isLight ? '#1e293b' : '#ffffff',
+                        bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                        borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: true
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor, drawBorder: false },
+                        ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                    }
+                }
+            });
+            const ctx1 = document.getElementById('weeklyVolumeChart')?.getContext('2d');
+            const ctx2 = document.getElementById('materialDistChart')?.getContext('2d');
+            const ctx3 = document.getElementById('destinationsChart')?.getContext('2d');
+            const ctx4 = document.getElementById('obrasVolumeChart')?.getContext('2d');
+
+            if (!ctx1 || !ctx2 || !ctx3 || !ctx4) return;
+
+            // Show loading state if charts exist
+            if (volumeChart) volumeChart.options.plugins.title = { display: true, text: 'Cargando...' };
+            if (materialChart) materialChart.options.plugins.title = { display: true, text: 'Cargando...' };
+
+            try {
+                // Update week display
+                window.updateWeekDisplay();
+
+                // Fetch real data
+                const [weeklyData, mixData] = await Promise.all([
+                    window.bossDashboardService.getWeeklyVolumeData(window.selectedObraId, currentWeekOffset),
+                    window.bossDashboardService.getMaterialMixData(window.selectedObraId, currentWeekOffset)
+                ]);
+
+                // Update material legend with only active materials
+                renderMaterialLegend(mixData.labels);
+
+                // Destroy previous instances
+                if (volumeChart) volumeChart.destroy();
+                if (materialChart) materialChart.destroy();
+
+                volumeChart = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: weeklyData.labels,
+                        datasets: [{
+                            label: 'Relleno (m³)',
+                            data: weeklyData.incoming,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#10b981',
+                            borderWidth: 3
+                        }, {
+                            label: 'Excavación (m³)',
+                            data: weeklyData.outgoing,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#f59e0b',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: getChartOptions()
+                });
+
+                materialChart = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: mixData.labels,
+                        datasets: [{
+                            data: mixData.data,
+                            backgroundColor: mixData.labels.map(label => getMaterialColor(label)),
+                            borderWidth: 2,
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    font: { size: 10, weight: '600' },
+                                    padding: 20,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // Destinations Chart
+                const destData = await window.bossDashboardService.getDestinationsVolumeData(window.selectedObraId, currentWeekOffset);
+                if (destinationsChart) destinationsChart.destroy();
+                destinationsChart = new Chart(ctx3, {
+                    type: 'bar',
+                    data: {
+                        labels: destData.labels,
+                        datasets: [{
+                            data: destData.data,
+                            backgroundColor: isLight ? 'rgba(99, 102, 241, 0.8)' : 'rgba(168, 85, 247, 0.8)',
+                            borderRadius: 8,
+                            hoverBackgroundColor: 'rgba(99, 102, 241, 1)'
+                        }]
+                    },
+                    options: {
+                        ...getChartOptions(true),
+                        indexAxis: 'y'
+                    }
+                });
+
+                // Obras Volume Chart
+                const obrasData = await window.bossDashboardService.getObrasVolumeData(currentWeekOffset);
+                if (obrasVolumeChart) obrasVolumeChart.destroy();
+                obrasVolumeChart = new Chart(ctx4, {
+                    type: 'bar',
+                    data: {
+                        labels: obrasData.labels,
+                        datasets: [{
+                            data: obrasData.data,
+                            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                            borderRadius: 8,
+                            hoverBackgroundColor: 'rgba(59, 130, 246, 1)'
+                        }]
+                    },
+                    options: getChartOptions(true)
+                });
+
+                // Update comparison metrics
+                const todayVol = weeklyData.incoming[weeklyData.incoming.length - 1] + weeklyData.outgoing[weeklyData.outgoing.length - 1];
+                const weekAvg = (weeklyData.incoming.reduce((a, b) => a + b, 0) + weeklyData.outgoing.reduce((a, b) => a + b, 0)) / 7;
+
+                const compElement = document.getElementById('reportComparison');
+                if (compElement) {
+                    const diff = weekAvg > 0 ? ((todayVol - weekAvg) / weekAvg * 100).toFixed(0) : 0;
+                    const prefix = diff >= 0 ? '+' : '';
+                    compElement.textContent = `${prefix}${diff}%`;
+                    compElement.className = `text-2xl font-black ${diff >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+                }
+
+                // Efficiency
+                const effElement = document.getElementById('reportEfficiency');
+                if (effElement) {
+                    const kpis = window.bossDashboardService.calculateKPIs(window.currentMovements || []);
+                    effElement.textContent = kpis.avgPerHour || '0';
+                }
+
+            } catch (error) {
+                console.error('Error rendering real charts:', error);
+            }
+        };
+
+        window.exportToPDF = function () {
+            // Using browser print for better compatibility in Capacitor apps without extra libs
+            window.print();
+        };
+
+        window.openCreateObraModal = async function () {
+            document.getElementById('createObraModal').classList.remove('hidden');
+            if (window.loadUsersForCreationFn) {
+                await window.loadUsersForCreationFn();
+            }
+        };
+
+        window.closeCreateObraModal = function () {
+            document.getElementById('createObraModal').classList.add('hidden');
+            document.getElementById('createObraForm').reset();
+        };
+
+        window.openAssignUsersModal = function () {
+            document.getElementById('assignUsersModal').classList.remove('hidden');
+            // Trigger load users in the module
+            if (window.loadUsersForAssignmentFn) {
+                window.loadUsersForAssignmentFn();
+            }
+        };
+
+        window.closeAssignUsersModal = function () {
+            document.getElementById('assignUsersModal').classList.add('hidden');
+        };
+
+        window.saveUserAssignments = function () {
+            if (window.saveUserAssignmentsFn) {
+                window.saveUserAssignmentsFn();
+            }
+        };
+
+        window.handleHeaderObraFilterChange = function () {
+            if (window.handleHeaderObraFilterChangeFn) {
+                window.handleHeaderObraFilterChangeFn();
+            }
+        };
+
+        window.logout = function () {
+            if (window.logoutFn) {
+                window.logoutFn();
+            }
+        };
+
+        window.refreshData = function () {
+            if (window.refreshDataFn) {
+                window.refreshDataFn();
+            }
+        };
+
+        window.openMaterialsModal = function () {
+            document.getElementById('materialsModal').classList.remove('hidden');
+        };
+
+        window.closeMaterialsModal = function () {
+            document.getElementById('materialsModal').classList.add('hidden');
+        };
+
+        window.loadMaterialsForEdit = function () {
+            if (window.loadMaterialsForEditFn) {
+                window.loadMaterialsForEditFn();
+            }
+        };
+
+        window.deleteMaterial = function (id) {
+            if (window.deleteMaterialFn) {
+                window.deleteMaterialFn(id);
+            }
+        };
+    </script>
+
+    <script type="module">
+        import { supabaseClient } from './supabase-client.js';
+        import { authService } from './auth-service.js';
+        import { bossDashboardService } from './boss-dashboard-service.js';
+        import { obrasService } from './obras-service.js';
+
+        let realtimeChannel = null;
+        let allObras = [];
+        let allUsers = [];
+        window.selectedObraId = null;
+        window.currentMovements = [];
+
+        // Assign module functions to global scope
+        window.logoutFn = async function () {
+            await authService.logout();
+            window.location.href = 'login.html';
+        };
+
+        window.refreshDataFn = async function () {
+            await window.loadDashboard(true);
+        };
+
+        window.handleHeaderObraFilterChangeFn = function () {
+            const select = document.getElementById('headerObraFilter');
+            window.selectedObraId = select.value || null;
+            // Sync other filters
+            const filterObras = document.getElementById('obrasTabFilter');
+            const filterReport = document.getElementById('reportObraFilter');
+            if (filterObras) filterObras.value = select.value || "";
+            if (filterReport) filterReport.value = select.value || "";
+            window.loadDashboard(false);
+        };
+
+        window.handleObrasTabFilterChange = function () {
+            const select = document.getElementById('obrasTabFilter');
+            window.selectedObraId = select.value || null;
+            // Sync other filters
+            const filterHeader = document.getElementById('headerObraFilter');
+            const filterObras = document.getElementById('obrasTabFilter');
+            if (filterHeader) filterHeader.value = select.value || "";
+            if (filterObras) filterObras.value = select.value || "";
+
+            // If in weekly view, update charts
+            if (document.getElementById('report-content-semanal') && document.getElementById('report-content-semanal').classList.contains('active')) {
+                renderCharts();
+            }
+            window.loadDashboard(false);
+        };
+
+        window.handleReportObraFilterChange = function () {
+            const select = document.getElementById('reportObraFilter');
+            window.selectedObraId = select.value || null;
+            // Sync other filters
+            const filterHeader = document.getElementById('headerObraFilter');
+            const filterObras = document.getElementById('obrasTabFilter');
+            if (filterHeader) filterHeader.value = select.value || "";
+            if (filterObras) filterObras.value = select.value || "";
+
+            // If in weekly view, update charts
+            if (document.getElementById('report-content-semanal') && document.getElementById('report-content-semanal').classList.contains('active')) {
+                renderCharts();
+            }
+            window.loadDashboard(false);
+        };
+
+        window.loadUsersForAssignmentFn = loadUsersForAssignment;
+        window.saveUserAssignmentsFn = saveUserAssignments;
+        window.loadUsersForCreationFn = loadUsersForCreationModal;
+        window.loadMaterialsForEditFn = loadMaterialsForEdit;
+        window.deleteMaterialFn = deleteMaterial;
+
+        // Internal functions
+        async function loadMaterialsForEdit() {
+            const obraId = document.getElementById('materialObraSelect').value;
+            const container = document.getElementById('materialsEditList');
+
+            if (!obraId) {
+                container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">Selecciona una obra para ver materiales</p>';
+                return;
+            }
+
+            container.innerHTML = '<div class="flex justify-center p-4"><div class="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div></div>';
+
+            try {
+                const materials = await bossDashboardService.getMaterialsByObra(obraId);
+
+                if (materials.length === 0) {
+                    container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay materiales registrados</p>';
+                    return;
+                }
+
+                container.innerHTML = materials.map(mat => `
+                    <div class="flex items-center justify-between p-3 glass-card rounded-lg border-l-4 ${mat.tipo === 'incoming' ? 'border-l-emerald-500' : 'border-l-amber-500'}">
+                        <div>
+                            <p class="text-white text-sm font-medium">${mat.nombre}</p>
+                            <p class="text-slate-500 text-[10px] uppercase">${mat.tipo === 'incoming' ? 'Relleno' : 'Excavación'}</p>
+                        </div>
+                        <button onclick="deleteMaterial('${mat.id}')" class="text-red-400 hover:text-red-300 transition-colors">
+                            <span class="material-symbols-outlined text-[20px]">delete</span>
+                        </button>
+                    </div>
+                    `).join('');
+            } catch (error) {
+                console.error('Error loading materials for edit:', error);
+                container.innerHTML = '<p class="text-center text-red-400 text-sm py-4">Error al cargar materiales</p>';
+            }
+        }
+
+        async function deleteMaterial(materialId) {
+            if (!confirm('¿Estás seguro de eliminar este material?')) return;
+
+            try {
+                await bossDashboardService.deleteMaterial(materialId);
+                await loadMaterialsForEdit();
+                showUpdateIndicator();
+            } catch (error) {
+                alert('Error al eliminar material: ' + error.message);
+            }
+        }
+
+        // Add Material Form Handler (only if form exists)
+        const addMaterialForm = document.getElementById('addMaterialForm');
+        if (addMaterialForm) {
+            addMaterialForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const obraId = document.getElementById('materialObraSelect').value;
+                const nombre = document.getElementById('newMaterialName').value;
+                const tipo = document.getElementById('newMaterialType').value;
+
+                if (!obraId) {
+                    alert('Selecciona una obra primero');
+                    return;
+                }
+
+                try {
+                    await bossDashboardService.addMaterial(obraId, nombre, tipo);
+                    document.getElementById('newMaterialName').value = '';
+                    await loadMaterialsForEdit();
+                    showUpdateIndicator();
+                } catch (error) {
+                    alert('Error al agregar material: ' + error.message);
+                }
+            });
+        }
+
+        // Internal functions
+        async function saveUserAssignments() {
+            const obraId = document.getElementById('assignObraSelect').value;
+            if (!obraId) {
+                alert('Por favor selecciona una obra');
+                return;
+            }
+
+            const checkboxes = document.querySelectorAll('#usersList input[type="checkbox"]');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                for (const checkbox of checkboxes) {
+                    const userId = checkbox.value;
+                    const isAssigned = checkbox.checked;
+                    const wasAssigned = checkbox.dataset.wasAssigned === 'true';
+
+                    if (isAssigned && !wasAssigned) {
+                        await obrasService.assignUserToObra(userId, obraId);
+                    } else if (!isAssigned && wasAssigned) {
+                        await obrasService.unassignUserFromObra(userId, obraId);
+                    }
+                }
+
+                closeAssignUsersModal();
+                showUpdateIndicator();
+            } catch (error) {
+                console.error('Error saving assignments:', error);
+                alert('Error al guardar asignaciones');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        };
+
+        // Create obra form handler
+        document.getElementById('createObraForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const obraData = {
+                nombre: formData.get('nombre'),
+                ubicacion: formData.get('ubicacion'),
+                descripcion: formData.get('descripcion'),
+                fecha_inicio: formData.get('fecha_inicio') || new Date().toISOString().split('T')[0]
+            };
+
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
+            try {
+                console.log('🏗️ Creating obra with data:', obraData);
+                const result = await obrasService.createObra(obraData);
+                console.log('📋 Create obra result:', result);
+
+                if (result.success) {
+                    const newObraId = result.data.id;
+                    console.log('✅ Obra created successfully with ID:', newObraId);
+
+                    // Assign selected users
+                    const selectedCheckboxes = document.querySelectorAll('#createObraUsersList input[type="checkbox"]:checked');
+                    console.log(`👥 Assigning ${selectedCheckboxes.length} users to obra`);
+                    for (const checkbox of selectedCheckboxes) {
+                        await obrasService.assignUserToObra(checkbox.value, newObraId);
+                    }
+
+                    closeCreateObraModal();
+                    console.log('🔄 Reloading obras...');
+                    await loadObras();
+                    await window.loadDashboard(true);
+                    showUpdateIndicator();
+                } else {
+                    console.error('❌ Failed to create obra:', result.error);
+                    alert('Error al crear obra: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error creating obra:', error);
+                alert('Error al crear obra');
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        });
+
+        // Load obras for filter
+        async function loadObras() {
+            try {
+                console.log('🔍 Loading obras from Supabase...');
+                const result = await obrasService.getObras();
+                console.log('📦 Obras result:', result);
+
+                if (result.success) {
+                    allObras = result.data;
+                    console.log(`✅ Successfully loaded ${allObras.length} obras: `, allObras);
+                    const select = document.getElementById('headerObraFilter');
+                    const assignSelect = document.getElementById('assignObraSelect');
+                    const materialSelect = document.getElementById('materialObraSelect');
+                    const obrasTabFilter = document.getElementById('obrasTabFilter');
+                    const reportObraFilter = document.getElementById('reportObraFilter');
+
+                    if (select) select.innerHTML = '<option value="">Todas las Obras (Vista Global)</option>';
+                    if (assignSelect) assignSelect.innerHTML = '<option value="">Seleccionar obra...</option>';
+                    if (materialSelect) materialSelect.innerHTML = '<option value="">Seleccionar obra...</option>';
+                    if (obrasTabFilter) obrasTabFilter.innerHTML = '<option value="">Todas las Obras (Vista Global)</option>';
+                    if (reportObraFilter) reportObraFilter.innerHTML = '<option value="">Todas las Obras (Vista Global)</option>';
+
+                    allObras.forEach(obra => {
+                        const option = `<option value="${obra.id}">${obra.nombre}</option>`;
+                        if (select) {
+                            const optEl = document.createElement('option');
+                            optEl.value = obra.id;
+                            optEl.textContent = obra.nombre;
+                            select.appendChild(optEl);
+                        }
+                        if (obrasTabFilter) {
+                            const optEl = document.createElement('option');
+                            optEl.value = obra.id;
+                            optEl.textContent = obra.nombre;
+                            obrasTabFilter.appendChild(optEl);
+                        }
+                        if (reportObraFilter) {
+                            const optEl = document.createElement('option');
+                            optEl.value = obra.id;
+                            optEl.textContent = obra.nombre;
+                            reportObraFilter.appendChild(optEl);
+                        }
+                        if (assignSelect) assignSelect.innerHTML += option;
+                        if (materialSelect) materialSelect.innerHTML += option;
+                    });
+
+                    console.log(`Populated ${allObras.length} obras in filters`);
+                }
+            } catch (error) {
+                console.error('Error in loadObras:', error);
+            }
+        }
+
+        async function loadUsersForCreationModal() {
+            const container = document.getElementById('createObraUsersList');
+            if (!container) return;
+
+            try {
+                const usersResult = await obrasService.getAllUsers();
+                if (usersResult.success) {
+                    const contadores = usersResult.data.filter(u => u.rol === 'contador');
+                    if (contadores.length === 0) {
+                        container.innerHTML = '<p class="text-slate-500 text-[10px] text-center py-2">No hay apuntadores disponibles</p>';
+                        return;
+                    }
+
+                    container.innerHTML = contadores.map(user => `
+                        <label class="flex items-center gap-2 p-2 hover:bg-white/5 rounded cursor-pointer transition-colors">
+                            <input type="checkbox" value="${user.id}" class="w-3.5 h-3.5 text-primary bg-white/10 border-white/20 rounded focus:ring-primary">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-white text-[10px] font-medium truncate">${user.nombre_completo}</p>
+                                <p class="text-slate-500 text-[9px] truncate">${user.email}</p>
+                            </div>
+                        </label>
+                `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading users for creation:', error);
+                container.innerHTML = '<p class="text-red-400 text-[10px] text-center py-2">Error cargando usuarios</p>';
+            }
+        }
+
+        // Load users for assignment
+        async function loadUsersForAssignment() {
+            const obraId = document.getElementById('assignObraSelect').value;
+            if (!obraId) {
+                document.getElementById('usersList').innerHTML = '<p class="text-slate-500 text-sm text-center py-4">Selecciona una obra primero</p>';
+                return;
+            }
+
+            const [usersResult, assignedResult] = await Promise.all([
+                obrasService.getAllUsers(),
+                obrasService.getObraUsers(obraId)
+            ]);
+
+            if (usersResult.success) {
+                allUsers = usersResult.data;
+                const assignedUserIds = assignedResult.success ? assignedResult.data.map(u => u.id) : [];
+                const contadores = allUsers.filter(u => u.rol === 'contador');
+
+                const usersList = document.getElementById('usersList');
+                usersList.innerHTML = contadores.map(user => {
+                    const isAssigned = assignedUserIds.includes(user.id);
+                    return `
+                        <label class="flex items-center gap-3 p-3 glass-card rounded-lg hover:bg-white/5 cursor-pointer">
+                            <input type="checkbox" value="${user.id}" ${isAssigned ? 'checked' : ''} data-was-assigned="${isAssigned}" class="w-4 h-4 text-primary bg-white/5 border-white/10 rounded focus:ring-primary focus:ring-2">
+                            <div class="flex-1">
+                                <p class="text-white text-sm font-medium">${user.nombre_completo}</p>
+                                <p class="text-slate-500 text-xs">${user.email}</p>
+                            </div>
+                        </label>
+                `;
+                }).join('');
+            }
+        }
+
+        // Listen for obra selection change in assign modal
+        document.getElementById('assignObraSelect').addEventListener('change', loadUsersForAssignment);
+
+        // Update date
+        function updateDate() {
+            const dateElement = document.getElementById('currentDate');
+            if (!dateElement) return;
+            // Force Chilean timezone (UTC-3 for current date)
+            const today = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                timeZone: 'America/Santiago'
+            };
+            dateElement.textContent = today.toLocaleDateString('es-CL', options);
+        }
+
+        // Show update indicator
+        function showUpdateIndicator() {
+            const indicator = document.getElementById('updateIndicator');
+            indicator.style.opacity = '1';
+            indicator.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+                indicator.style.transform = 'translateY(1rem)';
+            }, 2000);
+        }
+
+        // Render material breakdown
+        function renderMaterialBreakdown(elementId, breakdown) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+
+            const materials = Object.keys(breakdown);
+            if (materials.length === 0) {
+                element.innerHTML = '<p class="text-[10px] text-slate-500 italic">Sin materiales</p>';
+                return;
+            }
+
+            element.innerHTML = materials
+                .sort((a, b) => breakdown[b] - breakdown[a])
+                .map(material => `
+                    <div class="flex justify-between items-center text-[10px]">
+                        <span class="text-text-muted truncate">${material}</span>
+                        <span class="text-main font-black ml-2">${breakdown[material].toFixed(0)}m³</span>
+                    </div>
+                `).join('');
+        }
+
+        function renderLocationBreakdown(containerId, breakdown, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const keys = Object.keys(breakdown);
+
+            if (keys.length === 0) {
+                container.innerHTML = '<p class="text-slate-500 text-[10px]">Sin datos</p>';
+                return;
+            }
+
+            container.innerHTML = keys
+                .sort((a, b) => breakdown[b] - breakdown[a])
+                .map(loc => `
+                    <div class="fade-in">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-main text-[10px] font-bold truncate flex-1">${loc}</span>
+                            <span class="text-${color}-400 font-black text-[10px] ml-2">${breakdown[loc].toFixed(0)}m³</span>
+                        </div>
+                        <div class="w-full h-1 bg-black/10 rounded-full overflow-hidden">
+                            <div class="h-full bg-${color}-500/50 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+
+
+        // Render daily volume chart for Obras section
+        async function renderDailyVolumeChart(movements) {
+            const ctx = document.getElementById('dailyVolumeChart')?.getContext('2d');
+            if (!ctx) return;
+
+            // Group movements by hour (0-23)
+            const hourlyVolumes = {};
+            for (let h = 0; h < 24; h++) {
+                hourlyVolumes[h] = { incoming: 0, outgoing: 0 };
+            }
+
+            movements.forEach(m => {
+                const date = new Date(m.timestamp);
+                const h = date.getHours();
+                const vol = parseFloat(m.capacidad) || 0;
+                if (m.tipo === 'incoming') {
+                    hourlyVolumes[h].incoming += vol;
+                } else if (m.tipo === 'outgoing') {
+                    hourlyVolumes[h].outgoing += vol;
+                }
+            });
+
+            const chartLabels = [];
+            const chartIn = [];
+            const chartOut = [];
+
+            let sumIn = 0;
+            let sumOut = 0;
+
+            // 1. Initial point at 8:00 (includes everything before 8:00 AM)
+            for (let h = 0; h < 8; h++) {
+                sumIn += hourlyVolumes[h].incoming;
+                sumOut += hourlyVolumes[h].outgoing;
+            }
+            chartLabels.push('8:00');
+            chartIn.push(sumIn);
+            chartOut.push(sumOut);
+
+            // 2. Points from 9:00 to 19:00
+            for (let h = 8; h <= 18; h++) {
+                sumIn += hourlyVolumes[h].incoming;
+                sumOut += hourlyVolumes[h].outgoing;
+                chartLabels.push(`${h + 1}:00`);
+                chartIn.push(sumIn);
+                chartOut.push(sumOut);
+            }
+
+            // 3. Final point at 20:00 (sum remaining hours to match totals)
+            for (let h = 19; h < 24; h++) {
+                sumIn += hourlyVolumes[h].incoming;
+                sumOut += hourlyVolumes[h].outgoing;
+            }
+            // Overwrite last point label and data if it's already there or add it
+            if (chartLabels.includes('20:00')) {
+                const idx = chartLabels.indexOf('20:00');
+                chartIn[idx] = sumIn;
+                chartOut[idx] = sumOut;
+            } else {
+                chartLabels.push('20:00');
+                chartIn.push(sumIn);
+                chartOut.push(sumOut);
+            }
+
+
+            if (dailyVolumeChart) dailyVolumeChart.destroy();
+
+            dailyVolumeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Relleno (m³)',
+                        data: chartIn,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#10b981'
+                    }, {
+                        label: 'Excavación (m³)',
+                        data: chartOut,
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#f59e0b'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#94a3b8',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} m³`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            display: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748b', font: { size: 9 } },
+                            title: { display: true, text: 'Volumen Acumulado (m³)', color: '#64748b', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: 10 } },
+                            title: { display: true, text: 'Hora del Día', color: '#64748b', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Filter data by obra
+        function filterDataByObra(data) {
+            if (!window.selectedObraId) return data;
+
+            return {
+                obras: data.obras.filter(o => o.id === window.selectedObraId),
+                camiones: data.camiones.filter(c => c.obra_id === window.selectedObraId),
+                movements: data.movements.filter(m => m.obra_id === window.selectedObraId),
+                timestamp: data.timestamp
+            };
+        }
+
+        // Load dashboard (global so changeDay can call it)
+        window.loadDashboard = async function (forceRefresh = false) {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (forceRefresh) loadingOverlay.style.display = 'flex';
+
+            try {
+                // Determine active offset based on current view
+                const viewInicio = document.getElementById('view-inicio');
+                const viewObras = document.getElementById('view-obras');
+                const viewReportes = document.getElementById('view-reportes');
+
+                let activeOffset = 0;
+                let activeView = 'inicio';
+
+                if (viewObras.classList.contains('active')) {
+                    activeOffset = currentDayOffsetObras;
+                    activeView = 'obras';
+                    window.updateDayDisplayObras();
+                } else if (viewReportes.classList.contains('active')) {
+                    const isDiario = document.getElementById('report-content-diario').classList.contains('active');
+                    if (isDiario) {
+                        activeOffset = currentDayOffset;
+                        activeView = 'reportes-diario';
+                        window.updateDayDisplay();
+                    } else {
+                        // In weekly report, we don't use loadDashboard's main loop usually
+                        // but if we do, use 0 or handle accordingly
+                        activeView = 'reportes-semanal';
+                        if (forceRefresh) renderCharts();
+                        return;
+                    }
+                } else {
+                    activeOffset = currentDayOffsetInicio;
+                    activeView = 'inicio';
+                    window.updateDayDisplayInicio();
+                }
+
+                const rawData = await bossDashboardService.getConsolidatedData(forceRefresh, activeOffset);
+                const data = filterDataByObra(rawData);
+                window.currentMovements = data.movements;
+
+                // 1. UPDATE SHARED INDICATORS (if any)
+                if (forceRefresh) showUpdateIndicator();
+
+                // 2. UPDATE VIEW-SPECIFIC ELEMENTS
+                if (activeView === 'inicio') {
+                    const kpis = bossDashboardService.calculateKPIs(data.movements);
+                    document.getElementById('kpiTotalTrips').textContent = kpis.totalTrips;
+                    document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
+                    document.getElementById('kpiAvgPerHour').innerHTML = `${kpis.avgPerHour} <span class="text-xs font-normal text-slate-400">vueltas/hora</span>`;
+
+                    const incomingCount = data.movements.filter(m => m.tipo === 'incoming').length;
+                    const outgoingCount = data.movements.filter(m => m.tipo === 'outgoing').length;
+                    document.getElementById('kpiIncoming').textContent = incomingCount;
+                    document.getElementById('kpiOutgoing').textContent = outgoingCount;
+
+                    renderHourlyActivity(data.movements);
+                    renderTruckPerformance(data.camiones, data.movements);
+                    renderMovementHistory(data.movements);
+                }
+
+                else if (activeView === 'obras') {
+                    const fillVolume = bossDashboardService.calculateVolume(data.movements, 'incoming');
+                    const excavationVolume = bossDashboardService.calculateVolume(data.movements, 'outgoing');
+
+                    document.getElementById('dashFillVolume').innerHTML = `+${fillVolume.toFixed(0)} <span class="text-sm font-normal text-slate-500">m³</span>`;
+                    document.getElementById('dashExcavationVolume').innerHTML = `-${excavationVolume.toFixed(0)} <span class="text-sm font-normal text-slate-500">m³</span>`;
+
+                    const fillBreakdown = bossDashboardService.calculateMaterialBreakdown(data.movements, 'incoming');
+                    const excavationBreakdown = bossDashboardService.calculateMaterialBreakdown(data.movements, 'outgoing');
+                    renderMaterialBreakdown('dashFillBreakdown', fillBreakdown);
+                    renderMaterialBreakdown('dashExcavationBreakdown', excavationBreakdown);
+
+                    const incomingLocs = bossDashboardService.calculateLocationBreakdown(data.movements, 'incoming');
+                    const outgoingLocs = bossDashboardService.calculateLocationBreakdown(data.movements, 'outgoing');
+                    renderLocationBreakdown('dashIncomingLocations', incomingLocs, 'emerald');
+                    renderLocationBreakdown('dashOutgoingLocations', outgoingLocs, 'amber');
+
+                    renderDailyVolumeChart(data.movements);
+                }
+
+                else if (activeView === 'reportes-diario') {
+                    const fillVolume = bossDashboardService.calculateVolume(data.movements, 'incoming');
+                    const excavationVolume = bossDashboardService.calculateVolume(data.movements, 'outgoing');
+                    const totalDailyVolume = fillVolume + excavationVolume;
+
+                    const comparisonVal = await bossDashboardService.calculateComparison(totalDailyVolume, window.selectedObraId);
+                    const efficiencyVal = bossDashboardService.calculateEfficiency(data.movements);
+
+                    const reportComparison = document.getElementById('reportComparison');
+                    const reportEfficiency = document.getElementById('reportEfficiency');
+
+                    if (reportComparison) {
+                        reportComparison.textContent = `${comparisonVal >= 0 ? '+' : ''}${comparisonVal}%`;
+                        reportComparison.className = `text-xl font-bold ${comparisonVal >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                    }
+                    if (reportEfficiency) {
+                        reportEfficiency.innerHTML = `${efficiencyVal} <span class="text-xs font-normal text-slate-400">vueltas/hora</span>`;
+                    }
+
+                    renderHourlyActivity(data.movements);
+                }
+
+                // Update charts if they are visible
+                if (document.getElementById('view-reportes') && document.getElementById('view-reportes').classList.contains('active')) {
+                    if (document.getElementById('report-content-semanal').classList.contains('active')) {
+                        renderCharts();
+                    }
+                }
+
+                if (forceRefresh) showUpdateIndicator();
+
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            } finally {
+                loadingOverlay.style.display = 'none';
+            }
+        }
+
+        // Render hourly activity
+        function renderHourlyActivity(movements) {
+            const containers = ['hourlyActivity', 'reportHourlyActivity']
+                .map(id => document.getElementById(id))
+                .filter(el => el !== null);
+
+            if (containers.length === 0) return;
+
+            if (movements.length === 0) {
+                containers.forEach(c => c.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay datos disponibles</p>');
+                return;
+            }
+
+            const hourlyData = bossDashboardService.groupMovementsByHour(movements);
+            const maxCount = Math.max(...Object.values(hourlyData), 1);
+            const hours = Object.keys(hourlyData).sort((a, b) => a - b);
+
+            const html = hours.map(hour => {
+                const count = hourlyData[hour];
+                const percentage = (count / maxCount) * 100;
+                const displayHour = parseInt(hour) % 12 || 12;
+                const period = parseInt(hour) >= 12 ? 'PM' : 'AM';
+
+                return `
+                    <div class="flex items-center gap-3 fade-in">
+                        <span class="text-[10px] text-slate-400 w-12">${displayHour} ${period}</span>
+                        <div class="flex-1 h-6 bg-white/5 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-primary to-purple-600 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="text-[10px] text-white font-semibold w-8 text-right">${count}</span>
+                    </div>
+                `;
+            }).join('');
+
+            containers.forEach(c => c.innerHTML = html);
+        }
+
+        // Render truck performance with carousel
+        function renderTruckPerformance(camiones, movements) {
+            const containerId = 'performanceList';
+
+            if (camiones.length === 0) {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.innerHTML = '<p class="text-center text-slate-500 text-sm py-4">No hay camiones registrados</p>';
+                }
+                return;
+            }
+
+            const performance = bossDashboardService.getTruckPerformance(camiones, movements);
+
+            // Initialize carousel if not exists
+            if (!window.carousels[containerId]) {
+                window.carousels[containerId] = new CarouselManager(
+                    containerId,
+                    5, // 5 items per page
+                    renderTruckItems
+                );
+            }
+
+            // Update items and render
+            window.carousels[containerId].setItems(performance);
+            window.carousels[containerId].render();
+        }
+
+        // Render function for truck performance items
+        function renderTruckItems(trucks) {
+            if (trucks.length === 0) {
+                return '<p class="text-center text-slate-500 text-[10px] py-4">No hay camiones registrados</p>';
+            }
+
+            const carousel = window.carousels['performanceList'];
+            const startIndex = carousel ? carousel.currentPage * carousel.itemsPerPage : 0;
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+
+            return trucks.map((truck, localIndex) => {
+                const globalIndex = startIndex + localIndex;
+                const isTop = globalIndex === 0;
+
+                const rellenoPct = truck.totalTrips > 0 ? (truck.incomingCount / truck.totalTrips) * 100 : 0;
+                const excavPct = truck.totalTrips > 0 ? (truck.outgoingCount / truck.totalTrips) * 100 : 0;
+
+                return `
+                    <div class="glass-card rounded-2xl p-5 mb-4 group hover:scale-[1.02] transition-all border border-border relative overflow-hidden">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-warning to-amber-600 text-white flex items-center justify-center font-black text-xl shadow-lg shadow-warning/20">
+                                ${globalIndex + 1}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <h4 class="text-main font-bold text-base truncate group-hover:text-primary transition-colors">${truck.nombre}</h4>
+                                <p class="text-text-muted text-[10px] font-semibold uppercase tracking-wider">${truck.patente} • ${truck.capacidad}m³</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-main text-3xl font-black leading-none">${truck.totalTrips}</p>
+                                <p class="text-text-muted text-[9px] font-bold uppercase tracking-widest">vueltas</p>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bars -->
+                        <div class="space-y-4 my-4">
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between text-[9px] font-bold uppercase tracking-wider">
+                                    <span class="text-success flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[12px]">south_east</span>
+                                        Relleno (${truck.incomingCount})
+                                    </span>
+                                    <span class="text-text-muted">${rellenoPct.toFixed(0)}%</span>
+                                </div>
+                                <div class="h-2.5 bg-black/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-success rounded-full transition-all duration-1000" style="width: ${rellenoPct}%"></div>
+                                </div>
+                            </div>
+                            <div class="space-y-1.5">
+                                <div class="flex justify-between text-[9px] font-bold uppercase tracking-wider">
+                                    <span class="text-warning flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[12px]">north_east</span>
+                                        Excavación (${truck.outgoingCount})
+                                    </span>
+                                    <span class="text-text-muted">${excavPct.toFixed(0)}%</span>
+                                </div>
+                                <div class="h-2.5 bg-black/10 rounded-full overflow-hidden">
+                                    <div class="h-full bg-warning rounded-full transition-all duration-1000" style="width: ${excavPct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4 border-t border-border mt-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-text-muted text-[16px]">apartment</span>
+                                <span class="text-text-muted text-[10px] font-bold truncate max-w-[120px] uppercase">${truck.obraName}</span>
+                            </div>
+                            <div class="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-full">
+                                <span class="text-primary font-black text-sm">${truck.totalVolume.toFixed(0)}</span>
+                                <span class="text-primary text-[9px] font-bold uppercase">m³</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render movement history with carousel
+        function renderMovementHistory(movements) {
+            const containerId = 'movementList';
+
+            // Initialize carousel if not exists
+            if (!window.carousels[containerId]) {
+                window.carousels[containerId] = new CarouselManager(
+                    containerId,
+                    10, // 10 items per page
+                    renderMovementItems
+                );
+            }
+
+            // Update items and render
+            window.carousels[containerId].setItems(movements);
+            window.carousels[containerId].render();
+        }
+
+        // Render function for movement items
+        function renderMovementItems(movements) {
+            if (movements.length === 0) {
+                return '<p class="text-center text-slate-500 text-sm py-4">No hay movimientos registrados</p>';
+            }
+
+            return movements.map(movement => {
+                const date = new Date(movement.timestamp);
+                const hours = date.getHours() % 12 || 12;
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const period = date.getHours() >= 12 ? 'PM' : 'AM';
+                const timeStr = `${hours}:${minutes} ${period} `;
+
+                const isIncoming = movement.tipo === 'incoming';
+                const typeText = isIncoming ? 'Entrante' : 'Saliente';
+                const typeColor = isIncoming ? 'emerald' : 'amber';
+                const icon = isIncoming ? 'south_east' : 'north_east';
+                const obraName = movement.obras?.nombre || 'Sin obra';
+                const truckName = movement.camiones?.nombre || movement.camion_nombre || 'Sin nombre';
+                const truckPlate = movement.camiones?.patente || movement.camion_patente || 'Sin patente';
+
+                const materialName = `${movement.material || 'Sin material'} ${movement.destino ? `➜ <span class="text-primary font-bold">${movement.destino}</span>` : ''}`;
+                const locationInfo = `${movement.ubicacion || 'Sin especificar'} • ${obraName}`;
+
+                return `
+                    <div class="glass-card rounded-2xl p-4 mb-3 border-l-4 border-l-${typeColor}-500 neon-shadow fade-in border border-border">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-${typeColor}-500 text-[18px]">${icon}</span>
+                                <span class="text-main text-xs font-black uppercase tracking-wider">${truckName}</span>
+                            </div>
+                            <span class="text-text-muted text-[10px] font-bold">${timeStr}</span>
+                        </div>
+                        <div class="flex justify-between items-end">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-main text-[12px] font-medium truncate">${materialName}</p>
+                                <p class="text-text-muted text-[10px] font-semibold truncate leading-tight mt-0.5 uppercase tracking-wide">${locationInfo}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="text-${typeColor}-500 font-black text-lg">${isIncoming ? '+' : '-'}${parseFloat(movement.capacidad).toFixed(0)}<span class="text-[10px] ml-0.5">m³</span></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        async function init() {
+            updateDate();
+            await loadObras();
+            await window.loadDashboard(true);
+
+            // Fetch user info for Ajustes
+            const { data } = await supabaseClient.auth.getSession();
+            window.bossDashboardService.cachedSession = data.session;
+            updateAjustesView();
+
+            // Real-time subscription
+            realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
+                showUpdateIndicator();
+                await window.loadDashboard(true);
+            });
+
+            // Auto-refresh every 30s
+            setInterval(() => window.loadDashboard(false), 30000);
+        }
+
+        // Cleanup
+        window.addEventListener('beforeunload', () => {
+            if (realtimeChannel) {
+                bossDashboardService.unsubscribe(realtimeChannel);
+            }
+        });
+
+        init();
+    </script>
+</body>
+
+</html>

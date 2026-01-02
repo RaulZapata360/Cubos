@@ -1,0 +1,2 @@
+id,obra_id,nombre,patente,capacidad,tipo_registrado,contador_entrante,contador_saliente,created_at,updated_at
+5613f505-c184-4244-83cb-518bfc27c121,f9a3f344-c107-460f-87f3-433e1ca0327a,ROJO,AC00DC,20.00,outgoing,0,0,2025-12-28 21:42:44.445039+00,2025-12-28 21:42:44.445039+00

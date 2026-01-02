@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial - Conteo de Camiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Session verification
+        const userRole = sessionStorage.getItem('userRole');
+        if (!userRole) {
+            window.location.href = 'login.html';
+        }
+    </script>
+</head>
+
+<body>
+    <div class="mobile-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>📚 Historial de Reportes</h1>
+                    <p class="date" id="currentDate"></p>
+                </div>
+                <button onclick="logout()"
+                    style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600;">
+                    Salir
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px; padding: 0 16px;" id="navigationButtons">
+            <!-- Buttons will be populated by JavaScript based on user role -->
+        </div>
+
+        <script>
+            // Populate navigation buttons based on user role
+            const navButtons = document.getElementById('navigationButtons');
+            const navUserRole = sessionStorage.getItem('userRole');
+
+            if (navUserRole === 'counter') {
+                navButtons.innerHTML = `
+                    <button onclick="window.location.href='index.html'"
+                        style="flex: 1; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px; font-weight: 600;">
+                        ← Volver al Contador
+                    </button>
+                    <button onclick="window.location.href='boss.html'"
+                        style="flex: 1; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px; font-weight: 600;">
+                        Dashboard Ejecutivo
+                    </button>
+                `;
+            } else if (navUserRole === 'boss') {
+                navButtons.innerHTML = `
+                    <button onclick="window.location.href='boss.html'"
+                        style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary); cursor: pointer; font-size: 13px; font-weight: 600;">
+                        ← Volver al Dashboard
+                    </button>
+                `;
+            }
+        </script>
+
+        <!-- Archive Current Day Button -->
+        <div style="padding: 0 16px; margin-bottom: 20px;">
+            <button onclick="historyManager.archiveCurrentDay()"
+                style="width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%); border: none; border-radius: 12px; color: white; cursor: pointer; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-md);">
+                📦 Archivar Día Actual
+            </button>
+        </div>
+
+        <!-- History List -->
+        <div style="padding: 0 16px;">
+            <div id="historyList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Logout function
+        function logout() {
+            sessionStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Update date
+        const dateElement = document.getElementById('currentDate');
+        const today = new Date();
+        dateElement.textContent = today.toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+    </script>
+    <script src="history-app.js"></script>
+</body>
+
+</html>
