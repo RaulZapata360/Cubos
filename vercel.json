@@ -1,5 +1,8 @@
 {
-    "buildCommand": "echo 'No build needed'",
-    "outputDirectory": "WEB",
-    "installCommand": "echo 'No install needed'"
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/WEB/$1"
+        }
+    ]
 }
