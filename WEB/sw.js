@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cubos-v2-cache-v11';
+const CACHE_NAME = 'cubos-v2-cache-v12';
 const ASSETS_TO_CACHE = [
     '/login.html',
     '/boss.html',
