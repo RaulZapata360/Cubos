@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.5</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.6</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1655,18 +1655,33 @@
             const dateStr = targetDate.toISOString().split('T')[0];
 
             container.innerHTML = trucks.map(truck => {
-                // Filter movements already stored in 'movements' (which are for dateStr)
+                // Filter movements for this truck today
                 const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
                 const inc = truckDayMovs.filter(m => m.tipo === 'incoming').length;
                 const out = truckDayMovs.filter(m => m.tipo === 'outgoing').length;
 
-                const type = (truck.tipo_registrado || '').toLowerCase();
-                let borderColor = 'border-l-primary';
-                if (type === 'incoming') borderColor = 'border-l-success';
-                if (type === 'outgoing') borderColor = 'border-l-warning';
+                // Determine effective type for today
+                let effectiveType = (truck.tipo_registrado || 'outgoing').toLowerCase();
+
+                if (inc > 0 && out > 0) {
+                    effectiveType = 'mixed';
+                } else if (inc > 0) {
+                    effectiveType = (truck.tipo_registrado === 'mixed' || out > 0) ? 'mixed' : 'incoming';
+                } else if (out > 0) {
+                    effectiveType = (truck.tipo_registrado === 'mixed' || inc > 0) ? 'mixed' : 'outgoing';
+                }
+
+                // If it has NO movements today, use its registered type
+                if (inc === 0 && out === 0) {
+                    effectiveType = (truck.tipo_registrado || 'outgoing').toLowerCase();
+                }
+
+                let borderColor = 'border-l-primary'; // Primary for Mixed
+                if (effectiveType === 'incoming') borderColor = 'border-l-success';
+                if (effectiveType === 'outgoing') borderColor = 'border-l-warning';
 
                 return `
-                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${type}">
+                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${effectiveType}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-lg font-black text-white/50">
@@ -1716,15 +1731,29 @@
                 `;
             }).join('');
 
-            // Update filter counts
-            const countAll = trucks.length;
-            const countIncoming = trucks.filter(t => t.tipo_registrado === 'incoming').length;
-            const countOutgoing = trucks.filter(t => t.tipo_registrado === 'outgoing').length;
-            const countMixed = trucks.filter(t => t.tipo_registrado === 'mixed').length;
+            // Update filter counts by counting the cards actually rendered with those data-types
+            const renderedCards = container.querySelectorAll('.truck-card-new');
+            let countIncoming = 0;
+            let countOutgoing = 0;
+            let countMixed = 0;
+
+            renderedCards.forEach(card => {
+                const t = card.dataset.type;
+                if (t === 'incoming') countIncoming++;
+                else if (t === 'outgoing') countOutgoing++;
+                else if (t === 'mixed') countMixed++;
+            });
 
             document.getElementById('countIncoming').textContent = countIncoming;
             document.getElementById('countOutgoing').textContent = countOutgoing;
             document.getElementById('countMixed').textContent = countMixed;
+
+            // Maintain current filter
+            const activeTab = document.querySelector('.truck-filter-tab-new.text-main');
+            if (activeTab) {
+                const currentFilter = activeTab.dataset.type;
+                window.filterTrucksByType(currentFilter);
+            }
         }
 
         // Toggle truck menu dropdown

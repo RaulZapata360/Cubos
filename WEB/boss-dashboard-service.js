@@ -28,16 +28,21 @@ class BossDashboardService {
         }
     }
 
-    // Obtener todos los camiones de todas las obras
-    async getAllCamiones() {
+    // Obtener todos los camiones de todas las obras de un día específico
+    async getAllCamiones(dateStr = null) {
         try {
-            const { data, error } = await supabaseClient
+            let query = supabaseClient
                 .from('camiones')
                 .select(`
                     *,
                     obras (nombre)
-                `)
-                .order('obra_id');
+                `);
+
+            if (dateStr) {
+                query = query.eq('nomina_fecha', dateStr);
+            }
+
+            const { data, error } = await query.order('obra_id');
 
             if (error) throw error;
             return data || [];
@@ -90,10 +95,15 @@ class BossDashboardService {
         }
 
         try {
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + dayOffset);
+            const dateStr = this.getYMD(targetDate);
+
             // Obtener todos los datos en paralelo
             const [obras, camiones, movements] = await Promise.all([
                 this.getAllObras(),
-                this.getAllCamiones(),
+                this.getAllCamiones(dateStr),
                 this.getTodayMovements(dayOffset)
             ]);
 
