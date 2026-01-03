@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.2.0</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.2.1</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1542,13 +1542,15 @@
                     const currentMode = pendingTripMode;
                     const truck = trucks.find(t => t.id === truckId);
 
-                    // Contextual Type Upgrade: If adding from selector, upgrade to mixed if needed
+                    // Mission Assignment: If adding from a specific selector, assign that mission to the truck
+                    // This allows "switching" missions without making everything 'mixed'
                     if (truck) {
-                        const currentReg = (truck.tipo_registrado || 'mixed').toLowerCase();
+                        const currentReg = (truck.tipo_registrado || '').toLowerCase();
                         if (currentReg !== 'mixed' && currentReg !== currentMode) {
+                            console.log(`Switching truck mission to ${currentMode}:`, truckId);
                             await supabaseClient
                                 .from('camiones')
-                                .update({ tipo_registrado: 'mixed' })
+                                .update({ tipo_registrado: currentMode })
                                 .eq('id', truckId);
                             // Refresh local truck data
                             await loadTrucks();
@@ -2096,13 +2098,13 @@
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
-            // Selector Intelligence: Show if registered OR active today in this mode
+            // Strict Mission Selector: Show only trucks matching the mode OR registered as mixed
             const filteredTrucks = trucks.filter(truck => {
-                const hasAct = (movements || []).some(m => m.camion_id === truck.id && m.tipo === tipo);
+                const reg = (truck.tipo_registrado || '').toLowerCase();
                 if (tipo === 'incoming') {
-                    return truck.tipo_registrado === 'incoming' || truck.tipo_registrado === 'mixed' || hasAct;
+                    return reg === 'incoming' || reg === 'mixed';
                 } else {
-                    return truck.tipo_registrado === 'outgoing' || truck.tipo_registrado === 'mixed' || hasAct;
+                    return reg === 'outgoing' || reg === 'mixed';
                 }
             });
 
@@ -2530,15 +2532,16 @@
 
                 if (error) throw error;
 
-                // Automatic Type Upgrade: If a truck does something different, make it Mixed
+                // Mission Reinforcement: If a truck performs a mission, ensure it matches its type
+                // (Optional: Only if NOT mixed. We avoid auto-upgrading to mixed here to keep separation)
                 const truck = trucks.find(t => t.id === camionId);
                 if (truck) {
-                    const currentReg = (truck.tipo_registrado || 'mixed').toLowerCase();
+                    const currentReg = (truck.tipo_registrado || '').toLowerCase();
                     if (currentReg !== 'mixed' && currentReg !== tipo) {
-                        console.log('Upgrading truck for multi-purpose activity:', camionId);
+                        console.log(`Reaffirming truck mission as ${tipo}:`, camionId);
                         await supabaseClient
                             .from('camiones')
-                            .update({ tipo_registrado: 'mixed' })
+                            .update({ tipo_registrado: tipo })
                             .eq('id', camionId);
                         // Refresh local truck data
                         await loadTrucks();
