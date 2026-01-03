@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.3.2</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.4.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1143,21 +1143,32 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Operación
                                 Habitual</label>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-2">
                                 <label class="cursor-pointer">
                                     <input type="radio" name="truckType" value="incoming" class="peer sr-only" checked>
                                     <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-success/20 peer-checked:border-success transition-all text-center">
-                                        <div class="text-2xl mb-1">📥</div>
-                                        <div class="text-xs font-bold text-white">Relleno</div>
+                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-success/20 peer-checked:border-success transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <div class="text-xl mb-1">📥</div>
+                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">Relleno
+                                        </div>
                                     </div>
                                 </label>
                                 <label class="cursor-pointer">
                                     <input type="radio" name="truckType" value="outgoing" class="peer sr-only">
                                     <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-warning/20 peer-checked:border-warning transition-all text-center">
-                                        <div class="text-2xl mb-1">📤</div>
-                                        <div class="text-xs font-bold text-white">Excavación</div>
+                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-warning/20 peer-checked:border-warning transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <div class="text-xl mb-1">📤</div>
+                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">
+                                            Excavación</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="truckType" value="mixed" class="peer sr-only">
+                                    <div
+                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-secondary/20 peer-checked:border-secondary transition-all text-center h-full flex flex-col items-center justify-center">
+                                        <div class="text-xl mb-1">🔄</div>
+                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">Mixto
+                                        </div>
                                     </div>
                                 </label>
                             </div>
