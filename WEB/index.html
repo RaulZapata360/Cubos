@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.8</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.9</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1327,6 +1327,7 @@
 
         // Filter trucks by type
         // Updated filter logic: Mixed trucks appear in both Excavation and Relleno
+        // Also trucks with activity today in THAT category should show up
         window.filterTrucksByType = function (type) {
             const buttons = document.querySelectorAll('.truck-filter-tab-new');
             buttons.forEach(btn => {
@@ -1341,17 +1342,22 @@
 
             const cards = document.querySelectorAll('.truck-card-new');
             cards.forEach(card => {
-                const truckRegType = card.dataset.type; // This is the tipo_registrado
+                const regType = card.dataset.regType;
+                const inc = parseInt(card.dataset.inc || '0');
+                const out = parseInt(card.dataset.out || '0');
+
                 if (type === 'mixed') {
-                    if (truckRegType === 'mixed') card.style.display = 'block';
+                    // Show if registered as mixed OR has activity in both
+                    if (regType === 'mixed' || (inc > 0 && out > 0)) card.style.display = 'block';
                     else card.style.display = 'none';
-                } else {
-                    // Show if specific match OR if the truck is mixed
-                    if (truckRegType === type || truckRegType === 'mixed') {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
+                } else if (type === 'incoming') {
+                    // Show if registered as incoming/mixed OR has activity as incoming
+                    if (regType === 'incoming' || regType === 'mixed' || inc > 0) card.style.display = 'block';
+                    else card.style.display = 'none';
+                } else if (type === 'outgoing') {
+                    // Show if registered as outgoing/mixed OR has activity as outgoing
+                    if (regType === 'outgoing' || regType === 'mixed' || out > 0) card.style.display = 'block';
+                    else card.style.display = 'none';
                 }
             });
         };
@@ -1536,6 +1542,19 @@
                     const currentMode = pendingTripMode;
                     const truck = trucks.find(t => t.id === truckId);
 
+                    // Contextual Type Upgrade: If adding from selector, upgrade to mixed if needed
+                    if (truck) {
+                        const currentReg = (truck.tipo_registrado || 'mixed').toLowerCase();
+                        if (currentReg !== 'mixed' && currentReg !== currentMode) {
+                            await supabaseClient
+                                .from('camiones')
+                                .update({ tipo_registrado: 'mixed' })
+                                .eq('id', truckId);
+                            // Refresh local truck data
+                            await loadTrucks();
+                        }
+                    }
+
                     // Clear the pending mode before opening next modal to avoid loops
                     pendingTripMode = null;
 
@@ -1657,12 +1676,10 @@
             const dateStr = targetDate.toISOString().split('T')[0];
 
             container.innerHTML = trucks.map(truck => {
-                // Filter movements for this truck today (only for counts)
                 const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
                 const inc = truckDayMovs.filter(m => m.tipo === 'incoming').length;
                 const out = truckDayMovs.filter(m => m.tipo === 'outgoing').length;
 
-                // For the UI, we follow the REGISTERED TYPE
                 const regType = (truck.tipo_registrado || 'outgoing').toLowerCase();
 
                 let borderColor = 'border-l-primary'; // Mixed
@@ -1670,7 +1687,8 @@
                 if (regType === 'outgoing') borderColor = 'border-l-warning';
 
                 return `
-                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${regType}">
+                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" 
+                         data-reg-type="${regType}" data-inc="${inc}" data-out="${out}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-lg font-black text-white/50">
@@ -1720,10 +1738,22 @@
                 `;
             }).join('');
 
-            // Update filter counts based on registered type
-            const countIncoming = trucks.filter(t => t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed').length;
-            const countOutgoing = trucks.filter(t => t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed').length;
-            const countMixed = trucks.filter(t => t.tipo_registrado === 'mixed').length;
+            // Update filter counts based on registration OR activity
+            const countIncoming = trucks.filter(t => {
+                const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
+                return t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed' || hasAct;
+            }).length;
+
+            const countOutgoing = trucks.filter(t => {
+                const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
+                return t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed' || hasAct;
+            }).length;
+
+            const countMixed = trucks.filter(t => {
+                const hasInc = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
+                const hasOut = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
+                return t.tipo_registrado === 'mixed' || (hasInc && hasOut);
+            }).length;
 
             document.getElementById('countIncoming').textContent = countIncoming;
             document.getElementById('countOutgoing').textContent = countOutgoing;
@@ -2059,15 +2089,13 @@
                 ? '<span class="text-success material-symbols-outlined">south_east</span> Selección (Relleno)'
                 : '<span class="text-warning material-symbols-outlined">north_east</span> Selección (Excavación)';
 
-            modal.classList.remove('hidden');
-            modal.classList.add('active');
-
-            // Filter trucks based on the trip type being registered
+            // Selector Intelligence: Show if registered OR active today in this mode
             const filteredTrucks = trucks.filter(truck => {
+                const hasAct = (movements || []).some(m => m.camion_id === truck.id && m.tipo === tipo);
                 if (tipo === 'incoming') {
-                    return truck.tipo_registrado === 'incoming' || truck.tipo_registrado === 'mixed';
+                    return truck.tipo_registrado === 'incoming' || truck.tipo_registrado === 'mixed' || hasAct;
                 } else {
-                    return truck.tipo_registrado === 'outgoing' || truck.tipo_registrado === 'mixed';
+                    return truck.tipo_registrado === 'outgoing' || truck.tipo_registrado === 'mixed' || hasAct;
                 }
             });
 
@@ -2075,8 +2103,8 @@
                 list.innerHTML = `
                     <div class="text-center py-12 px-6">
                         <span class="material-symbols-outlined text-4xl text-slate-600 mb-2">info</span>
-                        <p class="text-slate-400 text-sm">No hay camiones de ${tipo === 'incoming' ? 'Relleno' : 'Excavación'} hoy.</p>
-                        <p class="text-slate-500 text-[10px] mt-2 italic uppercase">Usa "Recientes" para habilitar uno.</p>
+                        <p class="text-slate-400 text-sm">No hay camiones habilitados para ${tipo === 'incoming' ? 'Relleno' : 'Excavación'}.</p>
+                        <p class="text-slate-500 text-[10px] mt-2 italic uppercase">Usa "Recientes" para activar uno de la nómina general.</p>
                     </div>
                  `;
             } else {
@@ -2495,6 +2523,20 @@
 
                 if (error) throw error;
 
+                // Automatic Type Upgrade: If a truck does something different, make it Mixed
+                const truck = trucks.find(t => t.id === camionId);
+                if (truck) {
+                    const currentReg = (truck.tipo_registrado || 'mixed').toLowerCase();
+                    if (currentReg !== 'mixed' && currentReg !== tipo) {
+                        console.log('Upgrading truck for multi-purpose activity:', camionId);
+                        await supabaseClient
+                            .from('camiones')
+                            .update({ tipo_registrado: 'mixed' })
+                            .eq('id', camionId);
+                        // Refresh local truck data
+                        await loadTrucks();
+                    }
+                }
 
                 // Audio/Visual Feedback (simple)
                 if (navigator.vibrate) navigator.vibrate(50);
