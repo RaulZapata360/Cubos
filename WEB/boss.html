@@ -14,6 +14,7 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="avatar-icons.js"></script>
 
     <script>
         // Immediate auth check to avoid flicker
@@ -1031,20 +1032,13 @@
                 </div>
                 <form id="editProfileForm" class="space-y-4">
                     <div class="flex flex-col items-center mb-6">
-                        <div class="relative group cursor-pointer"
-                            onclick="document.getElementById('avatarInput').click()">
+                        <div class="relative">
                             <img id="editUserAvatar"
                                 src="https://ui-avatars.com/api/?name=User&background=5048e5&color=fff&size=256"
-                                class="w-24 h-24 rounded-full border-4 border-primary/30 object-cover shadow-xl group-hover:opacity-75 transition-all">
-                            <div
-                                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <span class="material-symbols-outlined text-white text-3xl">photo_camera</span>
-                            </div>
-                            <input type="file" id="avatarInput" class="hidden" accept="image/*"
-                                onchange="previewAvatar(this)">
+                                class="w-24 h-24 rounded-full border-4 border-primary/30 object-cover shadow-xl">
                         </div>
-                        <p class="text-[10px] text-text-muted mt-2 font-bold uppercase tracking-wider">Toca para cambiar
-                            foto</p>
+                        <p class="text-[10px] text-text-muted mt-2 font-bold uppercase tracking-wider">Icono de perfil
+                        </p>
                     </div>
                     <div>
                         <label
@@ -1170,7 +1164,9 @@
 
             document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
             document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || 'Supervisor de Obra';
-            document.getElementById('editUserAvatar').src = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=5048e5&color=fff&size=256`;
+            // Use role-based avatar
+            const cargo = user.user_metadata?.cargo || 'default';
+            document.getElementById('editUserAvatar').src = window.AvatarIcons?.getUrl(cargo) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=5048e5&color=fff&size=256`;
 
             document.getElementById('editProfileModal').classList.remove('hidden');
         };
@@ -1179,15 +1175,7 @@
             document.getElementById('editProfileModal').classList.add('hidden');
         };
 
-        window.previewAvatar = function (input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('editUserAvatar').src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        };
+        // Photo upload removed - using role-based avatars only
 
         window.updateAjustesView = function () {
             const { user } = bossDashboardService.cachedSession || {};
