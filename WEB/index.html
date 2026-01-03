@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.4</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.5</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1611,7 +1611,7 @@
                 const { data, error } = await supabaseClient
                     .from('destinos')
                     .select('*')
-                    .eq('obra_id', currentObraId)
+                    // Removed obra_id filter to allow sharing between works
                     .order('nombre');
 
                 if (error) throw error;
@@ -1626,7 +1626,7 @@
                 const { data, error } = await supabaseClient
                     .from('origenes')
                     .select('*')
-                    .eq('obra_id', currentObraId)
+                    // Removed obra_id filter to allow sharing between works
                     .order('nombre');
 
                 if (error) throw error;
@@ -1857,7 +1857,19 @@
                                         </div>
                                     ` : ''}
                                 </div>
-                                ${mov.ubicacion ? `<div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">location_on</span> ${mov.ubicacion}</div>` : ''}
+                                 ${mov.origen ? `
+                                    <div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[10px] text-emerald-400">fountain_pen_tip</span> 
+                                        <span class="text-emerald-400/80 font-bold uppercase">Origen:</span> ${mov.origen}
+                                    </div>
+                                ` : ''}
+                                ${mov.destino ? `
+                                    <div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-[10px] text-warning">location_on</span> 
+                                        <span class="text-warning/80 font-bold uppercase">Destino:</span> ${mov.destino}
+                                    </div>
+                                ` : ''}
+                                ${mov.ubicacion && !mov.origen && !mov.destino ? `<div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">location_on</span> ${mov.ubicacion}</div>` : ''}
                             </div>
                         </div>
                          <div class="flex flex-col items-end">
@@ -2280,10 +2292,14 @@
             modal.classList.add('active');
 
             let html = '';
-            if (destinos.length === 0) {
+            // Filter unique names to avoid duplicates since we load from all works
+            const uniqueDestinos = Array.from(new Set(destinos.map(d => d.nombre)))
+                .map(nombre => destinos.find(d => d.nombre === nombre));
+
+            if (uniqueDestinos.length === 0) {
                 html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin destinos previos</div>';
             } else {
-                html = destinos.map(dest => `
+                html = uniqueDestinos.map(dest => `
                     <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
                          onclick="finalRegisterAndClose('${camionId}', '${tipo}', ${capacidad}, '${material}', '${dest.nombre}', '${ubicacion}')">
                         <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-1">
@@ -2347,10 +2363,14 @@
             modal.classList.add('active');
 
             let html = '';
-            if (origenes.length === 0) {
+            // Filter unique names to avoid duplicates since we load from all works
+            const uniqueOrigenes = Array.from(new Set(origenes.map(o => o.nombre)))
+                .map(nombre => origenes.find(o => o.nombre === nombre));
+
+            if (uniqueOrigenes.length === 0) {
                 html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin orígenes previos</div>';
             } else {
-                html = origenes.map(orig => `
+                html = uniqueOrigenes.map(orig => `
                     <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
                          onclick="finalRegisterAndCloseOrigen('${camionId}', '${tipo}', ${capacidad}, '${material}', '${orig.nombre}', '${ubicacion}')">
                         <div class="w-10 h-10 rounded-full bg-emerald-400/20 flex items-center justify-center text-emerald-400 mb-1">
