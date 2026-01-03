@@ -1056,15 +1056,13 @@
                     </div>
                     <div>
                         <label
-                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Icono
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3 ml-1">Icono
                             de Perfil</label>
-                        <select id="editUserAvatarIcon" name="avatarIcon" onchange="updateAvatarPreview(this.value)"
-                            class="w-full px-4 py-3 bg-item border border-border rounded-xl text-main font-bold focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
-                            <option value="Gerente">👔 Gerente</option>
-                            <option value="Contador">📊 Contador</option>
-                            <option value="Supervisor">👷 Supervisor</option>
-                            <option value="Secretaria">💼 Secretaria</option>
-                        </select>
+                        <input type="hidden" id="editUserAvatarIcon" name="avatarIcon">
+                        <div id="avatarGalleryGrid"
+                            class="grid grid-cols-4 gap-3 bg-item/50 p-4 rounded-2xl border border-border">
+                            <!-- Los iconos se cargarán dinámicamente -->
+                        </div>
                     </div>
                     <div class="flex gap-3 pt-6">
                         <button type="button" onclick="closeEditProfileModal()"
@@ -1177,10 +1175,8 @@
             document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
             document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || '';
 
-            // Load selected avatar icon (default to Gerente if not set)
-            const avatarIcon = user.user_metadata?.avatarIcon || 'Gerente';
-            document.getElementById('editUserAvatarIcon').value = avatarIcon;
-            document.getElementById('editUserAvatar').src = window.AvatarIcons?.getUrl(avatarIcon) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=5048e5&color=fff&size=256`;
+            const currentIcon = user.user_metadata?.avatarIcon || 'gerente_m';
+            renderAvatarGallery(currentIcon);
 
             document.getElementById('editProfileModal').classList.remove('hidden');
         };
@@ -1189,11 +1185,28 @@
             document.getElementById('editProfileModal').classList.add('hidden');
         };
 
-        window.updateAvatarPreview = function (cargo) {
-            const avatarUrl = window.AvatarIcons?.getUrl(cargo);
-            if (avatarUrl) {
-                document.getElementById('editUserAvatar').src = avatarUrl;
-            }
+        function renderAvatarGallery(selectedId) {
+            const grid = document.getElementById('avatarGalleryGrid');
+            const icons = window.AvatarIcons.getGallery();
+
+            grid.innerHTML = icons.map(icon => `
+                <div onclick="selectAvatarIcon('${icon.id}')" 
+                     class="avatar-option cursor-pointer group relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${icon.id === selectedId ? 'border-primary ring-2 ring-primary/20 scale-95' : 'border-transparent hover:border-white/20'}">
+                    <img src="${icon.path}" class="w-full h-full object-cover">
+                    ${icon.id === selectedId ? `
+                        <div class="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white text-sm font-bold">check_circle</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            document.getElementById('editUserAvatarIcon').value = selectedId;
+            document.getElementById('editUserAvatar').src = window.AvatarIcons.getUrl(selectedId);
+        }
+
+        window.selectAvatarIcon = function (id) {
+            renderAvatarGallery(id);
         };
 
         // Photo upload removed - using role-based avatars only

@@ -1,38 +1,46 @@
-// Avatar Icons System - Role-based profile pictures
+/**
+ * Sistema de Avatares para Cubos V2
+ * Centraliza la lógica de iconos de perfil para toda la aplicación.
+ */
+
 const AVATAR_PATHS = {
-    'Gerente': 'assets/avatars/gerente.png',
-    'Contador': 'assets/avatars/contador.png',
-    'Supervisor': 'assets/avatars/supervisor.png',
-    'Secretaria': 'assets/avatars/secretaria.png',
+    // Definiciones básicas para compatibilidad
+    'Gerente': 'assets/avatars/gallery/gerente_m.png',
+    'Contador': 'assets/avatars/gallery/contador_f.png',
+    'Supervisor': 'assets/avatars/gallery/supervisor_m.png',
+    'Secretaria': 'assets/avatars/gallery/secretaria_f.png',
     'default': 'https://ui-avatars.com/api/?name=User&background=5048e5&color=fff&size=256'
 };
 
-/**
- * Get avatar URL for a given cargo/role
- * @param {string} cargo - User's role (Gerente, Contador, Supervisor, Secretaria)
- * @returns {string} - URL to avatar image
- */
-function getAvatarUrl(cargo) {
-    return AVATAR_PATHS[cargo] || AVATAR_PATHS['default'];
-}
+// Galería completa de iconos disponibles
+const AVATAR_GALLERY = [
+    { id: 'gerente_m', path: 'assets/avatars/gallery/gerente_m.png', label: 'Gerente M' },
+    { id: 'gerente_f', path: 'assets/avatars/gallery/gerente_f.png', label: 'Gerente F' },
+    { id: 'contador_m', path: 'assets/avatars/gallery/contador_m.png', label: 'Contador M' },
+    { id: 'contador_f', path: 'assets/avatars/gallery/contador_f.png', label: 'Contador F' },
+    { id: 'supervisor_m', path: 'assets/avatars/gallery/supervisor_m.png', label: 'Supervisor M' },
+    { id: 'supervisor_f', path: 'assets/avatars/gallery/supervisor_f.png', label: 'Supervisor F' },
+    { id: 'secretaria_m', path: 'assets/avatars/gallery/secretaria_m.png', label: 'Secretario' },
+    { id: 'secretaria_f', path: 'assets/avatars/gallery/secretaria_f.png', label: 'Secretaria' }
+];
 
-/**
- * Update avatar image element with role-based icon
- * @param {string} elementId - ID of the img element to update
- * @param {string} cargo - User's role
- */
-function updateAvatarIcon(elementId, cargo) {
-    const element = document.getElementById(elementId);
-    if (element) {
-        element.src = getAvatarUrl(cargo);
+window.AvatarIcons = {
+    /**
+     * Obtiene la URL de un avatar por ID o Cargo
+     */
+    getUrl: function (idOrCargo) {
+        // Primero buscar en la galería por ID
+        const fromGallery = AVATAR_GALLERY.find(a => a.id === idOrCargo);
+        if (fromGallery) return fromGallery.path;
+
+        // Luego buscar en el mapeo de cargos
+        return AVATAR_PATHS[idOrCargo] || AVATAR_PATHS['default'];
+    },
+
+    /**
+     * Obtiene todos los iconos de la galería
+     */
+    getGallery: function () {
+        return AVATAR_GALLERY;
     }
-}
-
-// Export for use in other scripts
-if (typeof window !== 'undefined') {
-    window.AvatarIcons = {
-        getUrl: getAvatarUrl,
-        update: updateAvatarIcon,
-        PATHS: AVATAR_PATHS
-    };
-}
+};
