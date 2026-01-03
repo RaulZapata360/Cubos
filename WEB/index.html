@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.7</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.8</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1326,6 +1326,7 @@
         };
 
         // Filter trucks by type
+        // Updated filter logic: Mixed trucks appear in both Excavation and Relleno
         window.filterTrucksByType = function (type) {
             const buttons = document.querySelectorAll('.truck-filter-tab-new');
             buttons.forEach(btn => {
@@ -1340,12 +1341,13 @@
 
             const cards = document.querySelectorAll('.truck-card-new');
             cards.forEach(card => {
-                const truckType = card.dataset.type;
+                const truckRegType = card.dataset.type; // This is the tipo_registrado
                 if (type === 'mixed') {
-                    if (truckType === 'mixed') card.style.display = 'block';
+                    if (truckRegType === 'mixed') card.style.display = 'block';
                     else card.style.display = 'none';
                 } else {
-                    if (truckType === type || truckType === 'mixed') {
+                    // Show if specific match OR if the truck is mixed
+                    if (truckRegType === type || truckRegType === 'mixed') {
                         card.style.display = 'block';
                     } else {
                         card.style.display = 'none';
@@ -1655,33 +1657,20 @@
             const dateStr = targetDate.toISOString().split('T')[0];
 
             container.innerHTML = trucks.map(truck => {
-                // Filter movements for this truck today
+                // Filter movements for this truck today (only for counts)
                 const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
                 const inc = truckDayMovs.filter(m => m.tipo === 'incoming').length;
                 const out = truckDayMovs.filter(m => m.tipo === 'outgoing').length;
 
-                // Determine effective type for today
-                let effectiveType = (truck.tipo_registrado || 'outgoing').toLowerCase();
+                // For the UI, we follow the REGISTERED TYPE
+                const regType = (truck.tipo_registrado || 'outgoing').toLowerCase();
 
-                if (inc > 0 && out > 0) {
-                    effectiveType = 'mixed';
-                } else if (inc > 0) {
-                    effectiveType = (truck.tipo_registrado === 'mixed' || out > 0) ? 'mixed' : 'incoming';
-                } else if (out > 0) {
-                    effectiveType = (truck.tipo_registrado === 'mixed' || inc > 0) ? 'mixed' : 'outgoing';
-                }
-
-                // If it has NO movements today, use its registered type
-                if (inc === 0 && out === 0) {
-                    effectiveType = (truck.tipo_registrado || 'outgoing').toLowerCase();
-                }
-
-                let borderColor = 'border-l-primary'; // Primary for Mixed
-                if (effectiveType === 'incoming') borderColor = 'border-l-success';
-                if (effectiveType === 'outgoing') borderColor = 'border-l-warning';
+                let borderColor = 'border-l-primary'; // Mixed
+                if (regType === 'incoming') borderColor = 'border-l-success';
+                if (regType === 'outgoing') borderColor = 'border-l-warning';
 
                 return `
-                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${effectiveType}">
+                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${regType}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-lg font-black text-white/50">
@@ -1731,24 +1720,10 @@
                 `;
             }).join('');
 
-            // Update filter counts by counting the cards actually rendered
-            const renderedCards = container.querySelectorAll('.truck-card-new');
-            let countIncoming = 0;
-            let countOutgoing = 0;
-            let countMixed = 0;
-
-            renderedCards.forEach(card => {
-                const t = card.dataset.type;
-                if (t === 'mixed') {
-                    countMixed++;
-                    countIncoming++;
-                    countOutgoing++;
-                } else if (t === 'incoming') {
-                    countIncoming++;
-                } else if (t === 'outgoing') {
-                    countOutgoing++;
-                }
-            });
+            // Update filter counts based on registered type
+            const countIncoming = trucks.filter(t => t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed').length;
+            const countOutgoing = trucks.filter(t => t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed').length;
+            const countMixed = trucks.filter(t => t.tipo_registrado === 'mixed').length;
 
             document.getElementById('countIncoming').textContent = countIncoming;
             document.getElementById('countOutgoing').textContent = countOutgoing;
@@ -1894,7 +1869,7 @@
                                 </div>
                                  ${mov.origen ? `
                                     <div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-[10px] text-emerald-400">fountain_pen_tip</span> 
+                                        <span class="material-symbols-outlined text-[10px] text-emerald-400">home_pin</span> 
                                         <span class="text-emerald-400/80 font-bold uppercase">Origen:</span> ${mov.origen}
                                     </div>
                                 ` : ''}
@@ -2087,17 +2062,25 @@
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
-            // Improved Professional List
-            if (trucks.length === 0) {
+            // Filter trucks based on the trip type being registered
+            const filteredTrucks = trucks.filter(truck => {
+                if (tipo === 'incoming') {
+                    return truck.tipo_registrado === 'incoming' || truck.tipo_registrado === 'mixed';
+                } else {
+                    return truck.tipo_registrado === 'outgoing' || truck.tipo_registrado === 'mixed';
+                }
+            });
+
+            if (filteredTrucks.length === 0) {
                 list.innerHTML = `
                     <div class="text-center py-12 px-6">
                         <span class="material-symbols-outlined text-4xl text-slate-600 mb-2">info</span>
-                        <p class="text-slate-400 text-sm">No hay camiones en la nómina de hoy.</p>
-                        <p class="text-slate-500 text-[10px] mt-2 italic uppercase">Usa el botón "Recientes" o "Nuevo" para activarlos.</p>
+                        <p class="text-slate-400 text-sm">No hay camiones de ${tipo === 'incoming' ? 'Relleno' : 'Excavación'} hoy.</p>
+                        <p class="text-slate-500 text-[10px] mt-2 italic uppercase">Usa "Recientes" para habilitar uno.</p>
                     </div>
                  `;
             } else {
-                list.innerHTML = trucks.map(truck => `
+                list.innerHTML = filteredTrucks.map(truck => `
                     <div class="glass-card p-3 rounded-xl flex items-center justify-between group hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-primary/30 active:scale-[0.98]" 
                          onclick="openMaterialSelector('${truck.id}', '${tipo}', ${truck.capacidad})">
                         <div class="flex items-center gap-3">
