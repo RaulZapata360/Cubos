@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.2.1</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.3.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -559,7 +559,45 @@
                     </div>
                 </section>
             </div>
-            <!-- End Tab: Análisis -->
+            <!-- Tab: Administración -->
+            <div id="tab-administracion" class="tab-content">
+                <section class="space-y-6 pb-32">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-black text-main tracking-tight uppercase">Administración</h2>
+                            <p class="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-0.5">Gestión de
+                                Flota Maestra</p>
+                        </div>
+                        <button onclick="openAddTruckModal()"
+                            class="bg-primary/20 text-primary border border-primary/30 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-primary/30 transition-all flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">add_circle</span>
+                            NUEVO
+                        </button>
+                    </div>
+
+                    <div class="glass-card p-5 rounded-2xl border border-border">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-accent">history</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-main leading-tight">Camiones Recientes</h3>
+                                <p class="text-[10px] font-bold text-text-muted uppercase">Todos los camiones
+                                    registrados
+                                    en esta obra</p>
+                            </div>
+                        </div>
+
+                        <div id="adminTruckList" class="space-y-3">
+                            <div class="text-center py-10">
+                                <span class="material-symbols-outlined text-3xl text-slate-700 animate-spin">sync</span>
+                                <p class="text-xs text-slate-500 mt-2">Cargando flota...</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Administración -->
         </main>
 
         <!-- Bottom Navigation -->
@@ -594,7 +632,7 @@
                             class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Log</span>
                     </div>
                 </button>
-                <button class="nav-item nav-item-new group relative px-6 py-3 rounded-xl transition-all duration-300"
+                <button class="nav-item nav-item-new group relative px-4 py-3 rounded-xl transition-all duration-300"
                     data-tab="analisis" onclick="switchTab('analisis')">
                     <div
                         class="absolute inset-0 bg-secondary/20 rounded-xl opacity-0 group-[.active]:opacity-100 transition-opacity blur-md">
@@ -605,6 +643,19 @@
                             class="material-symbols-outlined text-2xl text-text-muted group-[.active]:text-secondary transition-colors">equalizer</span>
                         <span
                             class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Análisis</span>
+                    </div>
+                </button>
+                <button class="nav-item nav-item-new group relative px-4 py-3 rounded-xl transition-all duration-300"
+                    data-tab="administracion" onclick="switchTab('administracion')">
+                    <div
+                        class="absolute inset-0 bg-primary/20 rounded-xl opacity-0 group-[.active]:opacity-100 transition-opacity blur-md">
+                    </div>
+                    <div
+                        class="relative z-10 flex flex-col items-center gap-1 group-[.active]:scale-110 transition-transform duration-300">
+                        <span
+                            class="material-symbols-outlined text-2xl text-text-muted group-[.active]:text-primary transition-colors">settings</span>
+                        <span
+                            class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Admin</span>
                     </div>
                 </button>
             </div>
@@ -1263,8 +1314,8 @@
                         }
                     });
 
-                    if (tabId === 'movimiento') loadMovements();
                     if (tabId === 'analisis') updateAnalytics();
+                    if (tabId === 'administracion') renderAdministration();
                 });
             });
 
@@ -1305,6 +1356,13 @@
             // Reset form for new truck
             currentEditingTruckId = null;
             document.getElementById('truckForm').reset();
+
+            // HEREDAR MISION - FIX
+            if (pendingTripMode) {
+                const radio = document.querySelector(`input[name="truckType"][value="${pendingTripMode}"]`);
+                if (radio) radio.checked = true;
+            }
+
             const modalTitle = document.querySelector('#truckModal h2');
             if (modalTitle) modalTitle.textContent = '➕ Registrar Nuevo Camión';
             document.getElementById('truckModal').classList.remove('hidden');
@@ -1322,12 +1380,101 @@
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
             });
-            document.getElementById(`tab-${tabName}`).classList.add('active');
+            const targetTab = document.getElementById(`tab-${tabName}`);
+            if (targetTab) targetTab.classList.add('active');
+
+            if (tabName === 'movimiento') loadMovements();
+            if (tabName === 'analisis') updateAnalytics();
+            if (tabName === 'administracion') renderAdministration();
+        };
+
+        // Render Administration View
+        window.renderAdministration = async function () {
+            const list = document.getElementById('adminTruckList');
+            if (!list) return;
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('camiones')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `
+                        <div class="text-center py-12">
+                            <span class="material-symbols-outlined text-4xl text-slate-700 mb-2">local_shipping</span>
+                            <p class="text-slate-500 text-sm">No hay camiones en el registro.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = data.map(truck => `
+                    <div class="bg-black/40 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-white/10 transition-all">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center font-black text-xs text-primary shadow-inner border border-white/5 uppercase">
+                                ${truck.nombre.substring(0, 2)}
+                            </div>
+                            <div>
+                                <h4 class="font-black text-main text-sm leading-tight">${truck.nombre}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] font-bold text-text-muted tracking-widest uppercase">${truck.patente}</span>
+                                    <span class="w-1 h-1 bg-white/20 rounded-full"></span>
+                                    <span class="text-[10px] font-bold text-accent uppercase tracking-widest">${truck.capacidad}m³</span>
+                                    <span class="w-1 h-1 bg-white/20 rounded-full"></span>
+                                    <span class="text-[10px] font-bold ${truck.tipo_registrado === 'mixed' ? 'text-secondary' : (truck.tipo_registrado === 'incoming' ? 'text-success' : 'text-warning')} uppercase tracking-widest">
+                                        ${truck.tipo_registrado === 'mixed' ? 'MIX' : (truck.tipo_registrado === 'incoming' ? 'ENT' : 'SAL')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="editTruckMaster('${truck.id}')" class="w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-white/70 transition-all">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button onclick="deleteTruckMaster('${truck.id}', '${truck.nombre}')" class="w-9 h-9 flex items-center justify-center rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-all">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                console.error('Error loading admin trucks:', err);
+                list.innerHTML = `<p class="text-center text-red-400 text-xs py-10">Error al cargar datos.</p>`;
+            }
+        };
+
+        window.editTruckMaster = function (id) {
+            window.editTruck(id);
+        };
+
+        window.deleteTruckMaster = async function (id, nombre) {
+            if (!confirm(`¿Estás seguro de eliminar el camión "${nombre}" de forma permanente del sistema? Se perderá este registro maestro.`)) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('camiones')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                if (navigator.vibrate) navigator.vibrate([30, 10, 30]);
+                await loadTrucks();
+                await renderAdministration();
+            } catch (err) {
+                console.error('Delete Error:', err);
+                alert('No se pudo eliminar: ' + err.message);
+            }
         };
 
         // Filter trucks by type
         // Updated filter logic: Mixed trucks appear in both Excavation and Relleno
-        // Also trucks with activity today in THAT category should show up
+        // Mission Strict Filtering: No more "auto-flexibility" overlap
         window.filterTrucksByType = function (type) {
             const buttons = document.querySelectorAll('.truck-filter-tab-new');
             buttons.forEach(btn => {
@@ -1342,21 +1489,19 @@
 
             const cards = document.querySelectorAll('.truck-card-new');
             cards.forEach(card => {
-                const regType = card.dataset.regType;
-                const inc = parseInt(card.dataset.inc || '0');
-                const out = parseInt(card.dataset.out || '0');
+                const regType = (card.dataset.regType || '').toLowerCase();
 
                 if (type === 'mixed') {
-                    // Show if registered as mixed OR has activity in both
-                    if (regType === 'mixed' || (inc > 0 && out > 0)) card.style.display = 'block';
+                    // Show ONLY registered mixed
+                    if (regType === 'mixed') card.style.display = 'block';
                     else card.style.display = 'none';
                 } else if (type === 'incoming') {
-                    // Show if registered as incoming/mixed OR has activity as incoming
-                    if (regType === 'incoming' || regType === 'mixed' || inc > 0) card.style.display = 'block';
+                    // Show ONLY registered incoming or mixed
+                    if (regType === 'incoming' || regType === 'mixed') card.style.display = 'block';
                     else card.style.display = 'none';
                 } else if (type === 'outgoing') {
-                    // Show if registered as outgoing/mixed OR has activity as outgoing
-                    if (regType === 'outgoing' || regType === 'mixed' || out > 0) card.style.display = 'block';
+                    // Show ONLY registered outgoing or mixed
+                    if (regType === 'outgoing' || regType === 'mixed') card.style.display = 'block';
                     else card.style.display = 'none';
                 }
             });
