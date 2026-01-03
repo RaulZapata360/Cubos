@@ -1051,8 +1051,13 @@
                         <label
                             class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Cargo
                             / Posición</label>
-                        <input type="text" id="editUserCargoInput" name="cargo" placeholder="Ej: Supervisor de Obra"
-                            class="w-full px-4 py-3 bg-item border border-border rounded-xl text-main font-bold focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                        <select id="editUserCargoInput" name="cargo" onchange="updateAvatarPreview(this.value)"
+                            class="w-full px-4 py-3 bg-item border border-border rounded-xl text-main font-bold focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer">
+                            <option value="Gerente">👔 Gerente</option>
+                            <option value="Contador">📊 Contador</option>
+                            <option value="Supervisor">👷 Supervisor</option>
+                            <option value="Secretaria">💼 Secretaria</option>
+                        </select>
                     </div>
                     <div class="flex gap-3 pt-6">
                         <button type="button" onclick="closeEditProfileModal()"
@@ -1173,6 +1178,13 @@
 
         window.closeEditProfileModal = function () {
             document.getElementById('editProfileModal').classList.add('hidden');
+        };
+
+        window.updateAvatarPreview = function (cargo) {
+            const avatarUrl = window.AvatarIcons?.getUrl(cargo);
+            if (avatarUrl) {
+                document.getElementById('editUserAvatar').src = avatarUrl;
+            }
         };
 
         // Photo upload removed - using role-based avatars only

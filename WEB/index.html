@@ -845,8 +845,12 @@
                     <div>
                         <label
                             class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Cargo</label>
-                        <input type="text" id="editUserCargoInput" name="cargo" placeholder="Ej: Apuntador"
-                            class="w-full px-4 py-3 bg-black/20 border border-border rounded-xl text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-none">
+                        <select id="editUserCargoInput" name="cargo" onchange="updateAvatarPreview(this.value)"
+                            class="w-full px-4 py-3 bg-black/20 border border-border rounded-xl text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-none cursor-pointer">
+                            <option value="Contador">📊 Contador</option>
+                            <option value="Supervisor">👷 Supervisor</option>
+                            <option value="Secretaria">💼 Secretaria</option>
+                        </select>
                     </div>
                     <div class="flex gap-3 pt-4">
                         <button type="button" onclick="closeEditProfileModal()"
@@ -949,6 +953,13 @@
 
         window.closeEditProfileModal = function () {
             document.getElementById('editProfileModal').classList.add('hidden');
+        };
+
+        window.updateAvatarPreview = function (cargo) {
+            const avatarUrl = window.AvatarIcons?.getUrl(cargo);
+            if (avatarUrl) {
+                document.getElementById('editUserAvatar').src = avatarUrl;
+            }
         };
 
         // Photo upload removed - using role-based avatars only
