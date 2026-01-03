@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.3.0</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.3.1</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -318,12 +318,7 @@
                     </button>
                 </section>
 
-                <!-- Floating Add Button -->
-                <!-- Floating Add Button -->
-                <button id="addTruckBtn" title="Agregar Camión"
-                    class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white z-50 hover:scale-110 active:scale-90 transition-all border border-white/20">
-                    <span class="material-symbols-outlined text-3xl">add</span>
-                </button>
+
 
                 <!-- Volume Stats -->
                 <!-- Volume Stats -->
@@ -1253,6 +1248,7 @@
         let origenes = []; // Added for Origen feature
         let hasRunAutoArchive = false;
         let pendingTripMode = null; // Track if we are in the middle of a trip recording flow
+        let currentEditingTruckId = null; // Track which truck is being edited
 
         async function init() {
             try {
