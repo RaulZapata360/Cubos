@@ -138,7 +138,7 @@ class AuthService {
     redirectByRole() {
         const rol = this.getRole();
 
-        if (rol === 'jefe') {
+        if (rol === 'jefe' || rol === 'supervisor' || rol === 'secretaria') {
             window.location.href = 'boss.html';
         } else if (rol === 'contador') {
             window.location.href = 'site-selector.html';
