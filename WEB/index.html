@@ -1,0 +1,2678 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Contador de Camiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Immediate auth check to avoid flicker
+        (function () {
+            const hasSession = Object.keys(localStorage).some(key => key.includes('-auth-token'));
+            if (!hasSession) {
+                window.location.href = 'login.html';
+            }
+        })();
+    </script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'var(--primary)',
+                        'primary-dark': 'var(--primary-dark)',
+                        accent: 'var(--accent)',
+                        success: 'var(--success)',
+                        warning: 'var(--warning)',
+                        danger: 'var(--danger)',
+                        main: 'var(--text-main)',
+                        'text-muted': 'var(--text-muted)',
+                        border: 'var(--border)',
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "3xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #a855f7;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+
+            /* Dark Theme (Default) */
+            --bg-body: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(51, 65, 85, 0.8);
+            --bg-item: rgba(255, 255, 255, 0.05);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(12px);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f1f5f9;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-card-hover: #ffffff;
+            --bg-item: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: rgba(0, 0, 0, 0.05);
+            --glass-blur: blur(8px);
+            --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+        }
+
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .neon-shadow {
+            box-shadow: 0 0 20px -5px rgba(80, 72, 229, 0.15);
+        }
+
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                opacity: 0.4;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        /* Mobile specific overrides to play nice with existing structure */
+        .mobile-container {
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            max-width: 100% !important;
+            /* Let body handle constraints if any */
+        }
+
+        /* Glass Nav for bottom bar */
+        .glass-nav {
+            background: rgba(18, 17, 33, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Essential for menu to work across all devices */
+        .truck-menu-dropdown {
+            display: none;
+            opacity: 0;
+            transform: scale(0.95);
+            transform-origin: top right;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .truck-menu-dropdown.active {
+            display: flex !important;
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .truck-menu-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .truck-menu-container.active-menu {
+            z-index: 50 !important;
+        }
+    </style>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary selection:text-white">
+
+    <!-- Ambient Background Glows -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] opacity-40">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-blue-600/10 rounded-full blur-[100px] opacity-30">
+        </div>
+    </div>
+    <div class="mobile-container">
+        <!-- Header -->
+        <!-- Header -->
+        <header class="relative z-10 p-4 pt-6 mb-2">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
+                        <span
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.3</span>
+                    </div>
+                    <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
+
+                    <div class="flex items-center gap-2 mt-2">
+                        <p class="text-sm font-bold text-text-muted capitalize" id="currentDate"></p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <!-- Profile Avatar -->
+                    <div id="headerAvatarContainer" onclick="openEditProfileModal()"
+                        class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20 border border-white/10 relative cursor-pointer overflow-hidden group">
+                        <span id="headerInitials" class="text-sm">CO</span>
+                        <img id="headerAvatarImg" class="hidden w-full h-full object-cover">
+                        <div
+                            class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 border-2 border-bg-body rounded-full">
+                        </div>
+                        <div
+                            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white text-sm">settings</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="window.location.reload()"
+                            class="p-2.5 bg-item hover:bg-white/10 rounded-xl transition-all border border-border group"
+                            title="Actualizar">
+                            <span
+                                class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors text-[20px]">refresh</span>
+                        </button>
+                        <button onclick="openHistoryModal()"
+                            class="p-2.5 bg-item hover:bg-white/10 rounded-xl transition-all border border-border group"
+                            title="Ver historial">
+                            <span
+                                class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors text-[20px]">calendar_month</span>
+                        </button>
+                        <button onclick="logout()"
+                            class="p-2.5 bg-item hover:bg-white/10 rounded-xl transition-all border border-border group"
+                            title="Cerrar sesión">
+                            <span
+                                class="material-symbols-outlined text-text-muted group-hover:text-danger transition-colors text-[20px]">logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Navigation (Glass Card) -->
+            <div class="glass-card rounded-xl p-2 flex items-center justify-between neon-shadow border border-border">
+                <button onclick="changeCounterDay(-1)"
+                    class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                    <span class="material-symbols-outlined">chevron_left</span>
+                </button>
+                <button onclick="changeCounterDay(0)" id="todayBtn"
+                    class="flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 rounded-lg transition-all border border-primary/30">
+                    <span id="todayBtnText" class="text-xs font-bold text-primary uppercase tracking-wider">Hoy</span>
+                </button>
+                <button onclick="changeCounterDay(1)"
+                    class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                    <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+            </div>
+        </header>
+
+
+        <!-- Main Content -->
+        <main class="app-content">
+            <!-- Tab: Resumen -->
+
+            <div class="tab-content active" id="tab-resumen">
+                <!-- Quick Action Buttons -->
+                <!-- Quick Action Buttons -->
+                <section class="grid grid-cols-2 gap-4 px-4 mb-6">
+                    <!-- Incoming Trucks -->
+                    <button id="incomingBtn" title="Presiona E"
+                        class="glass-card p-5 rounded-2xl border-l-4 border-l-success relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left neon-shadow">
+                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-6xl text-success">south_east</span>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-success text-lg">south_east</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Entrante</span>
+                            </div>
+                            <div class="text-4xl font-black text-main leading-none mb-1" id="incomingCount">0</div>
+                            <div class="text-[10px] text-text-muted">Seleccionar camión</div>
+                        </div>
+                    </button>
+
+                    <!-- Outgoing Trucks -->
+                    <button id="outgoingBtn" title="Presiona S"
+                        class="glass-card p-5 rounded-2xl border-l-4 border-l-warning relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left neon-shadow">
+                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <span class="material-symbols-outlined text-6xl text-warning">north_east</span>
+                        </div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-warning text-lg">north_east</span>
+                                </div>
+                                <span
+                                    class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Saliente</span>
+                            </div>
+                            <div class="text-4xl font-black text-main leading-none mb-1" id="outgoingCount">0</div>
+                            <div class="text-[10px] text-text-muted">Seleccionar camión</div>
+                        </div>
+                    </button>
+                </section>
+
+                <!-- Floating Add Button -->
+                <!-- Floating Add Button -->
+                <button id="addTruckBtn" title="Agregar Camión"
+                    class="fixed bottom-24 right-5 w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white z-50 hover:scale-110 active:scale-90 transition-all border border-white/20">
+                    <span class="material-symbols-outlined text-3xl">add</span>
+                </button>
+
+                <!-- Volume Stats -->
+                <!-- Volume Stats -->
+                <section class="grid grid-cols-2 gap-3 px-4 mb-6">
+                    <div class="glass-card p-4 rounded-xl flex flex-col neoh-shadow border border-border">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-6 h-6 rounded bg-emerald-500/10 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-emerald-500 text-sm">inventory_2</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Vol.
+                                Entrante</span>
+                        </div>
+                        <div class="text-xl font-black text-main" id="incomingVolume">0 m³</div>
+                    </div>
+                    <div class="glass-card p-4 rounded-xl flex flex-col neon-shadow border border-border">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-6 h-6 rounded bg-amber-500/10 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-amber-500 text-sm">local_shipping</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Vol.
+                                Saliente</span>
+                        </div>
+                        <div class="text-xl font-black text-main" id="outgoingVolume">0 m³</div>
+                    </div>
+                </section>
+
+                <!-- Truck Roster Section -->
+                <!-- Truck Roster Section -->
+                <section class="glass-card rounded-3xl p-6 mx-4 mb-24 neon-shadow border border-border">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-black text-main tracking-tight flex items-center gap-2">
+                            📋 Nómina
+                            <span class="bg-primary/20 text-primary px-2 py-1 rounded-lg text-xs font-bold"
+                                id="totalTrucks">0</span>
+                        </h3>
+                        <div class="flex gap-4">
+                            <button onclick="openFrequentTrucksModal()"
+                                class="text-xs font-bold text-accent hover:text-white transition-colors uppercase tracking-wider flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">bolt</span>
+                                Recientes
+                            </button>
+                            <button onclick="openAddTruckModal()"
+                                class="text-xs font-bold text-primary hover:text-white transition-colors uppercase tracking-wider flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                                Nuevo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Improved Filter Tabs -->
+                    <div class="flex p-1 bg-black/20 rounded-xl mb-4">
+                        <button
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            data-type="outgoing" onclick="filterTrucksByType('outgoing')">
+                            Excav. (<span id="countOutgoing">0</span>)
+                        </button>
+                        <button
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            data-type="incoming" onclick="filterTrucksByType('incoming')">
+                            Relleno (<span id="countIncoming">0</span>)
+                        </button>
+                        <button
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            data-type="mixed" onclick="filterTrucksByType('mixed')">
+                            Mixtos (<span id="countMixed">0</span>)
+                        </button>
+                    </div>
+
+                    <!-- Truck Cards Container -->
+                    <div class="space-y-3" id="truckList">
+                        <div class="text-center py-10 text-text-muted">
+                            <span class="material-symbols-outlined text-4xl mb-2 opacity-50">local_shipping</span>
+                            <p class="text-sm">Cargando nómina...</p>
+                        </div>
+                    </div>
+
+
+                </section>
+
+                <!-- Summary Footer -->
+                <section class="grid grid-cols-2 gap-3 px-4 pb-24">
+                    <div class="glass-card p-4 rounded-xl flex items-center gap-3 border border-border">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-primary">local_shipping</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-text-muted font-bold uppercase">Total</p>
+                            <p class="text-lg font-black text-main leading-none" id="totalTrucksFooter">0</p>
+                        </div>
+                    </div>
+                    <div class="glass-card p-4 rounded-xl flex items-center gap-3 border border-border">
+                        <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-accent">bar_chart</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-text-muted font-bold uppercase">Volumen</p>
+                            <p class="text-lg font-black text-main leading-none" id="totalVolume">0 m³</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Resumen -->
+
+            <!-- Tab: Movimiento del Día -->
+            <div class="tab-content hidden" id="tab-movimiento">
+                <section class="mx-4 mb-24">
+                    <!-- Header -->
+                    <div class="glass-card p-4 rounded-xl flex flex-col gap-4 mb-4 border border-border">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-lg font-black text-main flex items-center gap-2">
+                                📋 Movimientos
+                            </h2>
+                            <div class="flex bg-black/30 rounded-lg p-1">
+                                <button onclick="changeCounterDay(-1)"
+                                    class="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-text-muted hover:text-white transition-colors">
+                                    <span class="material-symbols-outlined text-sm">arrow_back_ios_new</span>
+                                </button>
+                                <button onclick="changeCounterDay(0)"
+                                    class="px-3 h-8 flex items-center justify-center rounded hover:bg-white/10 text-[10px] font-bold text-main uppercase tracking-wider transition-colors">
+                                    HOY
+                                </button>
+                                <button onclick="changeCounterDay(1)"
+                                    class="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-text-muted hover:text-white transition-colors">
+                                    <span class="material-symbols-outlined text-sm">arrow_forward_ios</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-black/20 rounded-lg p-2 flex items-center justify-between px-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-success text-sm">south_east</span>
+                                    <span class="text-[10px] font-bold text-text-muted uppercase">Ent.</span>
+                                </div>
+                                <span class="text-sm font-black text-white" id="movementIncomingCount">0</span>
+                            </div>
+                            <div class="bg-black/20 rounded-lg p-2 flex items-center justify-between px-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-warning text-sm">north_east</span>
+                                    <span class="text-[10px] font-bold text-text-muted uppercase">Sal.</span>
+                                </div>
+                                <span class="text-sm font-black text-white" id="movementOutgoingCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log -->
+                    <div class="space-y-2" id="movementLog">
+                        <div class="text-center py-10 text-text-muted">
+                            <span class="material-symbols-outlined text-4xl mb-2 opacity-50">history</span>
+                            <p class="text-sm">No hay movimientos registrados</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Movimiento -->
+
+            <!-- Tab: Análisis -->
+            <div class="tab-content hidden" id="tab-analisis">
+                <section class="mx-4 mb-24 space-y-6">
+                    <div class="flex items-center gap-2 mb-2">
+                        <h2 class="text-lg font-black text-main">📈 Análisis del Día</h2>
+                    </div>
+
+                    <!-- Volume Balance -->
+                    <div class="glass-card p-5 rounded-2xl neon-shadow border border-border">
+                        <h3
+                            class="text-xs font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                            Balance de Volumen</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-black/20 rounded-xl p-4 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center mb-2">
+                                    <span class="material-symbols-outlined text-success">inventory_2</span>
+                                </div>
+                                <span class="text-[10px] font-bold text-text-muted uppercase">Relleno</span>
+                                <span class="text-lg font-black text-main" id="analyticsFillVolume">+0.0 m³</span>
+                            </div>
+                            <div class="bg-black/20 rounded-xl p-4 flex flex-col items-center">
+                                <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center mb-2">
+                                    <span class="material-symbols-outlined text-warning">local_shipping</span>
+                                </div>
+                                <span class="text-[10px] font-bold text-text-muted uppercase">Excavación</span>
+                                <span class="text-lg font-black text-main" id="analyticsExcavationVolume">-0.0 m³</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Truck Performance -->
+                    <div class="glass-card p-5 rounded-2xl neon-shadow border border-border">
+                        <h3
+                            class="text-xs font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                            Rendimiento por Camión</h3>
+                        <div class="space-y-3" id="truckPerformance">
+                            <p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Activity Timeline -->
+                    <div class="glass-card p-5 rounded-2xl neon-shadow border border-border">
+                        <h3
+                            class="text-xs font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                            Actividad por Hora</h3>
+                        <div class="space-y-2" id="hourlyActivity">
+                            <p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver actividad</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="glass-card p-5 rounded-2xl neon-shadow border border-border">
+                        <h3
+                            class="text-xs font-bold text-text-muted uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+                            Resumen General</h3>
+                        <div class="grid grid-cols-2 gap-y-4 gap-x-2">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-text-muted uppercase">Primera vuelta</span>
+                                <span class="text-sm font-bold text-main" id="firstTrip">--:--</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-text-muted uppercase">Última vuelta</span>
+                                <span class="text-sm font-bold text-main" id="lastTrip">--:--</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-text-muted uppercase">Tiempo operando</span>
+                                <span class="text-sm font-bold text-main" id="operatingTime">0h 0m</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-text-muted uppercase">Promedio</span>
+                                <span class="text-sm font-bold text-main"><span id="avgTripsPerHour">0</span> v/h</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- End Tab: Análisis -->
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav
+            class="fixed bottom-0 left-0 right-0 z-40 px-6 pb-6 pt-2 bg-gradient-to-t from-black/90 to-transparent pointer-events-none flex justify-center">
+            <div
+                class="pointer-events-auto glass-card rounded-2xl p-2 flex items-center gap-1 shadow-2xl shadow-black/50 border border-white/10 backdrop-blur-xl bg-black/40">
+                <button
+                    class="nav-item nav-item-new group relative px-6 py-3 rounded-xl transition-all duration-300 active"
+                    data-tab="resumen" onclick="switchTab('resumen')">
+                    <div
+                        class="absolute inset-0 bg-primary/20 rounded-xl opacity-0 group-[.active]:opacity-100 transition-opacity blur-md">
+                    </div>
+                    <div
+                        class="relative z-10 flex flex-col items-center gap-1 group-[.active]:scale-110 transition-transform duration-300">
+                        <span
+                            class="material-symbols-outlined text-2xl text-text-muted group-[.active]:text-primary transition-colors">dashboard</span>
+                        <span
+                            class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Resumen</span>
+                    </div>
+                </button>
+                <button class="nav-item nav-item-new group relative px-6 py-3 rounded-xl transition-all duration-300"
+                    data-tab="movimiento" onclick="switchTab('movimiento')">
+                    <div
+                        class="absolute inset-0 bg-accent/20 rounded-xl opacity-0 group-[.active]:opacity-100 transition-opacity blur-md">
+                    </div>
+                    <div
+                        class="relative z-10 flex flex-col items-center gap-1 group-[.active]:scale-110 transition-transform duration-300">
+                        <span
+                            class="material-symbols-outlined text-2xl text-text-muted group-[.active]:text-accent transition-colors">list_alt</span>
+                        <span
+                            class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Log</span>
+                    </div>
+                </button>
+                <button class="nav-item nav-item-new group relative px-6 py-3 rounded-xl transition-all duration-300"
+                    data-tab="analisis" onclick="switchTab('analisis')">
+                    <div
+                        class="absolute inset-0 bg-secondary/20 rounded-xl opacity-0 group-[.active]:opacity-100 transition-opacity blur-md">
+                    </div>
+                    <div
+                        class="relative z-10 flex flex-col items-center gap-1 group-[.active]:scale-110 transition-transform duration-300">
+                        <span
+                            class="material-symbols-outlined text-2xl text-text-muted group-[.active]:text-secondary transition-colors">equalizer</span>
+                        <span
+                            class="text-[9px] font-bold text-text-muted group-[.active]:text-white transition-colors uppercase tracking-wider">Análisis</span>
+                    </div>
+                </button>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Modal for Selecting Truck (Glassmorphism) -->
+    <div id="truckSelectorModal" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[85vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <h3 class="text-lg font-black text-main tracking-tight flex items-center gap-2" id="selectorTitle">
+                        🚛 Seleccionar Camión
+                    </h3>
+                    <button onclick="closeAllModals()"
+                        class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                        id="closeSelectorModal">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <!-- List -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-2" id="truckSelectorList">
+                    <!-- Populated by JS -->
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-white/10 shrink-0 flex gap-3">
+                    <button onclick="openFrequentTrucksModal()"
+                        class="flex-1 py-3 px-2 bg-accent/10 border border-accent/20 rounded-xl text-accent text-xs font-bold hover:bg-accent/20 transition-all flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">bolt</span>
+                        RECIENTES
+                    </button>
+                    <button onclick="openAddTruckModal()"
+                        class="flex-[1.5] py-3 px-2 bg-primary rounded-xl text-white text-xs font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">add_circle</span>
+                        AGREGAR NUEVO
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Material Selection -->
+    <div id="materialSelectorModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card w-full max-w-md flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="text-lg font-black text-main tracking-tight" id="materialSelectorTitle">🏗️ Material</h3>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="closeAllModals()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <div class="p-4 space-y-4">
+                    <!-- Location Input -->
+                    <div>
+                        <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            📍 Ubicación (Opcional)
+                        </label>
+                        <input type="text" id="tripLocation" placeholder="Ej: Sector A, Relleno Sur..."
+                            class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                    </div>
+
+                    <!-- Material Grid -->
+                    <div class="grid grid-cols-2 gap-3" id="materialSelectorList">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- New Material Form -->
+                    <div id="newMaterialFormContainer"
+                        class="hidden space-y-4 bg-black/20 p-5 rounded-2xl border border-white/10">
+                        <div>
+                            <label
+                                class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Nombre
+                                del Material</label>
+                            <input type="text" id="customMaterialName" placeholder="Ej: Escombro Seleccionado..."
+                                class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-all">
+                        </div>
+
+                        <div>
+                            <label
+                                class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Icono
+                                Representativo</label>
+                            <div class="grid grid-cols-4 gap-2" id="materialIconSelector">
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Arena">
+                                    <img src="assets/materiales/arena.png" class="w-8 h-8 object-contain" alt="Arena">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Grava">
+                                    <img src="assets/materiales/grava.png" class="w-8 h-8 object-contain" alt="Grava">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Bolones">
+                                    <img src="assets/materiales/bolones.png" class="w-8 h-8 object-contain"
+                                        alt="Bolones">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Tierra">
+                                    <img src="assets/materiales/tierra.png" class="w-8 h-8 object-contain" alt="Tierra">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Escombro">
+                                    <img src="assets/materiales/escombro.png" class="w-8 h-8 object-contain"
+                                        alt="Escombro">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Base estabilizada">
+                                    <img src="assets/materiales/base_estabilizada.png" class="w-8 h-8 object-contain"
+                                        alt="Base">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Arcilla">
+                                    <img src="assets/materiales/arcilla.png" class="w-8 h-8 object-contain"
+                                        alt="Arcilla">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Basura">
+                                    <img src="assets/materiales/basura.png" class="w-8 h-8 object-contain" alt="Basura">
+                                </div>
+                                <div class="icon-option p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all active:scale-95"
+                                    data-icon="Maicillo">
+                                    <img src="assets/materiales/maicillo.png" class="w-8 h-8 object-contain"
+                                        alt="Maicillo">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-2">
+                            <button id="cancelNewMaterialBtn"
+                                class="flex-1 py-3 bg-white/5 rounded-xl text-xs font-bold hover:bg-white/10 transition-all">CANCELAR</button>
+                            <button id="saveNewMaterialBtn"
+                                class="flex-1 py-3 bg-primary rounded-xl text-xs font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20 transition-all">GUARDAR
+                                Y USAR</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Destination Selection (after material selected, only for outgoing) -->
+    <div id="destinoSelectorModal" class="fixed inset-0 z-[75] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card w-full max-w-md flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="text-lg font-black text-main tracking-tight" id="destinoSelectorTitle">📍 Destino</h3>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="closeAllModals()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <div class="p-4 space-y-4">
+                    <!-- Destination Grid -->
+                    <div class="grid grid-cols-2 gap-3" id="destinoSelectorList">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- New Destination Form -->
+                    <div id="newDestinoFormContainer"
+                        class="hidden space-y-3 bg-black/20 p-4 rounded-xl border border-white/10">
+                        <label class="text-xs font-bold text-white">Nuevo Destino:</label>
+                        <input type="text" id="customDestinoName" placeholder="Ej: Botadero 1..."
+                            class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none">
+                        <div class="flex gap-2">
+                            <button onclick="toggleNewDestinoForm(false)"
+                                class="flex-1 py-2 bg-white/5 rounded-lg text-xs font-bold hover:bg-white/10">Cancelar</button>
+                            <button id="saveNewDestinoBtn"
+                                class="flex-1 py-2 bg-primary rounded-lg text-xs font-bold text-white hover:bg-primary-dark">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Origin Selection (after material selected, only for incoming) -->
+    <div id="origenSelectorModal" class="fixed inset-0 z-[75] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card w-full max-w-md flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="text-lg font-black text-emerald-400 tracking-tight" id="origenSelectorTitle">🚚 Origen
+                    </h3>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="closeAllModals()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <div class="p-4 space-y-4">
+                    <!-- Origin Grid -->
+                    <div class="grid grid-cols-2 gap-3" id="origenSelectorList">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- New Origin Form -->
+                    <div id="newOrigenFormContainer"
+                        class="hidden space-y-3 bg-black/20 p-4 rounded-xl border border-white/10">
+                        <label class="text-xs font-bold text-white">Nuevo Origen:</label>
+                        <input type="text" id="customOrigenName" placeholder="Ej: Cantera X..."
+                            class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white outline-none">
+                        <div class="flex gap-2">
+                            <button onclick="toggleNewOrigenForm(false)"
+                                class="flex-1 py-2 bg-white/5 rounded-lg text-xs font-bold hover:bg-white/10">Cancelar</button>
+                            <button id="saveNewOrigenBtn"
+                                class="flex-1 py-2 bg-primary rounded-lg text-xs font-bold text-white hover:bg-primary-dark">Guardar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="editProfileModal" class="fixed inset-0 z-[100] hidden">
+        <div class="modal-backdrop absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeEditProfileModal()">
+        </div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card rounded-3xl p-6 w-full max-w-sm neon-shadow border border-border">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-black text-main tracking-tight">Mi Perfil</h2>
+                    <button onclick="closeEditProfileModal()" class="text-text-muted hover:text-main transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <form id="editProfileForm" class="space-y-4">
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="relative group cursor-pointer"
+                            onclick="document.getElementById('avatarInput').click()">
+                            <img id="editUserAvatar"
+                                src="https://ui-avatars.com/api/?name=User&background=6366f1&color=fff&size=256"
+                                class="w-20 h-20 rounded-2xl border-2 border-primary/30 object-cover shadow-xl group-hover:opacity-75 transition-all">
+                            <div
+                                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                <span class="material-symbols-outlined text-white text-2xl">photo_camera</span>
+                            </div>
+                            <input type="file" id="avatarInput" class="hidden" accept="image/*"
+                                onchange="previewAvatar(this)">
+                        </div>
+                        <p class="text-[9px] text-text-muted mt-2 font-bold uppercase tracking-widest">Toca para cambiar
+                            foto</p>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Nombre</label>
+                        <input type="text" id="editUserNameInput" name="nombre" required
+                            class="w-full px-4 py-3 bg-black/20 border border-border rounded-xl text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-none">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Cargo</label>
+                        <input type="text" id="editUserCargoInput" name="cargo" placeholder="Ej: Apuntador"
+                            class="w-full px-4 py-3 bg-black/20 border border-border rounded-xl text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all outline-none">
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeEditProfileModal()"
+                            class="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-main font-bold text-xs transition-all border border-border">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="flex-1 px-4 py-3 bg-primary hover:bg-primary-dark rounded-xl text-white font-bold text-xs transition-all shadow-lg shadow-primary/20">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 z-[120] bg-black/60 backdrop-blur-sm hidden flex-col items-center justify-center">
+        <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+        <p class="text-white font-bold text-sm animate-pulse uppercase tracking-[0.2em]" id="loadingText">Procesando...
+        </p>
+    </div>
+
+    <!-- Update Indicator -->
+    <div id="updateIndicator"
+        class="fixed top-4 right-4 z-50 glass-card rounded-xl px-4 py-2 neon-shadow transition-all duration-300 opacity-0 -translate-y-4 border border-border pointer-events-none">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-emerald-500 rounded-full pulse-glow"></div>
+            <span class="text-[10px] text-main font-bold uppercase tracking-wider">Actualizado</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { authService } from './auth-service.js';
+        import { obrasService } from './obras-service.js';
+
+        // Global session storage for UI usage
+        window.currentSession = null;
+
+        // Verify authentication and role
+        (async () => {
+            const session = await authService.checkSession();
+            window.currentSession = session;
+
+            if (!session.authenticated || session.rol !== 'contador') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Verify obra is selected
+            if (!obrasService.hasSelectedObra()) {
+                window.location.href = 'site-selector.html';
+                return;
+            }
+
+            console.log('✅ Contador authenticated, obra selected');
+            updateHeaderProfile();
+        })();
+
+        // Profile logic
+        window.updateHeaderProfile = function () {
+            const { user } = window.currentSession || {};
+            if (!user) return;
+
+            const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Contador';
+            const avatarUrl = user.user_metadata?.avatar_url;
+
+            const headerInitials = document.getElementById('headerInitials');
+            const headerImg = document.getElementById('headerAvatarImg');
+
+            if (avatarUrl) {
+                headerImg.src = avatarUrl;
+                headerImg.classList.remove('hidden');
+                headerInitials.classList.add('hidden');
+            } else {
+                headerImg.classList.add('hidden');
+                headerInitials.classList.remove('hidden');
+                headerInitials.textContent = getInitials(name);
+            }
+        };
+
+        function getInitials(name) {
+            if (!name) return 'CO';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        window.openEditProfileModal = function () {
+            const { user } = window.currentSession || {};
+            if (!user) return;
+
+            document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
+            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || 'Apuntador';
+            document.getElementById('editUserAvatar').src = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=6366f1&color=fff&size=256`;
+
+            document.getElementById('editProfileModal').classList.remove('hidden');
+        };
+
+        window.closeEditProfileModal = function () {
+            document.getElementById('editProfileModal').classList.add('hidden');
+        };
+
+        window.previewAvatar = function (input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('editUserAvatar').src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        };
+
+        document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            const updates = {
+                nombre: formData.get('nombre'),
+                cargo: formData.get('cargo'),
+                avatarUrl: document.getElementById('editUserAvatar').src
+            };
+
+            const loader = document.getElementById('loadingOverlay');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+
+            try {
+                const result = await authService.updateProfile(updates);
+                if (result.success) {
+                    window.currentSession.user = result.user;
+                    updateHeaderProfile();
+                    closeEditProfileModal();
+                    showUpdateIndicator();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error al actualizar');
+            } finally {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+            }
+        });
+
+        function showUpdateIndicator() {
+            const el = document.getElementById('updateIndicator');
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-20px)';
+            }, 3000);
+        }
+    </script>
+    <!-- HISTORY MODAL -->
+    <div id="historyModal" class="fixed inset-0 z-[110] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card w-full max-w-md max-h-[80vh] flex flex-col neon-shadow border border-border">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <h3 class="text-lg font-black text-main flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        Historial
+                    </h3>
+                    <button onclick="closeAllModals()"
+                        class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-2">
+                    <!-- Populated by JS -->
+                    <p class="text-center text-text-muted py-8 text-sm">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRUCK FORM MODAL -->
+    <div id="truckModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="closeModal"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="glass-card w-full max-w-md neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-black text-white">Registrar Camión</h2>
+                        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+
+                    <form id="truckForm" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Identificador</label>
+                            <input type="text" id="truckName" placeholder="Ej: Volvo A40, Interno 10..." required
+                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Patente</label>
+                            <input type="text" id="licensePlate" placeholder="Ej: AB1234" required
+                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Capacidad (m³)</label>
+                            <input type="number" id="capacity" placeholder="0.0" min="0" step="0.1" required
+                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Operación
+                                Habitual</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="truckType" value="incoming" class="peer sr-only" checked>
+                                    <div
+                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-success/20 peer-checked:border-success transition-all text-center">
+                                        <div class="text-2xl mb-1">📥</div>
+                                        <div class="text-xs font-bold text-white">Relleno</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="truckType" value="outgoing" class="peer sr-only">
+                                    <div
+                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-warning/20 peer-checked:border-warning transition-all text-center">
+                                        <div class="text-2xl mb-1">📤</div>
+                                        <div class="text-xs font-bold text-white">Excavación</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button type="button" onclick="closeAllModals()"
+                                class="flex-1 py-3 bg-white/5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/10">
+                                Cancelar
+                            </button>
+                            <button type="submit"
+                                class="flex-1 py-3 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20">
+                                Guardar Camión
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Frequent Trucks -->
+    <div id="frequentTrucksModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[80vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <h3 class="text-xl font-black text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-accent">bolt</span>
+                        Camiones Recientes
+                    </h3>
+                    <button onclick="closeAllModals()"
+                        class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto">
+                    <p class="text-sm text-slate-400 mb-6">
+                        Selecciona los camiones que trabajarán hoy para agregarlos a la nómina:
+                    </p>
+                    <div id="frequentTrucksList" class="space-y-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="p-4 border-t border-white/10 shrink-0">
+                    <button onclick="closeAllModals()"
+                        class="w-full py-3 bg-white/5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/10">
+                        Volver
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Managing Materials -->
+    <div class="modal" id="materialModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🏗️ Gestionar Materiales</h3>
+                <button class="close-btn" onclick="closeAllModals()" title="Presiona ESC">&times;</button>
+            </div>
+            <div class="material-tabs">
+                <button class="material-tab-btn active" data-type="incoming">📥 Relleno</button>
+                <button class="material-tab-btn" data-type="outgoing">📤 Excavación</button>
+            </div>
+            <div class="material-list" id="materialList"></div>
+            <div class="add-material-form">
+                <input type="text" id="newMaterialName" placeholder="Nombre del material (ej: Arena, Ripio...)" />
+                <button class="btn-primary" id="addMaterialBtn">Agregar</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <script type="module">
+        import { supabaseClient } from './supabase-client.js';
+        import { authService } from './auth-service.js';
+        import { obrasService } from './obras-service.js';
+
+        let currentObraId = null;
+        let trucks = [];
+        let movements = [];
+        let materials = [];
+        let destinos = []; // Added destinos array
+        let origenes = []; // Added for Origen feature
+        let hasRunAutoArchive = false;
+        let pendingTripMode = null; // Track if we are in the middle of a trip recording flow
+
+        async function init() {
+            try {
+                const session = await authService.checkSession();
+                if (!session.authenticated) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentObraId = obrasService.getSelectedObraId();
+                if (!currentObraId) {
+                    window.location.href = 'site-selector.html';
+                    return;
+                }
+
+                // NEW: Automatic archival of previous days (Runs only once or on today view)
+                if (!hasRunAutoArchive && currentCounterDayOffset === 0) {
+                    await autoArchivePreviousDays();
+                    hasRunAutoArchive = true;
+                }
+
+                setupEventListeners(); // Restore event listeners
+                await Promise.all([
+                    loadTrucks(),
+                    loadMaterials(),
+                    loadDestinos(),
+                    loadOrigenes(), // Added
+                    loadMovements()
+                ]);
+                updateDateTime();
+                setInterval(updateDateTime, 60000);
+
+                console.log('✅ Counter dashboard fully initialized');
+            } catch (err) {
+                console.error('Init Error:', err);
+                if (err.message?.includes('fetch')) {
+                    alert('Error de conexión con Supabase. Por favor, verifica tu internet o el estado del proyecto.');
+                }
+            }
+        }
+
+        function setupEventListeners() {
+            // Tab Switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+
+                    // Update buttons
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Update content
+                    const tabContents = document.querySelectorAll('.tab-content');
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `tab-${tabId}`) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    if (tabId === 'movimiento') loadMovements();
+                    if (tabId === 'analisis') updateAnalytics();
+                });
+            });
+
+            // Quick Actions (Buttons at the top)
+            document.getElementById('incomingBtn')?.addEventListener('click', () => openTruckSelector('incoming'));
+            document.getElementById('outgoingBtn')?.addEventListener('click', () => openTruckSelector('outgoing'));
+
+            // Add Truck Modal (Multiple buttons possible)
+            document.querySelectorAll('#addTruckBtn, #addTruckBtnEmpty').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.getElementById('truckModal').classList.add('active');
+                });
+            });
+
+            // Truck Form Submit
+            document.getElementById('truckForm')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await registerNewTruck();
+            });
+
+            // Modal Closing
+            document.querySelectorAll('.close-btn, #cancelBtn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const modal = e.target.closest('.modal');
+                    if (modal) modal.classList.remove('active');
+                });
+            });
+
+            // Legacy PDF button handler (optional fix)
+            window.truckManager = {
+                generatePDFReport: () => alert('Generando reporte PDF...')
+            };
+        }
+
+        // Open Add Truck Modal (for new button in roster)
+        window.openAddTruckModal = function () {
+            closeAllModals();
+            // Reset form for new truck
+            currentEditingTruckId = null;
+            document.getElementById('truckForm').reset();
+            const modalTitle = document.querySelector('#truckModal h2');
+            if (modalTitle) modalTitle.textContent = '➕ Registrar Nuevo Camión';
+            document.getElementById('truckModal').classList.remove('hidden');
+            document.getElementById('truckModal').classList.add('active');
+        };
+
+        // Switch tabs (for bottom navigation)
+        window.switchTab = function (tabName) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.tab === tabName);
+            });
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        };
+
+        // Filter trucks by type
+        window.filterTrucksByType = function (type) {
+            const buttons = document.querySelectorAll('.truck-filter-tab-new');
+            buttons.forEach(btn => {
+                if (btn.dataset.type === type) {
+                    btn.classList.remove('text-text-muted');
+                    btn.classList.add('text-main', 'bg-white/10');
+                } else {
+                    btn.classList.add('text-text-muted');
+                    btn.classList.remove('text-main', 'bg-white/10');
+                }
+            });
+
+            const cards = document.querySelectorAll('.truck-card-new');
+            cards.forEach(card => {
+                const truckType = card.dataset.type;
+                if (type === 'mixed') {
+                    if (truckType === 'mixed') card.style.display = 'block';
+                    else card.style.display = 'none';
+                } else {
+                    if (truckType === type || truckType === 'mixed') {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            });
+        };
+
+        async function registerNewTruck() {
+            const btn = document.querySelector('#truckForm button[type="submit"]');
+            const originalText = btn.textContent;
+
+            try {
+                btn.textContent = 'Guardando...';
+                btn.disabled = true;
+
+                const name = document.getElementById('truckName').value;
+                const plate = document.getElementById('licensePlate').value;
+                const cap = parseFloat(document.getElementById('capacity').value);
+                // The database expects 'incoming', 'outgoing', or 'mixed' (lowercase based on migration check constraint)
+                const type = document.querySelector('input[name="truckType"]:checked').value;
+
+                if (currentEditingTruckId) {
+                    // UPDATE existing truck
+                    console.log('Updating truck:', currentEditingTruckId, { name, plate, cap, type });
+
+                    const { error } = await supabaseClient
+                        .from('camiones')
+                        .update({
+                            nombre: name,
+                            patente: plate,
+                            capacidad: cap,
+                            tipo_registrado: type
+                        })
+                        .eq('id', currentEditingTruckId);
+
+                    if (error) throw error;
+
+                    alert(`Camión "${name}" actualizado correctamente.`);
+                    currentEditingTruckId = null;
+                } else {
+                    // INSERT new truck
+                    console.log('Registering new truck:', { name, plate, cap, type });
+
+                    const targetDate = getTargetDate();
+                    const dateStr = targetDate.toISOString().split('T')[0];
+
+                    const { data, error } = await supabaseClient
+                        .from('camiones')
+                        .insert([{
+                            obra_id: currentObraId,
+                            nombre: name,
+                            patente: plate,
+                            capacidad: cap,
+                            tipo_registrado: type,
+                            nomina_fecha: dateStr,
+                            contador_entrante: 0,
+                            contador_saliente: 0
+                        }])
+                        .select();
+
+                    if (error) throw error;
+
+                    const newTruck = data[0];
+                    await loadTrucks();
+
+                    if (pendingTripMode) {
+                        const currentMode = pendingTripMode;
+                        closeAllModals();
+                        window.openMaterialSelector(newTruck.id, currentMode, newTruck.capacidad);
+                        btn.textContent = originalText;
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    alert(`Camión "${name}" registrado correctamente.`);
+                }
+
+                document.getElementById('truckModal').classList.remove('active');
+                document.getElementById('truckForm').reset();
+                await loadTrucks();
+
+                // Haptic feedback
+                if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
+            } catch (error) {
+                console.error('Error saving truck:', error);
+                alert('Error al guardar el camión. Intenta nuevamente.');
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function loadTrucks() {
+            try {
+                const targetDate = getTargetDate();
+                const dateStr = targetDate.toISOString().split('T')[0];
+
+                const { data, error } = await supabaseClient
+                    .from('camiones')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .eq('nomina_fecha', dateStr)
+                    .order('nombre');
+
+                if (error) throw error;
+                trucks = data || [];
+                renderTruckList();
+                updateSummary();
+            } catch (error) {
+                console.error('Error loading trucks:', error);
+            }
+        }
+
+        window.openFrequentTrucksModal = async function () {
+            closeAllModals();
+            const modal = document.getElementById('frequentTrucksModal');
+            const list = document.getElementById('frequentTrucksList');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+            list.innerHTML = '<div class="text-center py-10 text-slate-400">Cargando...</div>';
+
+            try {
+                const targetDate = getTargetDate();
+                const dateStr = targetDate.toISOString().split('T')[0];
+
+                const { data, error } = await supabaseClient
+                    .from('camiones')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+
+                // Filter out trucks already in the roster for the selected day
+                const availableTrucks = (data || []).filter(t => t.nomina_fecha !== dateStr);
+
+                if (availableTrucks.length === 0) {
+                    list.innerHTML = `
+                        <div class="text-center py-12">
+                            <span class="material-symbols-outlined text-4xl text-slate-600 mb-2">local_shipping</span>
+                            <p class="text-slate-500 text-sm">No hay otros camiones registrados.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = availableTrucks.map(truck => `
+                    <div class="glass-card p-3 rounded-xl flex items-center justify-between group hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-accent/30 active:scale-[0.98]" 
+                         onclick="addTruckToRoster('${truck.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center border border-white/5">
+                                <span class="text-sm font-black text-accent">${truck.nombre.substring(0, 2).toUpperCase()}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <h4 class="text-sm font-bold text-white leading-tight">${truck.nombre}</h4>
+                                <span class="text-[10px] font-bold text-slate-500 uppercase">${truck.patente} • ${truck.capacidad}m³</span>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-all">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="text-red-400 text-xs text-center p-4">Error: ${err.message}</div>`;
+            }
+        };
+
+        window.addTruckToRoster = async function (truckId) {
+            try {
+                const targetDate = getTargetDate();
+                const dateStr = targetDate.toISOString().split('T')[0];
+
+                const { error } = await supabaseClient
+                    .from('camiones')
+                    .update({ nomina_fecha: dateStr })
+                    .eq('id', truckId);
+
+                if (error) throw error;
+
+                await loadTrucks();
+
+                if (pendingTripMode) {
+                    const currentMode = pendingTripMode;
+                    const truck = trucks.find(t => t.id === truckId);
+
+                    // Clear the pending mode before opening next modal to avoid loops
+                    pendingTripMode = null;
+
+                    // Close the current frequent trucks modal
+                    const freqModal = document.getElementById('frequentTrucksModal');
+                    freqModal.classList.remove('active');
+                    freqModal.classList.add('hidden');
+
+                    if (truck) {
+                        window.openMaterialSelector(truck.id, currentMode, truck.capacidad);
+                    }
+                } else {
+                    closeAllModals();
+                }
+            } catch (err) {
+                alert('Error al agregar camión: ' + err.message);
+            }
+        };
+
+        function getTargetDate() {
+            const now = new Date();
+            const targetDate = new Date(now);
+            targetDate.setDate(now.getDate() + currentCounterDayOffset);
+            return targetDate;
+        }
+
+        async function loadMovements() {
+            try {
+                // Fetch ALL movements for this obra to calculate cumulative totals
+                const { data, error } = await supabaseClient
+                    .from('movimientos')
+                    .select(`
+                        *,
+                        camiones (nombre, patente)
+                    `)
+                    .eq('obra_id', currentObraId)
+                    .order('timestamp', { ascending: false });
+
+                if (error) throw error;
+
+                // Store all movements for cumulative counting
+                window.allMovements = data || [];
+
+                // Filter movements for the selected date to show in the log
+                const targetDate = getTargetDate();
+                const dateStr = targetDate.toISOString().split('T')[0];
+                movements = (data || []).filter(m => m.fecha === dateStr);
+
+                renderMovementLog();
+                renderAnalytics();
+                updateSummary();
+                renderTruckList(); // Re-render truck list to update cumulative counts
+            } catch (error) {
+                console.error('Error loading movements:', error);
+            }
+        }
+
+        async function loadMaterials() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('materiales')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                materials = data || [];
+            } catch (error) {
+                console.error('Error loading materials:', error);
+            }
+        }
+
+        async function loadDestinos() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('destinos')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                destinos = data || [];
+            } catch (error) {
+                console.error('Error loading destinos:', error);
+            }
+        }
+
+        async function loadOrigenes() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('origenes')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (error) throw error;
+                origenes = data || [];
+            } catch (error) {
+                console.error('Error loading origenes:', error);
+            }
+        }
+
+        function renderTruckList() {
+            const container = document.getElementById('truckList');
+            if (!container) return;
+
+            if (trucks.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10 text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">local_shipping</span>
+                        <p class="text-sm">No hay camiones registrados</p>
+                        <p class="text-xs mt-1 text-primary cursor-pointer" onclick="openAddTruckModal()">+ Toca para agregar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const targetDate = getTargetDate();
+            const dateStr = targetDate.toISOString().split('T')[0];
+
+            container.innerHTML = trucks.map(truck => {
+                // Filter movements already stored in 'movements' (which are for dateStr)
+                const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
+                const inc = truckDayMovs.filter(m => m.tipo === 'incoming').length;
+                const out = truckDayMovs.filter(m => m.tipo === 'outgoing').length;
+
+                const type = (truck.tipo_registrado || '').toLowerCase();
+                let borderColor = 'border-l-primary';
+                if (type === 'incoming') borderColor = 'border-l-success';
+                if (type === 'outgoing') borderColor = 'border-l-warning';
+
+                return `
+                    <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" data-type="${type}">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-lg font-black text-white/50">
+                                    ${truck.nombre.substring(0, 1)}
+                                </div>
+                                <div>
+                                    <h4 class="text-lg font-black text-main leading-none mb-1">${truck.nombre}</h4>
+                                    <span class="text-[10px] font-bold text-text-muted bg-white/5 px-2 py-0.5 rounded tracking-wider uppercase">${truck.patente}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="truck-menu-container" id="container-${truck.id}">
+                                <button class="w-10 h-10 rounded-full hover:bg-white/10 flex items-center justify-center transition-all active:scale-90" 
+                                        onclick="event.stopPropagation(); window.toggleTruckMenu('${truck.id}')">
+                                    <span class="material-symbols-outlined text-text-muted">more_vert</span>
+                                </button>
+                                <!-- Dropdown Menu -->
+                                <div class="truck-menu-dropdown absolute right-0 top-12 w-48 bg-[#1e2235] border border-white/20 rounded-2xl shadow-2xl z-[100] flex-col overflow-hidden ring-1 ring-black/50" id="truckMenu-${truck.id}">
+                                    <button onclick="editTruck('${truck.id}')" class="flex items-center gap-2 px-4 py-3 hover:bg-white/5 text-xs text-main font-bold text-left transition-colors border-b border-white/5">
+                                        <span class="material-symbols-outlined text-base">edit</span> Editar
+                                    </button>
+                                    <button onclick="deleteTruck('${truck.id}', '${truck.nombre.replace(/'/g, "\\'")}')" class="flex items-center gap-2 px-4 py-3 hover:bg-red-500/10 text-xs text-red-400 font-bold text-left transition-colors">
+                                        <span class="material-symbols-outlined text-base">delete</span> Borrar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                             <div class="bg-black/20 rounded-lg p-2 flex flex-col items-center">
+                                <span class="text-[10px] text-text-muted uppercase font-bold">Capacidad</span>
+                                <span class="text-sm font-black text-white">${truck.capacidad} m³</span>
+                             </div>
+                             <div class="bg-black/20 rounded-lg p-2 flex justify-center gap-3 items-center">
+                                 <div class="flex flex-col items-center">
+                                     <span class="text-[10px] text-success font-bold uppercase">Ent</span>
+                                     <span class="text-sm font-black text-white">${inc}</span>
+                                 </div>
+                                 <div class="w-px h-6 bg-white/10"></div>
+                                 <div class="flex flex-col items-center">
+                                     <span class="text-[10px] text-warning font-bold uppercase">Sal</span>
+                                     <span class="text-sm font-black text-white">${out}</span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update filter counts
+            const countAll = trucks.length;
+            const countIncoming = trucks.filter(t => t.tipo_registrado === 'incoming').length;
+            const countOutgoing = trucks.filter(t => t.tipo_registrado === 'outgoing').length;
+            const countMixed = trucks.filter(t => t.tipo_registrado === 'mixed').length;
+
+            document.getElementById('countIncoming').textContent = countIncoming;
+            document.getElementById('countOutgoing').textContent = countOutgoing;
+            document.getElementById('countMixed').textContent = countMixed;
+        }
+
+        // Toggle truck menu dropdown
+        window.toggleTruckMenu = function (truckId) {
+            const menu = document.getElementById(`truckMenu-${truckId}`);
+            const container = document.getElementById(`container-${truckId}`);
+            if (!menu) return;
+
+            const isCurrentlyActive = menu.classList.contains('active');
+
+            // Close all first, and reset container z-indexes
+            document.querySelectorAll('.truck-menu-dropdown').forEach(m => m.classList.remove('active'));
+            document.querySelectorAll('.truck-menu-container').forEach(c => c.classList.remove('active-menu'));
+
+            if (!isCurrentlyActive) {
+                // Open this one
+                menu.classList.add('active');
+                if (container) container.classList.add('active-menu');
+            }
+        }
+
+        // Close menus when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.truck-menu-container')) {
+                document.querySelectorAll('.truck-menu-dropdown').forEach(m => m.classList.remove('active'));
+                document.querySelectorAll('.truck-menu-container').forEach(c => c.classList.remove('active-menu'));
+            }
+        });
+
+        // Delete truck
+        window.deleteTruck = async function (truckId, truckName) {
+            // Count trips for this truck today
+            const truckTrips = (movements || []).filter(m => m.camion_id === truckId).length;
+
+            let message = `¿Eliminar camión "${truckName}"?\n\nNOTA: El camión se quitará de la nómina de hoy pero se conservará en el sistema.`;
+            if (truckTrips > 0) {
+                message = `¿Estás seguro de eliminar este camión?\n\n"${truckName}" ya ha empezado a operar hoy (${truckTrips} vueltas registradas).`;
+            }
+
+            if (!confirm(message)) return;
+
+            try {
+                // Soft delete: remove from today's roster
+                const { error } = await supabaseClient
+                    .from('camiones')
+                    .update({ nomina_fecha: null })
+                    .eq('id', truckId);
+
+                if (error) throw error;
+
+                // Close menu
+                document.querySelectorAll('.truck-menu-dropdown').forEach(m => m.classList.add('hidden'));
+
+                // Reload trucks
+                await loadTrucks();
+                showUpdateIndicator();
+            } catch (error) {
+                console.error('Error deleting truck:', error);
+                alert('Error al eliminar el camión. Intenta nuevamente.');
+            }
+        }
+
+        // Edit truck
+        window.editTruck = function (truckId) {
+            const truck = trucks.find(t => t.id === truckId);
+            if (!truck) return;
+
+            // Close menu
+            document.querySelectorAll('.truck-menu-dropdown').forEach(m => m.classList.add('hidden'));
+
+            // Pre-fill modal with truck data
+            document.getElementById('truckName').value = truck.nombre;
+            document.getElementById('licensePlate').value = truck.patente;
+            document.getElementById('capacity').value = truck.capacidad;
+
+            // Set radio button
+            const radioBtn = document.querySelector(`input[name="truckType"][value="${truck.tipo_registrado}"]`);
+            if (radioBtn) radioBtn.checked = true;
+
+            // Store editing ID
+            currentEditingTruckId = truckId;
+
+            // Update modal title
+            const modalTitle = document.querySelector('#truckModal h2');
+            if (modalTitle) modalTitle.textContent = '✏️ Editar Camión';
+
+            // Open modal
+            document.getElementById('truckModal').classList.remove('hidden');
+            document.getElementById('truckModal').classList.add('active');
+        }
+
+        function renderMovementLog() {
+            const container = document.getElementById('movementLog');
+            if (!container) return;
+
+            if (movements.length === 0) {
+                container.innerHTML = `
+                   <div class="text-center py-10 text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">history</span>
+                        <p class="text-sm">No hay movimientos registrados</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = movements.map(mov => {
+                const isIncoming = mov.tipo === 'incoming';
+                const borderColor = isIncoming ? 'border-l-success' : 'border-l-warning';
+                const icon = isIncoming ? 'south_east' : 'north_east';
+                const iconColor = isIncoming ? 'text-success' : 'text-warning';
+                const typeLabel = isIncoming ? 'Relleno' : 'Excavación';
+
+                return `
+                    <div class="glass-card p-3 rounded-xl border-l-4 ${borderColor} flex items-center justify-between group hover:bg-white/5 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined ${iconColor}">${icon}</span>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-black text-main leading-tight">${mov.camiones?.nombre || 'Desconocido'}</h4>
+                                <div class="flex flex-wrap gap-1 mt-1">
+                                    <span class="text-[10px] font-bold text-text-muted bg-white/5 px-1.5 py-0.5 rounded uppercase tracking-wide">${typeLabel}</span>
+                                    <span class="text-[10px] font-bold text-accent bg-white/5 px-1.5 py-0.5 rounded tracking-wide">${mov.capacidad} m³</span>
+                                    ${mov.material ? `
+                                        <div class="flex items-center gap-1 bg-white/5 px-1.5 py-0.5 rounded">
+                                            <div class="w-3 h-3 flex items-center justify-center shrink-0">
+                                                ${window.getMatIcon ? window.getMatIcon(mov.material, 'w-3 h-3') : ''}
+                                            </div>
+                                            <span class="text-[10px] text-text-muted truncate max-w-[80px]">${mov.material}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                ${mov.ubicacion ? `<div class="text-[10px] text-text-muted mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">location_on</span> ${mov.ubicacion}</div>` : ''}
+                            </div>
+                        </div>
+                         <div class="flex flex-col items-end">
+                            <span class="text-xs font-bold text-white">${new Date(mov.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update pills
+            document.getElementById('movementIncomingCount').textContent = movements.filter(m => m.tipo === 'incoming').length;
+            document.getElementById('movementOutgoingCount').textContent = movements.filter(m => m.tipo === 'outgoing').length;
+        }
+
+        function updateSummary() {
+            const incMovs = movements.filter(m => m.tipo === 'incoming');
+            const outMovs = movements.filter(m => m.tipo === 'outgoing');
+
+            const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+            const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+
+            document.getElementById('incomingCount').textContent = incMovs.length;
+            document.getElementById('outgoingCount').textContent = outMovs.length;
+            document.getElementById('incomingVolume').textContent = `${incVol.toFixed(1)} m³`;
+            document.getElementById('outgoingVolume').textContent = `${outVol.toFixed(1)} m³`;
+            document.getElementById('totalTrucks').textContent = trucks.length;
+            document.getElementById('totalTrucksFooter').textContent = trucks.length;
+            document.getElementById('totalVolume').textContent = `${(incVol + outVol).toFixed(1)} m³`;
+        }
+
+        // Render Analytics Tab
+        function renderAnalytics() {
+            const incMovs = movements.filter(m => m.tipo === 'incoming');
+            const outMovs = movements.filter(m => m.tipo === 'outgoing');
+
+            const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+            const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+
+            // 1. Update Volume Balance
+            document.getElementById('analyticsFillVolume').textContent = `+${incVol.toFixed(1)} m³`;
+            document.getElementById('analyticsExcavationVolume').textContent = `-${outVol.toFixed(1)} m³`;
+
+            // 2. Truck Performance
+            const perfContainer = document.getElementById('truckPerformance');
+            if (movements.length === 0) {
+                perfContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas</p>';
+            } else {
+                // Group movements by truck
+                const statsMap = {};
+                movements.forEach(m => {
+                    const truckId = m.camion_id;
+                    if (!statsMap[truckId]) {
+                        // Support both 'camiones' (plural relation) and 'camion' (singular relation) or fallback to ID
+                        const truckInfo = m.camiones || m.camion || {};
+                        statsMap[truckId] = {
+                            name: truckInfo.nombre || `Camión ${truckId.substring(0, 4)}`,
+                            trips: 0,
+                            incomingCount: 0,
+                            outgoingCount: 0,
+                            incomingVol: 0,
+                            outgoingVol: 0,
+                            volume: 0
+                        };
+                    }
+                    const s = statsMap[truckId];
+                    s.trips++;
+                    if (m.tipo === 'incoming') {
+                        s.incomingCount++;
+                        s.incomingVol += (parseFloat(m.capacidad) || 0);
+                    } else {
+                        s.outgoingCount++;
+                        s.outgoingVol += (parseFloat(m.capacidad) || 0);
+                    }
+                    s.volume += (parseFloat(m.capacidad) || 0);
+                });
+
+                const truckStats = Object.values(statsMap)
+                    .sort((a, b) => b.trips - a.trips);
+
+                if (truckStats.length === 0) {
+                    perfContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas</p>';
+                } else {
+                    perfContainer.innerHTML = truckStats.map((stat, index) => {
+                        let typeLabels = [];
+                        if (stat.incomingCount > 0) {
+                            typeLabels.push(`<span class="text-[8px] bg-success/20 text-success px-1.5 py-0.5 rounded font-bold">RELLENO (${stat.incomingCount}v - ${stat.incomingVol.toFixed(1)}m³)</span>`);
+                        }
+                        if (stat.outgoingCount > 0) {
+                            typeLabels.push(`<span class="text-[8px] bg-warning/20 text-warning px-1.5 py-0.5 rounded font-bold">EXCAVACIÓN (${stat.outgoingCount}v - ${stat.outgoingVol.toFixed(1)}m³)</span>`);
+                        }
+
+                        return `
+                            <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 shadow-sm">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-6 h-6 rounded-lg bg-black/40 flex items-center justify-center text-[10px] font-bold text-text-muted border border-white/10 shrink-0">${index + 1}</span>
+                                    <div>
+                                        <span class="text-sm font-bold text-white block mb-1">${stat.name}</span>
+                                        <div class="flex gap-1.5 flex-wrap">
+                                            ${typeLabels.join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <span class="block text-base font-black text-main leading-none mb-1">${stat.trips} v</span>
+                                    <span class="text-[10px] text-text-muted font-bold">${stat.volume.toFixed(1)} m³</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            // 3. Hourly Activity
+            const activityContainer = document.getElementById('hourlyActivity');
+            if (movements.length === 0) {
+                activityContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver actividad</p>';
+            } else {
+                // Group movements by hour
+                const hourlyData = {};
+                movements.forEach(m => {
+                    const hour = new Date(m.timestamp).getHours();
+                    if (!hourlyData[hour]) hourlyData[hour] = 0;
+                    hourlyData[hour]++;
+                });
+
+                const maxTrips = Math.max(...Object.values(hourlyData));
+                const hours = Object.keys(hourlyData).sort((a, b) => a - b);
+
+                activityContainer.innerHTML = hours.map(hour => {
+                    const count = hourlyData[hour];
+                    const percentage = (count / maxTrips) * 100;
+                    return `
+                        <div class="flex items-center gap-2">
+                             <span class="text-[10px] font-bold text-text-muted w-8 text-right">${hour}:00</span>
+                             <div class="flex-1 h-3 bg-black/30 rounded-full overflow-hidden">
+                                 <div class="h-full bg-gradient-to-r from-primary to-accent rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" style="width: ${percentage}%"></div>
+                             </div>
+                             <span class="text-[10px] font-bold text-white w-4">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // 4. General Summary
+            if (movements.length > 0) {
+                const times = movements.map(m => new Date(m.timestamp));
+                const firstTrip = new Date(Math.min(...times));
+                const lastTrip = new Date(Math.max(...times));
+
+                document.getElementById('firstTrip').textContent = firstTrip.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                document.getElementById('lastTrip').textContent = lastTrip.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+                // Calculate operating time
+                const diffMs = lastTrip - firstTrip;
+                const hours = Math.floor(diffMs / 3600000);
+                const mins = Math.floor((diffMs % 3600000) / 60000);
+                document.getElementById('operatingTime').textContent = `${hours}h ${mins}m`;
+
+                // Avg trips per hour
+                const totalHours = diffMs / 3600000;
+                const avgTrips = totalHours > 0 ? (movements.length / totalHours).toFixed(1) : movements.length;
+                document.getElementById('avgTripsPerHour').textContent = avgTrips;
+            } else {
+                document.getElementById('firstTrip').textContent = '--:--';
+                document.getElementById('lastTrip').textContent = '--:--';
+                document.getElementById('operatingTime').textContent = '0h 0m';
+                document.getElementById('avgTripsPerHour').textContent = '0';
+            }
+        }
+
+        window.openTruckSelector = function (tipo) {
+            console.log('Opening Truck Selector for:', tipo);
+            pendingTripMode = tipo; // Store context for adding missing trucks
+            const modal = document.getElementById('truckSelectorModal');
+            const list = document.getElementById('truckSelectorList');
+            document.getElementById('selectorTitle').innerHTML = tipo === 'incoming'
+                ? '<span class="text-success material-symbols-outlined">south_east</span> Selección (Relleno)'
+                : '<span class="text-warning material-symbols-outlined">north_east</span> Selección (Excavación)';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+
+            // Improved Professional List
+            if (trucks.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-12 px-6">
+                        <span class="material-symbols-outlined text-4xl text-slate-600 mb-2">info</span>
+                        <p class="text-slate-400 text-sm">No hay camiones en la nómina de hoy.</p>
+                        <p class="text-slate-500 text-[10px] mt-2 italic uppercase">Usa el botón "Recientes" o "Nuevo" para activarlos.</p>
+                    </div>
+                 `;
+            } else {
+                list.innerHTML = trucks.map(truck => `
+                    <div class="glass-card p-3 rounded-xl flex items-center justify-between group hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-primary/30 active:scale-[0.98]" 
+                         onclick="openMaterialSelector('${truck.id}', '${tipo}', ${truck.capacidad})">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-white/5 shadow-inner">
+                                <span class="text-sm font-black text-primary">${truck.nombre.substring(0, 2).toUpperCase()}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <h4 class="text-sm font-bold text-main leading-tight">${truck.nombre}</h4>
+                                <div class="flex items-center gap-2 mt-0.5">
+                                    <span class="text-[10px] font-bold text-text-muted bg-white/5 px-1.5 rounded uppercase tracking-wide">${truck.patente}</span>
+                                    <span class="text-[10px] text-text-muted">•</span>
+                                    <span class="text-[10px] font-bold text-accent">${truck.capacidad} m³</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center bg-white/0 group-hover:bg-white/10 transition-colors">
+                            <span class="material-symbols-outlined text-text-muted group-hover:text-white">chevron_right</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Icon mapping helper - Globalized for reuse
+        window.getMatIcon = (name, sizeClass = 'w-12 h-12') => {
+            if (!name) return '📦';
+            const n = name.toLowerCase();
+            const imageMap = {
+                'arena': 'arena.png',
+                'grava': 'grava.png',
+                'bolones': 'bolones.png',
+                'bolón': 'bolones.png',
+                'tierra': 'tierra.png',
+                'escombro': 'escombro.png',
+                'base estabilizada': 'base_estabilizada.png',
+                'arcilla': 'arcilla.png',
+                'basura': 'basura.png',
+                'maicillo': 'maicillo.png'
+            };
+
+            const match = Object.keys(imageMap).find(key => n.includes(key));
+            if (match) {
+                return `<img src="assets/materiales/${imageMap[match]}" class="${sizeClass} object-contain filter drop-shadow-md" onerror="this.outerHTML='📦'">`;
+            }
+
+            if (n.includes('arena')) return '🏜️';
+            if (n.includes('grava') || n.includes('piedra')) return '🪨';
+            if (n.includes('bolones') || n.includes('bolon')) return '🎱';
+            if (n.includes('tierra') || n.includes('base')) return '🪴';
+            if (n.includes('escombro')) return '🧱';
+            if (n.includes('asfalto')) return '🛣️';
+            if (n.includes('concreto') || n.includes('hormigon')) return '🏗️';
+            return '📦';
+        };
+
+        window.openMaterialSelector = async function (camionId, tipo, capacidad) {
+            console.log('--- Material Selector Triggered ---');
+            console.log('Camion:', camionId, 'Tipo:', tipo);
+
+            // 1. Force close the truck selector
+            const truckModal = document.getElementById('truckSelectorModal');
+            truckModal.classList.remove('active');
+            truckModal.classList.add('hidden');
+
+            const modal = document.getElementById('materialSelectorModal');
+            const list = document.getElementById('materialSelectorList');
+            const formContainer = document.getElementById('newMaterialFormContainer');
+
+            // Reset selection state for new material icon
+            window.selectedMaterialIcon = null;
+
+            // Reset location field in the material modal for each trip
+            const locationInput = document.getElementById('tripLocation');
+            if (locationInput) locationInput.value = '';
+
+            // Reset UI - Be explicit and consistent with classList
+            formContainer.classList.add('hidden');
+            formContainer.style.display = ''; // Clear any inline styles from toggleNewMaterialForm
+            list.classList.remove('hidden');
+            list.style.display = ''; // Clear any inline styles from toggleNewMaterialForm
+
+            // Filter materials by type (incoming/outgoing)
+            console.log('--- Filtering Materials ---');
+            console.log('Current materials array size:', materials.length);
+            console.log('Target type:', tipo);
+
+            const filteredMaterials = materials.filter(m => m.tipo === tipo);
+            console.log('Filtered materials count:', filteredMaterials.length);
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+
+            let html = filteredMaterials.map(mat => `
+                <div class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.05] transition-all border border-white/5 shadow-lg active:scale-95 text-center group" 
+                     onclick="registerAndClose('${camionId}', '${tipo}', ${capacidad}, '${mat.nombre}')">
+                    <div class="w-14 h-14 flex items-center justify-center text-3xl mb-1 transform transition-transform group-hover:scale-110">
+                        ${getMatIcon(mat.nombre)}
+                    </div>
+                    <div class="text-[11px] font-black text-white text-center leading-tight w-full truncate uppercase tracking-tighter">${mat.nombre}</div>
+                </div>
+            `).join('');
+
+            if (filteredMaterials.length === 0) {
+                html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">No hay materiales configurados.</div>';
+            }
+
+            // Add "Nuevo Material" button
+            html += `
+                <div class="glass-card p-4 rounded-3xl flex flex-col items-center justify-center gap-2 cursor-pointer border-2 border-dashed border-primary/30 hover:border-primary hover:bg-primary/5 transition-all group active:scale-95" 
+                     onclick="toggleNewMaterialForm(true)">
+                    <div class="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-1 group-hover:scale-110 transition-transform">
+                         <span class="material-symbols-outlined text-3xl">add</span>
+                    </div>
+                    <div class="text-[11px] font-black text-primary text-center">NUEVO</div>
+                </div>
+            `;
+
+            list.innerHTML = html;
+
+            // Helper to handle flow
+            window.registerAndClose = async (cid, t, cap, matName) => {
+                const loc = document.getElementById('tripLocation').value;
+
+                if (t === 'outgoing') {
+                    // Excavatión (Salida): Ask for destination
+                    openDestinoSelector(cid, t, cap, matName, loc);
+                } else {
+                    // Relleno (Entrada): Ask for origin
+                    openOrigenSelector(cid, t, cap, matName, loc);
+                }
+            };
+
+            // Setup listeners for the new material form
+            const saveBtn = document.getElementById('saveNewMaterialBtn');
+            const cancelBtn = document.getElementById('cancelNewMaterialBtn');
+            const input = document.getElementById('customMaterialName');
+
+            saveBtn.onclick = async () => {
+                let materialName = input.value.trim();
+                const loc = document.getElementById('tripLocation').value;
+                if (!materialName) {
+                    alert('Ingresa un nombre para el material');
+                    return;
+                }
+
+                // If an icon was selected, ensure the name contains the keyword
+                if (window.selectedMaterialIcon) {
+                    const iconKey = window.selectedMaterialIcon.toLowerCase();
+                    if (!materialName.toLowerCase().includes(iconKey)) {
+                        materialName = `${materialName} (${window.selectedMaterialIcon})`;
+                    }
+                }
+
+                try {
+                    const { error } = await supabaseClient.from('materiales').insert([{
+                        obra_id: currentObraId,
+                        nombre: materialName,
+                        tipo: tipo
+                    }]);
+                    if (error) throw error;
+
+                    await loadMaterials();
+                    // Correct parameters: (camionId, tipo, capacidad, material, destino, ubicacion)
+                    await window.registerMovement(camionId, tipo, capacidad, materialName, null, loc);
+                    input.value = '';
+                    closeAllModals();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+
+            cancelBtn.onclick = () => window.toggleNewMaterialForm(false);
+        };
+
+        window.toggleNewMaterialForm = function (show) {
+            const list = document.getElementById('materialSelectorList');
+            const form = document.getElementById('newMaterialFormContainer');
+            const iconOptions = document.querySelectorAll('.icon-option');
+
+            if (show) {
+                list.classList.add('hidden');
+                form.classList.remove('hidden');
+                document.getElementById('customMaterialName').focus();
+
+                // Setup icon selector listeners
+                iconOptions.forEach(opt => {
+                    opt.onclick = () => {
+                        iconOptions.forEach(o => o.classList.remove('ring-4', 'ring-primary', 'bg-primary/20'));
+                        opt.classList.add('ring-4', 'ring-primary', 'bg-primary/20');
+                        window.selectedMaterialIcon = opt.getAttribute('data-icon');
+                    };
+                });
+            } else {
+                list.classList.remove('hidden');
+                form.classList.add('hidden');
+                iconOptions.forEach(o => o.classList.remove('ring-4', 'ring-primary', 'bg-primary/20'));
+                window.selectedMaterialIcon = null;
+            }
+        }
+
+        window.closeAllModals = function () {
+            document.querySelectorAll('.fixed.z-\\[60\\], .fixed.z-\\[70\\], .fixed.z-\\[75\\], .fixed.z-\\[80\\]').forEach(m => { // Targeting modals by their specific classes used in new design
+                m.classList.remove('active');
+                m.classList.add('hidden');
+            });
+            // Also fallback for generic ID targeting if class selector misses
+            const ids = ['truckSelectorModal', 'materialSelectorModal', 'destinoSelectorModal', 'origenSelectorModal', 'historyModal', 'truckModal', 'frequentTrucksModal', 'materialModal'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('active');
+                    el.classList.add('hidden');
+                }
+            });
+
+            if (document.getElementById('tripLocation')) {
+                document.getElementById('tripLocation').value = '';
+            }
+        }
+
+        window.openDestinoSelector = function (camionId, tipo, capacidad, material, ubicacion) {
+            console.log('--- Destination Selector Triggered ---');
+            const modal = document.getElementById('destinoSelectorModal');
+            const list = document.getElementById('destinoSelectorList');
+            const formContainer = document.getElementById('newDestinoFormContainer');
+
+            // Reset UI
+            formContainer.classList.add('hidden');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+
+            let html = '';
+            if (destinos.length === 0) {
+                html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin destinos previos</div>';
+            } else {
+                html = destinos.map(dest => `
+                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
+                         onclick="finalRegisterAndClose('${camionId}', '${tipo}', ${capacidad}, '${material}', '${dest.nombre}', '${ubicacion}')">
+                        <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-1">
+                             <span class="material-symbols-outlined">location_on</span>
+                        </div>
+                        <span class="text-xs font-bold text-white text-center leading-tight truncate w-full">${dest.nombre}</span>
+                    </div>
+                `).join('');
+            }
+
+            html += `
+                <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-dashed border-primary/50 hover:border-primary active:scale-95 group" onclick="toggleNewDestinoForm(true)">
+                     <div class="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary mb-1 transition-colors">
+                         <span class="material-symbols-outlined">add</span>
+                    </div>
+                    <span class="text-xs font-bold text-primary text-center leading-tight">NUEVO</span>
+                </div>
+             `;
+
+            list.innerHTML = html;
+
+            window.finalRegisterAndClose = async (cid, t, cap, mat, dest, loc) => {
+                await registerMovement(cid, t, cap, mat, dest, loc);
+                closeAllModals();
+            };
+
+            const saveBtn = document.getElementById('saveNewDestinoBtn');
+            const input = document.getElementById('customDestinoName');
+
+            saveBtn.onclick = async () => {
+                const destinoName = input.value.trim();
+                if (!destinoName) return alert('Ingresa un nombre');
+
+                try {
+                    const { error } = await supabaseClient.from('destinos').insert([{
+                        obra_id: currentObraId,
+                        nombre: destinoName
+                    }]);
+                    if (error) throw error;
+
+                    await loadDestinos();
+                    await registerMovement(camionId, tipo, capacidad, material, destinoName, ubicacion);
+                    input.value = '';
+                    closeAllModals();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+        };
+
+        window.openOrigenSelector = function (camionId, tipo, capacidad, material, ubicacion) {
+            console.log('--- Origin Selector Triggered ---');
+            const modal = document.getElementById('origenSelectorModal');
+            const list = document.getElementById('origenSelectorList');
+            const formContainer = document.getElementById('newOrigenFormContainer');
+
+            // Reset UI
+            formContainer.classList.add('hidden');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+
+            let html = '';
+            if (origenes.length === 0) {
+                html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin orígenes previos</div>';
+            } else {
+                html = origenes.map(orig => `
+                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
+                         onclick="finalRegisterAndCloseOrigen('${camionId}', '${tipo}', ${capacidad}, '${material}', '${orig.nombre}', '${ubicacion}')">
+                        <div class="w-10 h-10 rounded-full bg-emerald-400/20 flex items-center justify-center text-emerald-400 mb-1">
+                             <span class="material-symbols-outlined">local_shipping</span>
+                        </div>
+                        <span class="text-xs font-bold text-white text-center leading-tight truncate w-full">${orig.nombre}</span>
+                    </div>
+                `).join('');
+            }
+
+            html += `
+                <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-dashed border-primary/50 hover:border-primary active:scale-95 group" onclick="toggleNewOrigenForm(true)">
+                     <div class="w-10 h-10 rounded-full bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center text-primary mb-1 transition-colors">
+                         <span class="material-symbols-outlined">add</span>
+                    </div>
+                    <span class="text-xs font-bold text-primary text-center leading-tight">NUEVO</span>
+                </div>
+             `;
+
+            list.innerHTML = html;
+
+            window.finalRegisterAndCloseOrigen = async (cid, t, cap, mat, orig, loc) => {
+                await registerMovement(cid, t, cap, mat, null, loc, orig);
+                closeAllModals();
+            };
+
+            const saveBtn = document.getElementById('saveNewOrigenBtn');
+            const input = document.getElementById('customOrigenName');
+
+            saveBtn.onclick = async () => {
+                const origenName = input.value.trim();
+                if (!origenName) return alert('Ingresa un nombre');
+
+                try {
+                    const { error } = await supabaseClient.from('origenes').insert([{
+                        obra_id: currentObraId,
+                        nombre: origenName
+                    }]);
+                    if (error) throw error;
+
+                    await loadOrigenes();
+                    await registerMovement(camionId, tipo, capacidad, material, null, ubicacion, origenName);
+                    input.value = '';
+                    closeAllModals();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                }
+            };
+        };
+
+        window.toggleNewOrigenForm = function (show) {
+            const list = document.getElementById('origenSelectorList');
+            const form = document.getElementById('newOrigenFormContainer');
+            if (show) {
+                list.style.display = 'none';
+                form.style.display = 'block';
+                document.getElementById('customOrigenName').focus();
+            } else {
+                list.style.display = 'grid';
+                form.style.display = 'none';
+            }
+        };
+
+        window.toggleNewDestinoForm = function (show) {
+            const list = document.getElementById('destinoSelectorList');
+            const form = document.getElementById('newDestinoFormContainer');
+            if (show) {
+                list.style.display = 'none';
+                form.style.display = 'block';
+                document.getElementById('customDestinoName').focus();
+            } else {
+                list.style.display = 'grid';
+                form.style.display = 'none';
+            }
+        };
+
+        window.registerMovement = async function (camionId, tipo, capacidad, material = null, destino = null, ubicacion = null, origen = null) {
+            try {
+                const session = await supabaseClient.auth.getSession();
+                const userId = session.data.session?.user?.id;
+
+                if (!userId) {
+                    alert('Sesión expirada');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const now = new Date();
+                const { error } = await supabaseClient
+                    .from('movimientos')
+                    .insert([{
+                        obra_id: currentObraId,
+                        camion_id: camionId,
+                        usuario_id: userId,
+                        tipo: tipo,
+                        capacidad: parseFloat(capacidad),
+                        material: material,
+                        destino: destino,
+                        origen: origen, // Added
+                        ubicacion: ubicacion,
+                        fecha: now.toISOString().split('T')[0],
+                        timestamp: now.toISOString()
+                    }]);
+
+                if (error) throw error;
+
+
+                // Audio/Visual Feedback (simple)
+                if (navigator.vibrate) navigator.vibrate(50);
+
+                await loadMovements();
+                renderTruckList();
+            } catch (err) {
+                console.error('Save Error:', err);
+                alert('No se pudo guardar: ' + err.message);
+            }
+        };
+
+        // ============================================
+        // AUTOMATIC DAILY ARCHIVAL
+        // ============================================
+
+        async function autoArchivePreviousDays() {
+            try {
+                console.group('🔍 Checking for pending archives...');
+                const today = new Date().toISOString().split('T')[0];
+
+                // 1. Fetch movements from PREVIOUS days (not today)
+                const { data: pendingMovs, error: movError } = await supabaseClient
+                    .from('movimientos')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .neq('fecha', today);
+
+                if (movError) throw movError;
+
+                if (!pendingMovs || pendingMovs.length === 0) {
+                    console.log('✅ All previous days are already archived.');
+                    console.groupEnd();
+                    return;
+                }
+
+                // 2. Group by date
+                const groupedByDate = {};
+                pendingMovs.forEach(mov => {
+                    if (!groupedByDate[mov.fecha]) groupedByDate[mov.fecha] = [];
+                    groupedByDate[mov.fecha].push(mov);
+                });
+
+                console.log(`📌 Found movements for ${Object.keys(groupedByDate).length} previous days.`);
+
+                for (const fecha in groupedByDate) {
+                    const dayMovs = groupedByDate[fecha];
+                    const incMovs = dayMovs.filter(m => m.tipo === 'incoming');
+                    const outMovs = dayMovs.filter(m => m.tipo === 'outgoing');
+
+                    const summary = {
+                        obra_id: currentObraId,
+                        fecha: fecha,
+                        total_camiones: trucks.length || 0,
+                        total_vueltas: dayMovs.length,
+                        vueltas_entrantes: incMovs.length,
+                        vueltas_salientes: outMovs.length,
+                        volumen_relleno: incMovs.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                        volumen_excavacion: outMovs.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                        datos_completos: { movements: dayMovs }
+                    };
+
+                    console.log(`💾 Archiving ${fecha}... Vueltas: ${dayMovs.length}`);
+
+                    const { error: upsertError } = await supabaseClient
+                        .from('historial_diario')
+                        .upsert([summary], { onConflict: 'obra_id, fecha' });
+
+                    if (upsertError) throw upsertError;
+                }
+
+                console.log('🚀 Automatic archival complete.');
+                console.groupEnd();
+
+                // Re-load to ensure clean slate for today
+                await loadMovements();
+            } catch (err) {
+                console.error('❌ Auto-Archive Error:', err);
+                console.groupEnd();
+            }
+        }
+
+        window.openHistoryModal = async function () {
+            const modal = document.getElementById('historyModal');
+            const list = document.getElementById('historyList');
+
+            if (!currentObraId || currentObraId === 'null') {
+                alert('Error: No se ha seleccionado una obra válida.');
+                return;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
+            list.innerHTML = '<div class="text-center py-8 text-text-muted text-sm">Cargando historial...</div>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('historial_diario')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('fecha', { ascending: false })
+                    .limit(30);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    list.innerHTML = `
+                        <div class="text-center py-10 text-text-muted">
+                            <span class="material-symbols-outlined text-4xl mb-2 opacity-50">calendar_today</span>
+                            <p class="text-sm">No hay cierres previos</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = data.map(record => `
+                    <div class="glass-card p-4 rounded-xl flex flex-col gap-3 cursor-pointer group hover:bg-white/5 transition-all border border-transparent hover:border-primary/30" onclick="loadDate('${record.fecha}')">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined">calendar_month</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-black text-main leading-none">${formatDateStr(record.fecha)}</h4>
+                                    <span class="text-[10px] font-bold text-primary uppercase tracking-wide group-hover:underline">Ver Detalle</span>
+                                </div>
+                            </div>
+                            <span class="bg-primary px-2 py-1 rounded text-[10px] font-bold text-white shadow-lg shadow-primary/25">
+                                ${record.total_vueltas} Vueltas
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="bg-black/20 rounded px-2 py-1.5 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-success text-xs">south_east</span>
+                                <span class="text-xs font-bold text-text-muted">Rel: <span class="text-white">${Number(record.volumen_relleno).toFixed(1)}m³</span></span>
+                            </div>
+                            <div class="bg-black/20 rounded px-2 py-1.5 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-warning text-xs">north_east</span>
+                                <span class="text-xs font-bold text-text-muted">Exc: <span class="text-white">${Number(record.volumen_excavacion).toFixed(1)}m³</span></span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                list.innerHTML = `<div class="text-red-400 text-xs text-center p-4">Error: ${err.message}</div>`;
+            }
+        }
+
+        function formatDateStr(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}/${month}/${year}`;
+        }
+
+        // Day navigation for counter
+        let currentCounterDayOffset = 0;
+
+        function updateDateTime() {
+            const targetDate = getTargetDate();
+
+            const el = document.getElementById('currentDate');
+            if (el) {
+                const dateStr = targetDate.toLocaleDateString('es-AR', {
+                    weekday: 'long', day: 'numeric', month: 'long'
+                });
+                el.textContent = currentCounterDayOffset === 0 ? dateStr : `${dateStr} (${currentCounterDayOffset > 0 ? '+' : ''}${currentCounterDayOffset} días)`;
+
+                // Color change to indicate not today
+                if (currentCounterDayOffset !== 0) {
+                    el.classList.add('text-warning');
+                    el.classList.remove('text-text-muted');
+                } else {
+                    el.classList.remove('text-warning');
+                    el.classList.add('text-text-muted');
+                }
+            }
+
+            // Update Today Button
+            const todayBtn = document.getElementById('todayBtn');
+            const todayBtnText = document.getElementById('todayBtnText');
+            if (todayBtn && todayBtnText) {
+                if (currentCounterDayOffset === 0) {
+                    todayBtnText.textContent = 'Hoy';
+                    todayBtn.className = "flex items-center gap-2 px-4 py-1.5 bg-primary/20 hover:bg-primary/30 rounded-lg transition-all border border-primary/30";
+                    todayBtnText.className = "text-xs font-bold text-primary uppercase tracking-wider";
+                } else {
+                    todayBtnText.textContent = 'Volver a Hoy';
+                    todayBtn.className = "flex items-center gap-2 px-4 py-1.5 bg-warning/20 hover:bg-warning/30 rounded-lg transition-all border border-warning/30 animate-pulse";
+                    todayBtnText.className = "text-xs font-bold text-warning uppercase tracking-wider";
+                }
+            }
+        }
+
+        window.changeCounterDay = function (direction) {
+            if (direction === 0) {
+                currentCounterDayOffset = 0;
+            } else {
+                currentCounterDayOffset += direction;
+            }
+            updateDateTime();
+            // Reload data for the selected date
+            init();
+        }
+
+        window.loadDate = function (dateStr) {
+            console.log('Loading specific date:', dateStr);
+            // Calculate offset days from today
+            // Use T12:00:00 to avoid timezone issues when parsing date string
+            const target = new Date(dateStr + 'T12:00:00');
+            const today = new Date();
+            today.setHours(12, 0, 0, 0);
+
+            // Difference in milliseconds
+            const diffTime = target.getTime() - today.getTime();
+            // Convert to days
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            console.log(`Jumping to date: ${dateStr}, Offset: ${diffDays}`);
+
+            currentCounterDayOffset = diffDays;
+            updateDateTime();
+
+            // Close modal correctly
+            const modal = document.getElementById('historyModal');
+            modal.classList.remove('active');
+            modal.classList.add('hidden');
+
+            // Visual feedback
+            const formattedDate = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+            // Optional: You could use a toast notification here instead of alert if available
+            // alert(`Cargando datos del ${formattedDate}...`); 
+
+            init(); // Reload all data for new date
+        }
+
+        window.logout = async () => {
+            await authService.logout();
+            window.location.href = 'login.html';
+        };
+
+        init();
+    </script>
+</body>
+
+</html>
