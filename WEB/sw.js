@@ -1,25 +1,26 @@
-const CACHE_NAME = 'cubos-v2-cache-v1';
+const CACHE_NAME = 'cubos-v2-cache-v2';
 const ASSETS_TO_CACHE = [
-    '/',
     '/login.html',
     '/boss.html',
     '/index.html',
+    '/site-selector.html',
+    '/register.html',
     '/styles.css',
-    '/auth-service.js',
-    '/supabase-client.js',
-    '/avatar-icons.js',
-    '/icons/icon-192x192.png',
-    '/icons/icon-512x512.png'
+    '/manifest.json',
+    '/icons/icon-192x192.png'
 ];
 
 // Install Event
 self.addEventListener('install', (event) => {
+    // Force the waiting service worker to become the active service worker.
+    self.skipWaiting();
+
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
+            console.log('SW: Pre-caching critical assets');
             return cache.addAll(ASSETS_TO_CACHE);
         })
     );
-    self.skipWaiting();
 });
 
 // Activate Event
@@ -31,21 +32,29 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
+    // Ensure the updated service worker takes control of all pages immediately.
     self.clients.claim();
 });
 
 // Fetch Event (Required for PWA installation)
 self.addEventListener('fetch', (event) => {
-    // Handle Supabase/External requests separately if needed
-    if (event.request.url.includes('supabase.co')) {
+    // We only want to handle same-origin requests
+    if (!event.request.url.startsWith(self.location.origin)) {
         return;
     }
 
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request).catch(() => {
-                // Fallback or just let it fail for dynamic data
+        caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+                return cachedResponse;
+            }
+            return fetch(event.request).then((response) => {
+                // If it's a valid response, maybe cache it dynamically? 
+                // For now, just return it.
+                return response;
             });
+        }).catch(() => {
+            // Error handling
         })
     );
 });
