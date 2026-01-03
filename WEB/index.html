@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.1.9</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.2.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1740,19 +1740,22 @@
 
             // Update filter counts based on registration OR activity
             const countIncoming = trucks.filter(t => {
+                const reg = (t.tipo_registrado || '').toLowerCase();
                 const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
-                return t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed' || hasAct;
+                return reg === 'incoming' || reg === 'mixed' || hasAct;
             }).length;
 
             const countOutgoing = trucks.filter(t => {
+                const reg = (t.tipo_registrado || '').toLowerCase();
                 const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
-                return t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed' || hasAct;
+                return reg === 'outgoing' || reg === 'mixed' || hasAct;
             }).length;
 
             const countMixed = trucks.filter(t => {
+                const reg = (t.tipo_registrado || '').toLowerCase();
                 const hasInc = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
                 const hasOut = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
-                return t.tipo_registrado === 'mixed' || (hasInc && hasOut);
+                return reg === 'mixed' || (hasInc && hasOut);
             }).length;
 
             document.getElementById('countIncoming').textContent = countIncoming;
@@ -2088,6 +2091,10 @@
             document.getElementById('selectorTitle').innerHTML = tipo === 'incoming'
                 ? '<span class="text-success material-symbols-outlined">south_east</span> Selección (Relleno)'
                 : '<span class="text-warning material-symbols-outlined">north_east</span> Selección (Excavación)';
+
+            // SHOW MODAL - FIX
+            modal.classList.remove('hidden');
+            modal.classList.add('active');
 
             // Selector Intelligence: Show if registered OR active today in this mode
             const filteredTrucks = trucks.filter(truck => {
