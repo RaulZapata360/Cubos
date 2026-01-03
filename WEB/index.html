@@ -665,14 +665,7 @@
                 </div>
 
                 <div class="p-4 space-y-4">
-                    <!-- Location Input -->
-                    <div>
-                        <label class="text-[10px] font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            📍 Ubicación (Opcional)
-                        </label>
-                        <input type="text" id="tripLocation" placeholder="Ej: Sector A, Relleno Sur..."
-                            class="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-white/20 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
-                    </div>
+
 
                     <!-- Material Grid -->
                     <div class="grid grid-cols-2 gap-3" id="materialSelectorList">
@@ -2129,9 +2122,7 @@
             // Reset selection state for new material icon
             window.selectedMaterialIcon = null;
 
-            // Reset location field in the material modal for each trip
-            const locationInput = document.getElementById('tripLocation');
-            if (locationInput) locationInput.value = '';
+
 
             // Reset UI - Be explicit and consistent with classList
             formContainer.classList.add('hidden');
@@ -2179,7 +2170,7 @@
 
             // Helper to handle flow
             window.registerAndClose = async (cid, t, cap, matName) => {
-                const loc = document.getElementById('tripLocation').value;
+                const loc = null; // Ubicación removida del flujo
 
                 if (t === 'outgoing') {
                     // Excavatión (Salida): Ask for destination
@@ -2197,7 +2188,7 @@
 
             saveBtn.onclick = async () => {
                 let materialName = input.value.trim();
-                const loc = document.getElementById('tripLocation').value;
+                const loc = null;
                 if (!materialName) {
                     alert('Ingresa un nombre para el material');
                     return;
@@ -2273,9 +2264,7 @@
                 }
             });
 
-            if (document.getElementById('tripLocation')) {
-                document.getElementById('tripLocation').value = '';
-            }
+
         }
 
         window.openDestinoSelector = function (camionId, tipo, capacidad, material, ubicacion) {
