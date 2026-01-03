@@ -1183,29 +1183,25 @@
 
             const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Usuario Boss';
             const cargo = user.user_metadata?.cargo || 'Supervisor de Obra';
-            const avatarUrl = user.user_metadata?.avatar_url;
+
+            // Use role-based avatar
+            const avatarUrl = window.AvatarIcons?.getUrl(cargo) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5048e5&color=fff&size=256`;
 
             // Profile Card
             document.getElementById('userName').textContent = name;
             document.getElementById('userCargo').textContent = cargo;
 
             const profileAvatar = document.getElementById('userAvatar');
-            const fallbackAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5048e5&color=fff&size=256`;
-            profileAvatar.src = avatarUrl || fallbackAvatarUrl;
+            profileAvatar.src = avatarUrl;
 
             // Header Avatar
             const headerInitials = document.getElementById('headerInitials');
             const headerImg = document.getElementById('headerAvatarImg');
 
-            if (avatarUrl) {
-                headerImg.src = avatarUrl;
-                headerImg.classList.remove('hidden');
-                headerInitials.classList.add('hidden');
-            } else {
-                headerImg.classList.add('hidden');
-                headerInitials.classList.remove('hidden');
-                headerInitials.textContent = getInitials(name);
-            }
+            // Always show image for role-based avatars
+            headerImg.src = avatarUrl;
+            headerImg.classList.remove('hidden');
+            headerInitials.classList.add('hidden');
         };
 
         function getInitials(name) {

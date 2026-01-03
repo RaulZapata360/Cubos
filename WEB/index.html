@@ -913,20 +913,18 @@
             if (!user) return;
 
             const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Contador';
-            const avatarUrl = user.user_metadata?.avatar_url;
+            const cargo = user.user_metadata?.cargo || 'Contador';
+
+            // Use role-based avatar
+            const avatarUrl = window.AvatarIcons?.getUrl(cargo) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&size=256`;
 
             const headerInitials = document.getElementById('headerInitials');
             const headerImg = document.getElementById('headerAvatarImg');
 
-            if (avatarUrl) {
-                headerImg.src = avatarUrl;
-                headerImg.classList.remove('hidden');
-                headerInitials.classList.add('hidden');
-            } else {
-                headerImg.classList.add('hidden');
-                headerInitials.classList.remove('hidden');
-                headerInitials.textContent = getInitials(name);
-            }
+            // Always show image for role-based avatars
+            headerImg.src = avatarUrl;
+            headerImg.classList.remove('hidden');
+            headerInitials.classList.add('hidden');
         };
 
         function getInitials(name) {
@@ -941,9 +939,9 @@
             if (!user) return;
 
             document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
-            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || 'Apuntador';
+            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || 'Contador';
             // Use role-based avatar
-            const cargo = user.user_metadata?.cargo || 'default';
+            const cargo = user.user_metadata?.cargo || 'Contador';
             document.getElementById('editUserAvatar').src = window.AvatarIcons?.getUrl(cargo) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=6366f1&color=fff&size=256`;
 
             document.getElementById('editProfileModal').classList.remove('hidden');
