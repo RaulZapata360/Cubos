@@ -206,7 +206,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.4.2</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.4.4</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -2433,10 +2433,15 @@
                     if (error) throw error;
 
                     await loadMaterials();
-                    // Correct parameters: (camionId, tipo, capacidad, material, destino, ubicacion)
-                    await window.registerMovement(camionId, tipo, capacidad, materialName, null, loc);
+
+                    // Trigger the next step in the flow instead of registering immediately
+                    if (tipo === 'outgoing') {
+                        openDestinoSelector(camionId, tipo, capacidad, materialName, loc);
+                    } else {
+                        openOrigenSelector(camionId, tipo, capacidad, materialName, loc);
+                    }
+
                     input.value = '';
-                    closeAllModals();
                 } catch (err) {
                     alert('Error: ' + err.message);
                 }
