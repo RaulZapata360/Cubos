@@ -3010,25 +3010,65 @@
             }).join('');
         }
 
+        // Apply role-based permissions
+        function applyPermissions() {
+            const role = sessionStorage.getItem('userRole');
+            console.log('🛡️ Applying permissions for role:', role);
+
+            if (role === 'supervisor' || role === 'secretaria') {
+                console.log('👀 Spectator mode enabled');
+
+                // Hide Create Obra FAB button
+                const fab = document.querySelector('.fab-button')?.parentElement;
+                if (fab) fab.classList.add('hidden');
+
+                // Hide specific administrative buttons if they exist
+                // (e.g., buttons to add materials or assign users)
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+
+                // Optional: Disable inputs in modals
+                const forms = ['editProfileForm']; // We allow profile edit, but maybe not create obra form
+                // But since we hide the FAB, they can't even open the create obra form.
+            }
+        }
+
         // Initialize
         async function init() {
-            updateDate();
-            await loadObras();
-            await window.loadDashboard(true);
-
-            // Fetch user info for Ajustes
-            const { data } = await supabaseClient.auth.getSession();
-            window.bossDashboardService.cachedSession = data.session;
-            updateAjustesView();
-
-            // Real-time subscription
-            realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
-                showUpdateIndicator();
+            try {
+                applyPermissions(); // Run immediately to hide UI
+                updateDate();
+                await loadObras();
                 await window.loadDashboard(true);
-            });
 
-            // Auto-refresh every 30s
-            setInterval(() => window.loadDashboard(false), 30000);
+                // Fetch user info for Ajustes
+                const { data } = await supabaseClient.auth.getSession();
+                if (data?.session) {
+                    window.bossDashboardService.cachedSession = data.session;
+
+                    // Double check role from profile table if needed
+                    const profile = await getUserProfile(data.session.user.id);
+                    if (profile) {
+                        sessionStorage.setItem('userRole', profile.rol);
+                        sessionStorage.setItem('userName', profile.nombre_completo);
+                        applyPermissions(); // Re-apply if role just loaded
+                    }
+                }
+                updateAjustesView();
+
+                // Real-time subscription
+                realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
+                    showUpdateIndicator();
+                    await window.loadDashboard(true);
+                });
+
+                // Auto-refresh every 30s
+                setInterval(() => window.loadDashboard(false), 30000);
+
+            } catch (error) {
+                console.error('CRITICAL ERROR during init:', error);
+                // If it's an auth error, maybe go to login?
+                // But let's avoid redirect loops.
+            }
         }
 
         // Cleanup

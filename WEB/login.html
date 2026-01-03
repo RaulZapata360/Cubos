@@ -368,16 +368,12 @@
 
                     // Redirect based on role
                     setTimeout(() => {
-                        if (result.rol === 'jefe') {
-                            window.location.href = 'boss.html';
-                        } else if (result.rol === 'contador') {
-                            window.location.href = 'site-selector.html';
-                        }
-                    }, 1000);
+                        authService.redirectByRole(result.rol);
+                    }, 500);
                 } else {
                     showError(result.error || 'Error al iniciar sesión');
-                    setLoading(false);
                 }
+                setLoading(false);
             } catch (error) {
                 console.error('Login error:', error);
                 showError('Error de conexión. Verifica tu internet.');
