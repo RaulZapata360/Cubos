@@ -473,7 +473,7 @@
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.5.0</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.5.1</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -1275,24 +1275,54 @@
         let currentDayOffsetObras = 0;
 
         // Configuration
+        // Configuration: Extended Material Palette for high contrast
         const MATERIAL_COLORS = {
-            'Arcilla': '#6366f1',           // Indigo
+            'Arcilla': '#c084fc',           // Purple Light
             'Base estabilizada': '#10b981', // Emerald
+            'Base estabilizada 70-80': '#059669', // Darker Emerald
             'Arena': '#f59e0b',             // Amber
             'Basura': '#ef4444',            // Rose
             'Grava': '#8b5cf6',             // Violet
-            'Tierra': '#94a3b8',            // Slate (Greyish Blue)
-            'default': '#cbd5e1'            // Lighter Slate
+            'Tierra': '#94a3b8',            // Slate
+            'Bolones': '#3b82f6',           // Blue
+            'Bolones 90': '#2563eb',        // Darker Blue
+            'Escombro': '#f97316',          // Orange
+            'Ripio': '#ec4899',             // Pink
+            'Maicillo': '#84cc16',          // Lime
+            'default': '#64748b'            // Neutral Slate
         };
+
+        // Extra dynamic palette for unknown materials to avoid collisions
+        const FALLBACK_PALETTE = [
+            '#06b6d4', '#8b5cf6', '#d946ef', '#f43f5e', '#14b8a6',
+            '#eab308', '#84cc16', '#6366f1', '#f97316', '#475569'
+        ];
 
         const getMaterialColor = (mat) => {
             if (!mat) return MATERIAL_COLORS['default'];
-            if (MATERIAL_COLORS[mat]) return MATERIAL_COLORS[mat];
+
             const lower = mat.toLowerCase();
+
+            // 1. Direct match or keyword match
+            if (MATERIAL_COLORS[mat]) return MATERIAL_COLORS[mat];
+
+            // Check for keyword matches in predefined mapping
             for (const key in MATERIAL_COLORS) {
-                if (key.toLowerCase() === lower) return MATERIAL_COLORS[key];
+                if (lower.includes(key.toLowerCase())) return MATERIAL_COLORS[key];
             }
-            return MATERIAL_COLORS['default'];
+
+            // 2. Specific complex matches
+            if (lower.includes('bola') || lower.includes('bolon')) return MATERIAL_COLORS['Bolones'];
+            if (lower.includes('base')) return MATERIAL_COLORS['Base estabilizada'];
+            if (lower.includes('escombro')) return MATERIAL_COLORS['Escombro'];
+
+            // 3. Dynamic fallback based on name hash (always same color for same name)
+            let hash = 0;
+            for (let i = 0; i < mat.length; i++) {
+                hash = mat.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const colorIndex = Math.abs(hash) % FALLBACK_PALETTE.length;
+            return FALLBACK_PALETTE[colorIndex];
         };
 
         // Unified Theme Management
