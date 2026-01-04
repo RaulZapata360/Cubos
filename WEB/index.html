@@ -1740,7 +1740,20 @@
 
         async function loadMovements() {
             try {
-                // Fetch ALL movements for this obra to calculate cumulative totals
+                const targetDate = getTargetDate();
+                const selectedDateStr = targetDate.toISOString().split('T')[0];
+
+                // Optimización: Solo cargar el rango necesario (hoy y ayer por defecto)
+                let startDate = selectedDateStr;
+                let endDate = selectedDateStr;
+
+                // Si estamos viendo "Hoy", cargamos también "Ayer" como respaldo
+                if (currentCounterDayOffset === 0) {
+                    const yesterday = new Date(targetDate);
+                    yesterday.setDate(targetDate.getDate() - 1);
+                    startDate = yesterday.toISOString().split('T')[0];
+                }
+
                 const { data, error } = await supabaseClient
                     .from('movimientos')
                     .select(`
@@ -1748,22 +1761,22 @@
                         camiones (nombre, patente)
                     `)
                     .eq('obra_id', currentObraId)
+                    .gte('fecha', startDate)
+                    .lte('fecha', endDate)
                     .order('timestamp', { ascending: false });
 
                 if (error) throw error;
 
-                // Store all movements for cumulative counting
-                window.allMovements = data || [];
+                // movements para el log debe ser solo del día seleccionado
+                movements = (data || []).filter(m => m.fecha === selectedDateStr);
 
-                // Filter movements for the selected date to show in the log
-                const targetDate = getTargetDate();
-                const dateStr = targetDate.toISOString().split('T')[0];
-                movements = (data || []).filter(m => m.fecha === dateStr);
+                // Guardamos los movimientos recientes (hoy/ayer) por si se necesitan
+                window.recentMovements = data || [];
 
                 renderMovementLog();
                 renderAnalytics();
                 updateSummary();
-                renderTruckList(); // Re-render truck list to update cumulative counts
+                renderTruckList();
             } catch (error) {
                 console.error('Error loading movements:', error);
             }
@@ -2728,12 +2741,17 @@
                 console.group('🔍 Checking for pending archives...');
                 const today = new Date().toISOString().split('T')[0];
 
-                // 1. Fetch movements from PREVIOUS days (not today)
+                // 1. Fetch movements from PREVIOUS days (limited to last 3 days for performance)
+                const limitDate = new Date();
+                limitDate.setDate(limitDate.getDate() - 3);
+                const limitDateStr = limitDate.toISOString().split('T')[0];
+
                 const { data: pendingMovs, error: movError } = await supabaseClient
                     .from('movimientos')
                     .select('*')
                     .eq('obra_id', currentObraId)
-                    .neq('fecha', today);
+                    .neq('fecha', today)
+                    .gte('fecha', limitDateStr);
 
                 if (movError) throw movError;
 
