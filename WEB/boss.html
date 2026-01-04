@@ -1111,6 +1111,10 @@
     </div>
 
     <script>
+        // Pre-initialize global functions to avoid "is not a function" errors
+        window.loadDashboard = async () => console.log('⏳ Cargando Dashboard...');
+        window.updateAjustesView = () => console.log('⏳ Cargando Ajustes...');
+
         // Global functions that need to be accessible from onclick handlers
         window.switchTab = function (tabId) {
             // Update UI
@@ -1190,7 +1194,7 @@
         };
 
         window.openEditProfileModal = function () {
-            const { user } = bossDashboardService.cachedSession || {};
+            const { user } = window.bossDashboardService?.cachedSession || {};
             if (!user) return;
 
             document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
@@ -1233,8 +1237,8 @@
         // Photo upload removed - using role-based avatars only
 
         window.updateAjustesView = function () {
-            const profile = window.bossDashboardService.currentProfile;
-            const { user } = bossDashboardService.cachedSession || {};
+            const profile = window.bossDashboardService?.currentProfile;
+            const { user } = window.bossDashboardService?.cachedSession || {};
             if (!profile && !user) return;
 
             const name = profile?.nombre_completo || user?.user_metadata?.nombre || user?.user_metadata?.nombre_completo || 'Usuario Boss';
@@ -2100,7 +2104,7 @@
     </script>
 
     <script type="module">
-        import { supabaseClient } from './supabase-client.js';
+        import { supabaseClient, getUserProfile } from './supabase-client.js';
         import { authService } from './auth-service.js';
         import { bossDashboardService } from './boss-dashboard-service.js';
         import { obrasService } from './obras-service.js';
@@ -3112,7 +3116,7 @@
                 }
 
                 // Actualizar UI del header lo antes posible
-                updateAjustesView();
+                window.updateAjustesView();
                 applyPermissions();
 
                 // 2. Carga secundaria de datos masivos
