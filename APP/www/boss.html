@@ -478,6 +478,13 @@
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
                     <div class="flex items-center gap-4">
+                        <div class="hidden sm:flex flex-col items-end justify-center mr-1 cursor-pointer"
+                            onclick="switchTab('ajustes')">
+                            <span id="headerUserName"
+                                class="text-main text-xs font-black tracking-tight leading-none mb-1">Cargando...</span>
+                            <span id="headerUserCargo"
+                                class="text-text-muted text-[8px] font-bold uppercase tracking-widest leading-none">...</span>
+                        </div>
                         <button onclick="toggleTheme()"
                             class="p-3 bg-item hover:bg-white/10 rounded-2xl transition-all group border border-border"
                             title="Cambiar Tema">
@@ -1226,11 +1233,12 @@
         // Photo upload removed - using role-based avatars only
 
         window.updateAjustesView = function () {
+            const profile = window.bossDashboardService.currentProfile;
             const { user } = bossDashboardService.cachedSession || {};
-            if (!user) return;
+            if (!profile && !user) return;
 
-            const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Usuario Boss';
-            const cargo = user.user_metadata?.cargo || '';
+            const name = profile?.nombre_completo || user?.user_metadata?.nombre || user?.user_metadata?.nombre_completo || 'Usuario Boss';
+            const cargo = profile?.cargo || user?.user_metadata?.cargo || '';
 
             // Use selected avatar icon (not cargo)
             const avatarIcon = user.user_metadata?.avatarIcon || 'Gerente';
@@ -1246,6 +1254,13 @@
             // Header Avatar
             const headerInitials = document.getElementById('headerInitials');
             const headerImg = document.getElementById('headerAvatarImg');
+
+            // Always show image for role-based avatars
+            // Header Persona Info
+            const headerName = document.getElementById('headerUserName');
+            const headerTitle = document.getElementById('headerUserCargo');
+            if (headerName) headerName.textContent = name;
+            if (headerTitle) headerTitle.textContent = cargo || 'Supervisor';
 
             // Always show image for role-based avatars
             headerImg.src = avatarUrl;
@@ -3093,6 +3108,7 @@
                     // Double check role from profile table if needed
                     const profile = await getUserProfile(data.session.user.id);
                     if (profile) {
+                        window.bossDashboardService.currentProfile = profile;
                         sessionStorage.setItem('userRole', profile.rol);
                         sessionStorage.setItem('userName', profile.nombre_completo);
                         applyPermissions(); // Re-apply if role just loaded
