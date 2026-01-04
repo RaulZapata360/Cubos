@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.5.3</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.5.4</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1929,24 +1929,26 @@
             return targetDate;
         }
 
-        async function loadMovements() {
+        async function loadMovements(forceRefresh = false) {
             try {
                 const targetDate = getTargetDate();
                 const selectedDateStr = targetDate.toISOString().split('T')[0];
                 const cacheKey = `movements_${selectedDateStr}`;
 
-                // 1. Check Cache
-                const cached = DataCache.get(cacheKey);
-                if (cached && cached.data) {
-                    console.log('📦 Using cached movements');
-                    movements = cached.data;
-                    renderMovementLog();
-                    renderAnalytics();
-                    updateSummary();
-                    if (!cached.expired) return;
-                } else {
-                    // Show Skeletons ONLY if no cache exists
-                    renderSkeletons('movementLog', 5, 'list');
+                // 1. Check Cache (Skip if forceRefresh is true)
+                if (!forceRefresh) {
+                    const cached = DataCache.get(cacheKey);
+                    if (cached && cached.data) {
+                        console.log('📦 Using cached movements');
+                        movements = cached.data;
+                        renderMovementLog();
+                        renderAnalytics();
+                        updateSummary();
+                        if (!cached.expired) return;
+                    } else {
+                        // Show Skeletons ONLY if no cache exists
+                        renderSkeletons('movementLog', 5, 'list');
+                    }
                 }
 
                 // Optimización: Solo cargar el rango necesario (hoy y ayer por defecto)
@@ -2979,7 +2981,12 @@
                 // Audio/Visual Feedback (simple)
                 if (navigator.vibrate) navigator.vibrate(50);
 
-                await loadMovements();
+                // Force refresh both trucks and movements to ensure UI is in sync
+                await Promise.all([
+                    loadTrucks(true),
+                    loadMovements(true)
+                ]);
+
                 renderTruckList();
             } catch (err) {
                 console.error('Save Error:', err);

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cubos-v2-cache-v13';
+const CACHE_NAME = 'cubos-v3-cache-v14';
 const ASSETS_TO_CACHE = [
     '/login.html',
     '/boss.html',
@@ -12,9 +12,7 @@ const ASSETS_TO_CACHE = [
 
 // Install Event
 self.addEventListener('install', (event) => {
-    // Force the waiting service worker to become the active service worker.
     self.skipWaiting();
-
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             console.log('SW: Pre-caching critical assets');
@@ -32,29 +30,36 @@ self.addEventListener('activate', (event) => {
             );
         })
     );
-    // Ensure the updated service worker takes control of all pages immediately.
     self.clients.claim();
 });
 
-// Fetch Event (Required for PWA installation)
+// Fetch Event
 self.addEventListener('fetch', (event) => {
-    // We only want to handle same-origin requests
+    // Solo manejamos peticiones del mismo origen
     if (!event.request.url.startsWith(self.location.origin)) {
         return;
     }
 
+    // Estrategia: Network First para archivos HTML (para asegurar que la versión siempre sea la última)
+    if (event.request.mode === 'navigate' || event.request.url.endsWith('.html')) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    // Actualizamos el caché con la nueva respuesta
+                    const copy = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                    return response;
+                })
+                .catch(() => caches.match(event.request)) // Si falla el red, usamos el cache
+        );
+        return;
+    }
+
+    // Estrategia: Cache First para el resto (imágenes, fuentes, etc)
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-            return fetch(event.request).then((response) => {
-                // If it's a valid response, maybe cache it dynamically? 
-                // For now, just return it.
-                return response;
-            });
-        }).catch(() => {
-            // Error handling
+            if (cachedResponse) return cachedResponse;
+            return fetch(event.request);
         })
     );
 });
