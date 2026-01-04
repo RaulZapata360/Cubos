@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.5.2</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.5.3</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1318,6 +1318,7 @@
         let hasRunAutoArchive = false;
         let pendingTripMode = null; // Track if we are in the middle of a trip recording flow
         let currentEditingTruckId = null; // Track which truck is being edited
+        let truckCooldowns = {}; // Global for preventing double-clicking accidents
 
         // ============================================
         // DATA CACHE UTILITY (Plan B)
@@ -1346,6 +1347,9 @@
                 Object.keys(localStorage).forEach(key => {
                     if (key.startsWith('cache_')) localStorage.removeItem(key);
                 });
+            },
+            remove(key) {
+                localStorage.removeItem(`cache_${currentObraId}_${key}`);
             }
         };
 
@@ -1722,7 +1726,10 @@
                     if (error) throw error;
 
                     const newTruck = data[0];
-                    await loadTrucks();
+                    // Invalidate cache since we added a new truck
+                    DataCache.remove(`trucks_${dateStr}`);
+
+                    await loadTrucks(true);
 
                     if (pendingTripMode) {
                         const currentMode = pendingTripMode;
@@ -1751,24 +1758,26 @@
             }
         }
 
-        async function loadTrucks() {
+        async function loadTrucks(forceRefresh = false) {
             try {
                 const targetDate = getTargetDate();
                 const dateStr = targetDate.toISOString().split('T')[0];
                 const cacheKey = `trucks_${dateStr}`;
 
-                // 1. Check Cache
-                const cached = DataCache.get(cacheKey);
-                if (cached && cached.data) {
-                    console.log('📦 Using cached trucks');
-                    trucks = cached.data;
-                    renderTruckList();
-                    updateSummary();
-                    // If not expired, we're done. If expired, we continue to fetch in background.
-                    if (!cached.expired) return;
-                } else {
-                    // Show Skeletons ONLY if no cache exists
-                    renderSkeletons('truckList', 3, 'card');
+                // 1. Check Cache (Skip if forceRefresh is true)
+                if (!forceRefresh) {
+                    const cached = DataCache.get(cacheKey);
+                    if (cached && cached.data) {
+                        console.log('📦 Using cached trucks');
+                        trucks = cached.data;
+                        renderTruckList();
+                        updateSummary();
+                        // If not expired, we're done. If expired, we continue to fetch in background.
+                        if (!cached.expired) return;
+                    } else {
+                        // Show Skeletons ONLY if no cache exists
+                        renderSkeletons('truckList', 3, 'card');
+                    }
                 }
 
                 // 2. Fetch fresh data
@@ -1871,7 +1880,9 @@
 
                 if (error) throw error;
 
-                await loadTrucks();
+                // Invalidate cache immediately to ensure visibility
+                DataCache.remove(`trucks_${dateStr}`);
+                await loadTrucks(true);
 
                 if (pendingTripMode) {
                     const currentMode = pendingTripMode;
@@ -2908,6 +2919,15 @@
         };
 
         window.registerMovement = async function (camionId, tipo, capacidad, material = null, destino = null, ubicacion = null, origen = null) {
+            // Anti-Double Click Cooldown (1 minute per truck)
+            const lastTrip = truckCooldowns[camionId];
+            const nowTime = Date.now();
+            if (lastTrip && (nowTime - lastTrip) < 60000) {
+                const rem = Math.ceil((60000 - (nowTime - lastTrip)) / 1000);
+                alert(`⚠️ ¡ESPERA! Este camión acaba de registrar una vuelta.\n\nPor seguridad, debes esperar ${rem} segundos para evitar duplicados.`);
+                return;
+            }
+
             try {
                 const session = await supabaseClient.auth.getSession();
                 const userId = session.data.session?.user?.id;
@@ -2936,6 +2956,9 @@
                     }]);
 
                 if (error) throw error;
+
+                // Update Success: Set cooldown to prevent immediate repeat
+                truckCooldowns[camionId] = Date.now();
 
                 // Mission Reinforcement: If a truck performs a mission, ensure it matches its type
                 // (Optional: Only if NOT mixed. We avoid auto-upgrading to mixed here to keep separation)
