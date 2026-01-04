@@ -1241,7 +1241,7 @@
             const cargo = profile?.cargo || user?.user_metadata?.cargo || '';
 
             // Use selected avatar icon (not cargo)
-            const avatarIcon = user.user_metadata?.avatarIcon || 'Gerente';
+            const avatarIcon = profile?.avatar_icon || user?.user_metadata?.avatarIcon || 'man_1';
             const avatarUrl = window.AvatarIcons?.getUrl(avatarIcon) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5048e5&color=fff&size=256`;
 
             // Profile Card
@@ -3095,26 +3095,29 @@
         // Initialize
         async function init() {
             try {
-                applyPermissions(); // Run immediately to hide UI
                 updateDate();
-                await loadObras();
-                await window.loadDashboard(true);
 
-                // Fetch user info for Ajustes
+                // 1. Prioridad: Cargar sesión y perfil inmediatamente para el Header
                 const { data } = await supabaseClient.auth.getSession();
                 if (data?.session) {
                     window.bossDashboardService.cachedSession = data.session;
 
-                    // Double check role from profile table if needed
+                    // Cargar perfil completo (nombre, cargo, avatar_icon)
                     const profile = await getUserProfile(data.session.user.id);
                     if (profile) {
                         window.bossDashboardService.currentProfile = profile;
                         sessionStorage.setItem('userRole', profile.rol);
                         sessionStorage.setItem('userName', profile.nombre_completo);
-                        applyPermissions(); // Re-apply if role just loaded
                     }
                 }
+
+                // Actualizar UI del header lo antes posible
                 updateAjustesView();
+                applyPermissions();
+
+                // 2. Carga secundaria de datos masivos
+                await loadObras();
+                await window.loadDashboard(true);
 
                 // Real-time subscription
                 realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
