@@ -28,16 +28,21 @@ class BossDashboardService {
         }
     }
 
-    // Obtener todos los camiones de todas las obras
-    async getAllCamiones() {
+    // Obtener todos los camiones de todas las obras de un día específico
+    async getAllCamiones(dateStr = null) {
         try {
-            const { data, error } = await supabaseClient
+            let query = supabaseClient
                 .from('camiones')
                 .select(`
                     *,
                     obras (nombre)
-                `)
-                .order('obra_id');
+                `);
+
+            if (dateStr) {
+                query = query.eq('nomina_fecha', dateStr);
+            }
+
+            const { data, error } = await query.order('obra_id');
 
             if (error) throw error;
             return data || [];
@@ -90,10 +95,15 @@ class BossDashboardService {
         }
 
         try {
+            const today = new Date();
+            const targetDate = new Date(today);
+            targetDate.setDate(today.getDate() + dayOffset);
+            const dateStr = this.getYMD(targetDate);
+
             // Obtener todos los datos en paralelo
             const [obras, camiones, movements] = await Promise.all([
                 this.getAllObras(),
-                this.getAllCamiones(),
+                this.getAllCamiones(dateStr),
                 this.getTodayMovements(dayOffset)
             ]);
 
@@ -232,11 +242,11 @@ class BossDashboardService {
                 // Determine which field to use for the breakdown
                 let loc = null;
                 if (type === 'incoming') {
-                    // For incoming, use 'ubicacion' (which contains the origin/cantera)
-                    loc = movement.ubicacion;
+                    // For incoming, priority is 'origen', then fallback to 'ubicacion'
+                    loc = movement.origen || movement.ubicacion;
                 } else {
-                    // For outgoing, use 'destino'
-                    loc = movement.destino;
+                    // For outgoing, priority is 'destino', then fallback to 'ubicacion'
+                    loc = movement.destino || movement.ubicacion;
                 }
 
                 if (!loc) return; // Skip if no location/origin/destination
@@ -607,7 +617,7 @@ class BossDashboardService {
 
             let query = supabaseClient
                 .from('movimientos')
-                .select('ubicacion, capacidad, material')
+                .select('origen, ubicacion, capacidad, material')
                 .eq('tipo', 'incoming')
                 .gte('fecha', range.start)
                 .lte('fecha', range.end);
@@ -617,8 +627,8 @@ class BossDashboardService {
             const { data, error } = await query;
             if (error) throw error;
 
-            // Use 'ubicacion' as the origin for incoming movements
-            const origins = [...new Set(data.map(m => m.ubicacion).filter(o => o))];
+            // Use 'origen' primarily, fallback to 'ubicacion'
+            const origins = [...new Set(data.map(m => m.origen || m.ubicacion).filter(o => o))];
             const materials = [...new Set(data.map(m => m.material).filter(m => m))];
 
             const datasets = materials.map(material => {
@@ -626,7 +636,7 @@ class BossDashboardService {
                     label: material,
                     data: origins.map(orig => {
                         return data
-                            .filter(m => m.ubicacion === orig && m.material === material)
+                            .filter(m => (m.origen === orig || (!m.origen && m.ubicacion === orig)) && m.material === material)
                             .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
                     })
                 };
@@ -644,7 +654,7 @@ class BossDashboardService {
                     label: material,
                     data: sortedLabels.map(orig => {
                         return data
-                            .filter(m => m.ubicacion === orig && m.material === material)
+                            .filter(m => (m.origen === orig || (!m.origen && m.ubicacion === orig)) && m.material === material)
                             .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
                     })
                 };

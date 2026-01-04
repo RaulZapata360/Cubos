@@ -69,6 +69,11 @@ class AuthService {
             localStorage.removeItem('selectedObraId');
             localStorage.removeItem('selectedObraNombre');
 
+            // Clear data cache (Plan B)
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('cache_')) localStorage.removeItem(key);
+            });
+
             return { success: true };
 
         } catch (error) {
@@ -135,15 +140,21 @@ class AuthService {
     }
 
     // Redirigir según rol
-    redirectByRole() {
-        const rol = this.getRole();
+    redirectByRole(forcedRole = null) {
+        const rol = forcedRole || this.getRole();
+        console.log('🚀 Redirecting based on role:', rol);
 
-        if (rol === 'jefe') {
-            window.location.href = 'boss.html';
+        if (rol === 'jefe' || rol === 'supervisor' || rol === 'secretaria') {
+            console.log('Target: boss.html');
+            window.location.replace('boss.html'); // Use replace to avoid back-button loops
         } else if (rol === 'contador') {
-            window.location.href = 'site-selector.html';
+            console.log('Target: site-selector.html');
+            window.location.replace('site-selector.html');
         } else {
-            window.location.href = 'login.html';
+            console.error('❌ Unknown role or no role found:', rol);
+            if (!window.location.pathname.includes('login.html')) {
+                window.location.replace('login.html');
+            }
         }
     }
 

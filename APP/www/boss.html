@@ -5,16 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Camiones | Consolidado</title>
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#5048e5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Conteo">
-    <link rel="apple-touch-icon" href="/icons/icon-152x152.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -24,6 +14,21 @@
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="avatar-icons.js"></script>
+
+    <!-- PWA Support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
+                    .catch(err => console.error('Error al registrar Service Worker:', err));
+            });
+        }
+    </script>
 
     <script>
         // Immediate auth check to avoid flicker
@@ -359,15 +364,15 @@
     <!-- Create Obra Modal -->
     <div id="createObraModal" class="fixed inset-0 z-50 hidden">
         <div class="modal-backdrop absolute inset-0" onclick="closeCreateObraModal()"></div>
-        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
-            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow">
-                <div class="flex justify-between items-center mb-4">
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4 py-20">
+            <div class="glass-card rounded-2xl p-6 w-full max-w-md neon-shadow max-h-[85vh] flex flex-col">
+                <div class="flex justify-between items-center mb-4 flex-shrink-0">
                     <h2 class="text-xl font-bold text-white">Nueva Obra</h2>
                     <button onclick="closeCreateObraModal()" class="text-slate-400 hover:text-white">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
-                <form id="createObraForm" class="space-y-4">
+                <form id="createObraForm" class="space-y-4 overflow-y-auto flex-1 pr-2">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-1">Nombre *</label>
                         <input type="text" name="nombre" required
@@ -397,7 +402,7 @@
                             <p class="text-slate-500 text-[10px] text-center py-2">Cargando apuntadores...</p>
                         </div>
                     </div>
-                    <div class="flex gap-3 pt-4">
+                    <div class="flex gap-3 pt-4 sticky bottom-0 bg-[var(--color-bg)] pb-2">
                         <button type="button" onclick="closeCreateObraModal()"
                             class="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-white transition-colors">
                             Cancelar
@@ -468,7 +473,7 @@
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.2.0</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.5.0</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -569,9 +574,9 @@
                         <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Tiempo Operación</p>
                         <p class="text-2xl font-black text-main" id="kpiOperatingTime">0h 0m</p>
                     </div>
-                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border">
-                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Promedio General</p>
-                        <p class="text-2xl font-black text-main" id="kpiAvgPerHour">0 <span
+                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border flex flex-col items-center">
+                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Eficiencia</p>
+                        <p class="text-2xl font-black text-blue-400" id="kpiAvgPerHour">0 <span
                                 class="text-xs font-normal text-text-muted">vueltas/h</span></p>
                     </div>
                 </div>
@@ -769,9 +774,9 @@
                             <p class="text-[9px] text-slate-500">vs prom. diario última semana</p>
                         </div>
                         <div class="glass-card rounded-2xl p-4 flex flex-col items-center">
-                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Eficiencia</p>
-                            <p id="reportEfficiency" class="text-xl font-bold text-blue-400">0</p>
-                            <p class="text-[9px] text-slate-500">Vueltas/Hora</p>
+                            <p class="text-[10px] text-slate-500 font-bold uppercase mb-1">Promedio General</p>
+                            <p id="reportEfficiency" class="text-xl font-bold text-main">0</p>
+
                         </div>
                     </div>
 
@@ -1041,20 +1046,13 @@
                 </div>
                 <form id="editProfileForm" class="space-y-4">
                     <div class="flex flex-col items-center mb-6">
-                        <div class="relative group cursor-pointer"
-                            onclick="document.getElementById('avatarInput').click()">
+                        <div class="relative">
                             <img id="editUserAvatar"
                                 src="https://ui-avatars.com/api/?name=User&background=5048e5&color=fff&size=256"
-                                class="w-24 h-24 rounded-full border-4 border-primary/30 object-cover shadow-xl group-hover:opacity-75 transition-all">
-                            <div
-                                class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
-                                <span class="material-symbols-outlined text-white text-3xl">photo_camera</span>
-                            </div>
-                            <input type="file" id="avatarInput" class="hidden" accept="image/*"
-                                onchange="previewAvatar(this)">
+                                class="w-24 h-24 rounded-full border-4 border-primary/30 object-cover shadow-xl">
                         </div>
-                        <p class="text-[10px] text-text-muted mt-2 font-bold uppercase tracking-wider">Toca para cambiar
-                            foto</p>
+                        <p class="text-[10px] text-text-muted mt-2 font-bold uppercase tracking-wider">Icono de perfil
+                        </p>
                     </div>
                     <div>
                         <label
@@ -1067,8 +1065,18 @@
                         <label
                             class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-1.5 ml-1">Cargo
                             / Posición</label>
-                        <input type="text" id="editUserCargoInput" name="cargo" placeholder="Ej: Supervisor de Obra"
+                        <input type="text" id="editUserCargoInput" name="cargo" placeholder="Ej: Gerente de Proyecto"
                             class="w-full px-4 py-3 bg-item border border-border rounded-xl text-main font-bold focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all">
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-bold text-text-muted uppercase tracking-wider mb-3 ml-1">Icono
+                            de Perfil</label>
+                        <input type="hidden" id="editUserAvatarIcon" name="avatarIcon">
+                        <div id="avatarGalleryGrid"
+                            class="grid grid-cols-4 gap-3 bg-item/50 p-4 rounded-2xl border border-border">
+                            <!-- Los iconos se cargarán dinámicamente -->
+                        </div>
                     </div>
                     <div class="flex gap-3 pt-6">
                         <button type="button" onclick="closeEditProfileModal()"
@@ -1179,8 +1187,10 @@
             if (!user) return;
 
             document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
-            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || 'Supervisor de Obra';
-            document.getElementById('editUserAvatar').src = user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.nombre || 'User')}&background=5048e5&color=fff&size=256`;
+            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || '';
+
+            const currentIcon = user.user_metadata?.avatarIcon || 'gerente_m';
+            renderAvatarGallery(currentIcon);
 
             document.getElementById('editProfileModal').classList.remove('hidden');
         };
@@ -1189,45 +1199,58 @@
             document.getElementById('editProfileModal').classList.add('hidden');
         };
 
-        window.previewAvatar = function (input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    document.getElementById('editUserAvatar').src = e.target.result;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
+        function renderAvatarGallery(selectedId) {
+            const grid = document.getElementById('avatarGalleryGrid');
+            const icons = window.AvatarIcons.getGallery();
+
+            grid.innerHTML = icons.map(icon => `
+                <div onclick="selectAvatarIcon('${icon.id}')" 
+                     class="avatar-option cursor-pointer group relative aspect-square rounded-xl overflow-hidden border-2 bg-slate-800/50 transition-all ${icon.id === selectedId ? 'border-primary ring-2 ring-primary/20 scale-95' : 'border-transparent hover:border-white/20'}">
+                    <img src="${icon.path}" class="w-full h-full object-contain p-1">
+                    ${icon.id === selectedId ? `
+                        <div class="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white text-xs font-bold bg-primary rounded-full">check</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+
+            document.getElementById('editUserAvatarIcon').value = selectedId;
+            document.getElementById('editUserAvatar').src = window.AvatarIcons.getUrl(selectedId);
+        }
+
+        window.selectAvatarIcon = function (id) {
+            renderAvatarGallery(id);
         };
+
+        // Photo upload removed - using role-based avatars only
 
         window.updateAjustesView = function () {
             const { user } = bossDashboardService.cachedSession || {};
             if (!user) return;
 
             const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Usuario Boss';
-            const cargo = user.user_metadata?.cargo || 'Supervisor de Obra';
-            const avatarUrl = user.user_metadata?.avatar_url;
+            const cargo = user.user_metadata?.cargo || '';
+
+            // Use selected avatar icon (not cargo)
+            const avatarIcon = user.user_metadata?.avatarIcon || 'Gerente';
+            const avatarUrl = window.AvatarIcons?.getUrl(avatarIcon) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5048e5&color=fff&size=256`;
 
             // Profile Card
             document.getElementById('userName').textContent = name;
-            document.getElementById('userCargo').textContent = cargo;
+            document.getElementById('userCargo').textContent = cargo || 'Sin cargo asignado';
 
             const profileAvatar = document.getElementById('userAvatar');
-            const fallbackAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=5048e5&color=fff&size=256`;
-            profileAvatar.src = avatarUrl || fallbackAvatarUrl;
+            profileAvatar.src = avatarUrl;
 
             // Header Avatar
             const headerInitials = document.getElementById('headerInitials');
             const headerImg = document.getElementById('headerAvatarImg');
 
-            if (avatarUrl) {
-                headerImg.src = avatarUrl;
-                headerImg.classList.remove('hidden');
-                headerInitials.classList.add('hidden');
-            } else {
-                headerImg.classList.add('hidden');
-                headerInitials.classList.remove('hidden');
-                headerInitials.textContent = getInitials(name);
-            }
+            // Always show image for role-based avatars
+            headerImg.src = avatarUrl;
+            headerImg.classList.remove('hidden');
+            headerInitials.classList.add('hidden');
         };
 
         function getInitials(name) {
@@ -2271,6 +2294,7 @@
             const updates = {
                 nombre: formData.get('nombre'),
                 cargo: formData.get('cargo'),
+                avatarIcon: formData.get('avatarIcon'),
                 avatarUrl: document.getElementById('editUserAvatar').src
             };
 
@@ -2969,7 +2993,8 @@
                     materialDisplay += ` <span class="text-primary text-[10px] ml-1">➜ ${movement.destino}</span>`;
                 }
 
-                const locationInfo = `${movement.ubicacion || 'Sin especificar'} • ${obraName}`;
+                const locClean = (movement.ubicacion && movement.ubicacion.toLowerCase() !== 'null') ? movement.ubicacion : '';
+                const locationInfo = locClean ? `${locClean} • ${obraName}` : obraName;
 
                 return `
                     <div class="glass-card rounded-2xl p-4 mb-3 border-l-4 border-l-${typeColor}-500 neon-shadow fade-in border border-border group hover:bg-white/5 transition-all">
@@ -3000,25 +3025,65 @@
             }).join('');
         }
 
+        // Apply role-based permissions
+        function applyPermissions() {
+            const role = sessionStorage.getItem('userRole');
+            console.log('🛡️ Applying permissions for role:', role);
+
+            if (role === 'supervisor' || role === 'secretaria') {
+                console.log('👀 Spectator mode enabled');
+
+                // Hide Create Obra FAB button
+                const fab = document.querySelector('.fab-button')?.parentElement;
+                if (fab) fab.classList.add('hidden');
+
+                // Hide specific administrative buttons if they exist
+                // (e.g., buttons to add materials or assign users)
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+
+                // Optional: Disable inputs in modals
+                const forms = ['editProfileForm']; // We allow profile edit, but maybe not create obra form
+                // But since we hide the FAB, they can't even open the create obra form.
+            }
+        }
+
         // Initialize
         async function init() {
-            updateDate();
-            await loadObras();
-            await window.loadDashboard(true);
-
-            // Fetch user info for Ajustes
-            const { data } = await supabaseClient.auth.getSession();
-            window.bossDashboardService.cachedSession = data.session;
-            updateAjustesView();
-
-            // Real-time subscription
-            realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
-                showUpdateIndicator();
+            try {
+                applyPermissions(); // Run immediately to hide UI
+                updateDate();
+                await loadObras();
                 await window.loadDashboard(true);
-            });
 
-            // Auto-refresh every 30s
-            setInterval(() => window.loadDashboard(false), 30000);
+                // Fetch user info for Ajustes
+                const { data } = await supabaseClient.auth.getSession();
+                if (data?.session) {
+                    window.bossDashboardService.cachedSession = data.session;
+
+                    // Double check role from profile table if needed
+                    const profile = await getUserProfile(data.session.user.id);
+                    if (profile) {
+                        sessionStorage.setItem('userRole', profile.rol);
+                        sessionStorage.setItem('userName', profile.nombre_completo);
+                        applyPermissions(); // Re-apply if role just loaded
+                    }
+                }
+                updateAjustesView();
+
+                // Real-time subscription
+                realtimeChannel = bossDashboardService.subscribeToChanges(async () => {
+                    showUpdateIndicator();
+                    await window.loadDashboard(true);
+                });
+
+                // Auto-refresh every 30s
+                setInterval(() => window.loadDashboard(false), 30000);
+
+            } catch (error) {
+                console.error('CRITICAL ERROR during init:', error);
+                // If it's an auth error, maybe go to login?
+                // But let's avoid redirect loops.
+            }
         }
 
         // Cleanup
