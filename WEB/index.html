@@ -259,6 +259,14 @@
                 </div>
 
                 <div class="flex items-center gap-3">
+                    <!-- User Info (Name & Cargo) -->
+                    <div class="hidden sm:flex flex-col text-right">
+                        <span id="headerUserName"
+                            class="text-main font-black text-xs leading-none mb-0.5">Cargando...</span>
+                        <span id="headerUserCargo"
+                            class="text-text-muted text-[8px] font-bold uppercase tracking-widest">Contador</span>
+                    </div>
+
                     <!-- Profile Avatar -->
                     <div id="headerAvatarContainer" onclick="openEditProfileModal()"
                         class="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-primary/20 border border-white/10 relative cursor-pointer overflow-hidden group">
@@ -1003,6 +1011,10 @@
     <script type="module">
         import { authService } from './auth-service.js';
         import { obrasService } from './obras-service.js';
+        import { getUserProfile } from './supabase-client.js';
+
+        // Expose to global for other scripts
+        window.getUserProfile = getUserProfile;
 
         // Global session storage for UI usage
         window.currentSession = null;
@@ -1028,15 +1040,31 @@
         })();
 
         // Profile logic
-        window.updateHeaderProfile = function () {
+        window.updateHeaderProfile = async function () {
             const { user } = window.currentSession || {};
             if (!user) return;
 
-            const name = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Contador';
-            const cargo = user.user_metadata?.cargo || 'Contador';
+            // Priority: Fetch from database if not cached
+            if (!window.currentProfile && window.getUserProfile) {
+                try {
+                    const profile = await window.getUserProfile(user.id);
+                    if (profile) window.currentProfile = profile;
+                } catch (e) { console.error("Error loading profile:", e); }
+            }
+
+            const profile = window.currentProfile;
+            const name = profile?.nombre_completo || user.user_metadata?.nombre || user.user_metadata?.nombre_completo || 'Contador';
+            const cargo = profile?.cargo || user.user_metadata?.cargo || 'Contador';
+            const avatarIcon = profile?.avatar_icon || user.user_metadata?.avatarIcon || 'contador_f';
+
+            // Update Text Info
+            const headerNameEl = document.getElementById('headerUserName');
+            const headerCargoEl = document.getElementById('headerUserCargo');
+            if (headerNameEl) headerNameEl.textContent = name;
+            if (headerCargoEl) headerCargoEl.textContent = cargo || 'Contador';
 
             // Use role-based avatar
-            const avatarUrl = window.AvatarIcons?.getUrl(cargo) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&size=256`;
+            const avatarUrl = window.AvatarIcons?.getUrl(avatarIcon) || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff&size=256`;
 
             const headerInitials = document.getElementById('headerInitials');
             const headerImg = document.getElementById('headerAvatarImg');
@@ -1056,12 +1084,13 @@
 
         window.openEditProfileModal = function () {
             const { user } = window.currentSession || {};
+            const profile = window.currentProfile;
             if (!user) return;
 
-            document.getElementById('editUserNameInput').value = user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
-            document.getElementById('editUserCargoInput').value = user.user_metadata?.cargo || '';
+            document.getElementById('editUserNameInput').value = profile?.nombre_completo || user.user_metadata?.nombre || user.user_metadata?.nombre_completo || '';
+            document.getElementById('editUserCargoInput').value = profile?.cargo || user.user_metadata?.cargo || '';
 
-            const currentIcon = user.user_metadata?.avatarIcon || 'contador_f';
+            const currentIcon = profile?.avatar_icon || user.user_metadata?.avatarIcon || 'contador_f';
             renderAvatarGallery(currentIcon);
 
             document.getElementById('editProfileModal').classList.remove('hidden');
@@ -1118,6 +1147,13 @@
                 const result = await authService.updateProfile(updates);
                 if (result.success) {
                     window.currentSession.user = result.user;
+                    // Mock profile update to avoid extra fetch
+                    window.currentProfile = {
+                        ...window.currentProfile,
+                        nombre_completo: updates.nombre,
+                        cargo: updates.cargo,
+                        avatar_icon: updates.avatarIcon
+                    };
                     updateHeaderProfile();
                     closeEditProfileModal();
                     showUpdateIndicator();
