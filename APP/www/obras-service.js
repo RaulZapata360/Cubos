@@ -98,8 +98,8 @@ class ObrasService {
                 return { success: false, error: error.message, data: null };
             }
 
-            // Crear materiales por defecto para la obra
-            await this.createDefaultMaterials(data.id);
+            // Registro de materiales por defecto eliminado por requerimiento de usuario
+            // Ahora el contador agregará los materiales manualmente según se necesiten.
 
             return { success: true, data: data };
 
