@@ -178,6 +178,49 @@
         .truck-menu-container.active-menu {
             z-index: 50 !important;
         }
+
+        /* Skeleton Loading Styles */
+        @keyframes shimmer {
+            0% {
+                background-position: -468px 0;
+            }
+
+            100% {
+                background-position: 468px 0;
+            }
+        }
+
+        .skeleton {
+            background: linear-gradient(to right, rgba(255, 255, 255, 0.05) 8%, rgba(255, 255, 255, 0.1) 18%, rgba(255, 255, 255, 0.05) 33%);
+            background-size: 800px 104px;
+            animation: shimmer 2s infinite linear;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-theme="light"] .skeleton {
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.03) 8%, rgba(0, 0, 0, 0.08) 18%, rgba(0, 0, 0, 0.03) 33%);
+            background-size: 800px 104px;
+        }
+
+        .skeleton-card {
+            height: 100px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .skeleton-text {
+            height: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .skeleton-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
     </style>
 
     <!-- Supabase Client -->
@@ -1261,6 +1304,72 @@
         let pendingTripMode = null; // Track if we are in the middle of a trip recording flow
         let currentEditingTruckId = null; // Track which truck is being edited
 
+        // ============================================
+        // DATA CACHE UTILITY (Plan B)
+        // ============================================
+        const DataCache = {
+            set(key, data, ttlMinutes = 60) {
+                const item = {
+                    data: data,
+                    expiry: Date.now() + (ttlMinutes * 60 * 1000)
+                };
+                localStorage.setItem(`cache_${currentObraId}_${key}`, JSON.stringify(item));
+            },
+            get(key) {
+                const itemStr = localStorage.getItem(`cache_${currentObraId}_${key}`);
+                if (!itemStr) return null;
+                const item = JSON.parse(itemStr);
+                if (Date.now() > item.expiry) {
+                    // Expired but we can still return it while fetching fresh data
+                    // Or we could return null. Let's return the data but with a flag.
+                    return { data: item.data, expired: true };
+                }
+                return { data: item.data, expired: false };
+            },
+            clearAll() {
+                // Useful for manual refresh or logging out
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('cache_')) localStorage.removeItem(key);
+                });
+            }
+        };
+
+        // ============================================
+        // SKELETON RENDERERS (Plan C)
+        // ============================================
+        function renderSkeletons(containerId, count = 3, type = 'card') {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            let html = '';
+            for (let i = 0; i < count; i++) {
+                if (type === 'card') {
+                    html += `
+                        <div class="glass-card p-4 rounded-xl mb-3 flex items-center justify-between border border-border/50">
+                            <div class="flex items-center gap-3 w-full">
+                                <div class="skeleton skeleton-circle shrink-0"></div>
+                                <div class="flex-1">
+                                    <div class="skeleton skeleton-text w-24"></div>
+                                    <div class="skeleton skeleton-text w-32 opacity-50"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else if (type === 'list') {
+                    html += `
+                        <div class="p-3 mb-2 flex items-center gap-3">
+                            <div class="skeleton w-8 h-8 rounded-lg shrink-0"></div>
+                            <div class="flex-1">
+                                <div class="skeleton skeleton-text w-20 mb-1"></div>
+                                <div class="skeleton skeleton-text w-40 opacity-50"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            container.innerHTML = html;
+        }
+
         async function init() {
             try {
                 const session = await authService.checkSession();
@@ -1606,7 +1715,23 @@
             try {
                 const targetDate = getTargetDate();
                 const dateStr = targetDate.toISOString().split('T')[0];
+                const cacheKey = `trucks_${dateStr}`;
 
+                // 1. Check Cache
+                const cached = DataCache.get(cacheKey);
+                if (cached && cached.data) {
+                    console.log('📦 Using cached trucks');
+                    trucks = cached.data;
+                    renderTruckList();
+                    updateSummary();
+                    // If not expired, we're done. If expired, we continue to fetch in background.
+                    if (!cached.expired) return;
+                } else {
+                    // Show Skeletons ONLY if no cache exists
+                    renderSkeletons('truckList', 3, 'card');
+                }
+
+                // 2. Fetch fresh data
                 const { data, error } = await supabaseClient
                     .from('camiones')
                     .select('*')
@@ -1615,9 +1740,15 @@
                     .order('nombre');
 
                 if (error) throw error;
-                trucks = data || [];
-                renderTruckList();
-                updateSummary();
+
+                // 3. Update UI and Cache if data changed
+                const freshData = data || [];
+                if (JSON.stringify(freshData) !== JSON.stringify(trucks)) {
+                    trucks = freshData;
+                    DataCache.set(cacheKey, freshData, 60); // Cache for 60 mins
+                    renderTruckList();
+                    updateSummary();
+                }
             } catch (error) {
                 console.error('Error loading trucks:', error);
             }
@@ -1742,6 +1873,21 @@
             try {
                 const targetDate = getTargetDate();
                 const selectedDateStr = targetDate.toISOString().split('T')[0];
+                const cacheKey = `movements_${selectedDateStr}`;
+
+                // 1. Check Cache
+                const cached = DataCache.get(cacheKey);
+                if (cached && cached.data) {
+                    console.log('📦 Using cached movements');
+                    movements = cached.data;
+                    renderMovementLog();
+                    renderAnalytics();
+                    updateSummary();
+                    if (!cached.expired) return;
+                } else {
+                    // Show Skeletons ONLY if no cache exists
+                    renderSkeletons('movementLog', 5, 'list');
+                }
 
                 // Optimización: Solo cargar el rango necesario (hoy y ayer por defecto)
                 let startDate = selectedDateStr;
@@ -1768,15 +1914,21 @@
                 if (error) throw error;
 
                 // movements para el log debe ser solo del día seleccionado
-                movements = (data || []).filter(m => m.fecha === selectedDateStr);
+                const freshMovements = (data || []).filter(m => m.fecha === selectedDateStr);
 
-                // Guardamos los movimientos recientes (hoy/ayer) por si se necesitan
-                window.recentMovements = data || [];
+                // Compare with current movements to avoid redundant renders
+                if (JSON.stringify(freshMovements) !== JSON.stringify(movements)) {
+                    movements = freshMovements;
+                    DataCache.set(cacheKey, freshMovements, 5); // Cache movements for 5 mins
 
-                renderMovementLog();
-                renderAnalytics();
-                updateSummary();
-                renderTruckList();
+                    // Guardamos los movimientos recientes (hoy/ayer) por si se necesitan
+                    window.recentMovements = data || [];
+
+                    renderMovementLog();
+                    renderAnalytics();
+                    updateSummary();
+                    renderTruckList();
+                }
             } catch (error) {
                 console.error('Error loading movements:', error);
             }
@@ -1784,6 +1936,13 @@
 
         async function loadMaterials() {
             try {
+                const cacheKey = 'materials';
+                const cached = DataCache.get(cacheKey);
+                if (cached && cached.data) {
+                    materials = cached.data;
+                    if (!cached.expired) return;
+                }
+
                 const { data, error } = await supabaseClient
                     .from('materiales')
                     .select('*')
@@ -1791,7 +1950,11 @@
                     .order('nombre');
 
                 if (error) throw error;
-                materials = data || [];
+                const freshData = data || [];
+                if (JSON.stringify(freshData) !== JSON.stringify(materials)) {
+                    materials = freshData;
+                    DataCache.set(cacheKey, freshData, 120); // 2 hours cache
+                }
             } catch (error) {
                 console.error('Error loading materials:', error);
             }
@@ -1799,14 +1962,24 @@
 
         async function loadDestinos() {
             try {
+                const cacheKey = 'destinos';
+                const cached = DataCache.get(cacheKey);
+                if (cached && cached.data) {
+                    destinos = cached.data;
+                    if (!cached.expired) return;
+                }
+
                 const { data, error } = await supabaseClient
                     .from('destinos')
                     .select('*')
-                    // Removed obra_id filter to allow sharing between works
                     .order('nombre');
 
                 if (error) throw error;
-                destinos = data || [];
+                const freshData = data || [];
+                if (JSON.stringify(freshData) !== JSON.stringify(destinos)) {
+                    destinos = freshData;
+                    DataCache.set(cacheKey, freshData, 240); // 4 hours cache
+                }
             } catch (error) {
                 console.error('Error loading destinos:', error);
             }
@@ -1814,14 +1987,24 @@
 
         async function loadOrigenes() {
             try {
+                const cacheKey = 'origenes';
+                const cached = DataCache.get(cacheKey);
+                if (cached && cached.data) {
+                    origenes = cached.data;
+                    if (!cached.expired) return;
+                }
+
                 const { data, error } = await supabaseClient
                     .from('origenes')
                     .select('*')
-                    // Removed obra_id filter to allow sharing between works
                     .order('nombre');
 
                 if (error) throw error;
-                origenes = data || [];
+                const freshData = data || [];
+                if (JSON.stringify(freshData) !== JSON.stringify(origenes)) {
+                    origenes = freshData;
+                    DataCache.set(cacheKey, freshData, 240); // 4 hours cache
+                }
             } catch (error) {
                 console.error('Error loading origenes:', error);
             }

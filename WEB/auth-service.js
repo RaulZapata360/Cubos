@@ -69,6 +69,11 @@ class AuthService {
             localStorage.removeItem('selectedObraId');
             localStorage.removeItem('selectedObraNombre');
 
+            // Clear data cache (Plan B)
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('cache_')) localStorage.removeItem(key);
+            });
+
             return { success: true };
 
         } catch (error) {
