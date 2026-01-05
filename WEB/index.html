@@ -2032,13 +2032,15 @@
             }
         }
 
-        async function loadMaterials() {
+        async function loadMaterials(forceRefresh = false) {
             try {
                 const cacheKey = 'materials';
-                const cached = DataCache.get(cacheKey);
-                if (cached && cached.data) {
-                    materials = cached.data;
-                    if (!cached.expired) return;
+                if (!forceRefresh) {
+                    const cached = DataCache.get(cacheKey);
+                    if (cached && cached.data) {
+                        materials = cached.data;
+                        if (!cached.expired) return;
+                    }
                 }
 
                 const { data, error } = await supabaseClient
@@ -2049,22 +2051,22 @@
 
                 if (error) throw error;
                 const freshData = data || [];
-                if (JSON.stringify(freshData) !== JSON.stringify(materials)) {
-                    materials = freshData;
-                    DataCache.set(cacheKey, freshData, 120); // 2 hours cache
-                }
+                materials = freshData;
+                DataCache.set(cacheKey, freshData, 120); // 2 hours cache
             } catch (error) {
                 console.error('Error loading materials:', error);
             }
         }
 
-        async function loadDestinos() {
+        async function loadDestinos(forceRefresh = false) {
             try {
                 const cacheKey = 'destinos';
-                const cached = DataCache.get(cacheKey);
-                if (cached && cached.data) {
-                    destinos = cached.data;
-                    if (!cached.expired) return;
+                if (!forceRefresh) {
+                    const cached = DataCache.get(cacheKey);
+                    if (cached && cached.data) {
+                        destinos = cached.data;
+                        if (!cached.expired) return;
+                    }
                 }
 
                 const { data, error } = await supabaseClient
@@ -2074,22 +2076,22 @@
 
                 if (error) throw error;
                 const freshData = data || [];
-                if (JSON.stringify(freshData) !== JSON.stringify(destinos)) {
-                    destinos = freshData;
-                    DataCache.set(cacheKey, freshData, 240); // 4 hours cache
-                }
+                destinos = freshData;
+                DataCache.set(cacheKey, freshData, 240); // 4 hours cache
             } catch (error) {
                 console.error('Error loading destinos:', error);
             }
         }
 
-        async function loadOrigenes() {
+        async function loadOrigenes(forceRefresh = false) {
             try {
                 const cacheKey = 'origenes';
-                const cached = DataCache.get(cacheKey);
-                if (cached && cached.data) {
-                    origenes = cached.data;
-                    if (!cached.expired) return;
+                if (!forceRefresh) {
+                    const cached = DataCache.get(cacheKey);
+                    if (cached && cached.data) {
+                        origenes = cached.data;
+                        if (!cached.expired) return;
+                    }
                 }
 
                 const { data, error } = await supabaseClient
@@ -2099,10 +2101,8 @@
 
                 if (error) throw error;
                 const freshData = data || [];
-                if (JSON.stringify(freshData) !== JSON.stringify(origenes)) {
-                    origenes = freshData;
-                    DataCache.set(cacheKey, freshData, 240); // 4 hours cache
-                }
+                origenes = freshData;
+                DataCache.set(cacheKey, freshData, 240); // 4 hours cache
             } catch (error) {
                 console.error('Error loading origenes:', error);
             }
@@ -2185,6 +2185,24 @@
                                  </div>
                              </div>
                         </div>
+
+                        ${(truck.ultimo_material && (truck.ultimo_destino || truck.ultimo_origen) && regType !== 'mixed') ? `
+                        <div class="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[8px] text-text-muted font-black uppercase tracking-widest mb-0.5">Memoria Habitual</span>
+                                <div class="flex items-center gap-1.5 overflow-hidden">
+                                     <span class="text-[10px] text-main font-black uppercase truncate">${truck.ultimo_material}</span>
+                                     <span class="material-symbols-outlined text-[10px] text-white/20">arrow_forward</span>
+                                     <span class="text-[10px] text-main font-black uppercase truncate">${truck.ultimo_destino || truck.ultimo_origen}</span>
+                                </div>
+                            </div>
+                            <button onclick="window.handleQuickAction('${truck.id}', '${regType}', ${truck.capacidad}, '${truck.ultimo_material}', '${truck.ultimo_destino || truck.ultimo_origen}')" 
+                                    class="w-10 h-10 rounded-xl bg-accent/10 text-accent flex items-center justify-center hover:bg-accent/20 transition-all active:scale-95 group/bolt shrink-0"
+                                    title="Repetir viaje rápido">
+                                <span class="material-symbols-outlined text-lg group-hover:scale-110 transition-transform">bolt</span>
+                            </button>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
             }).join('');
@@ -2654,11 +2672,40 @@
             const filteredMaterials = materials.filter(m => m.tipo === tipo);
             console.log('Filtered materials count:', filteredMaterials.length);
 
+            // NEW: Add Memory Shortcut (Plan Shortcut)
+            const truck = trucks.find(t => t.id === camionId);
+            let memoryHtml = '';
+            if (truck) {
+                const lastVal = tipo === 'outgoing' ? truck.ultimo_destino : truck.ultimo_origen;
+                if (truck.ultimo_material) {
+                    // Specific material shortcut
+                    memoryHtml += `
+                        <div class="col-span-2 mb-2">
+                            <p class="text-[10px] font-bold text-accent uppercase tracking-widest mb-2 ml-1">Habitual</p>
+                            <div class="bg-accent/10 border border-accent/20 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-accent/20 active:scale-95 transition-all group"
+                                 onclick="handleQuickAction('${camionId}', '${tipo}', ${capacidad}, '${truck.ultimo_material}', ${lastVal ? `'${lastVal}'` : 'null'})">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent">
+                                        <span class="material-symbols-outlined text-3xl">bolt</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-accent uppercase tracking-widest leading-none mb-1">${lastVal ? 'Repetir Viaje Completo' : 'Repetir Material'}</p>
+                                        <h4 class="text-sm font-black text-white uppercase">${truck.ultimo_material} ${lastVal ? `→ ${lastVal}` : ''}</h4>
+                                    </div>
+                                </div>
+                                <span class="material-symbols-outlined text-accent group-hover:translate-x-1 transition-transform">chevron_right</span>
+                            </div>
+                        </div>
+                        <div class="col-span-2 border-b border-white/5 my-2"></div>
+                    `;
+                }
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
-            let html = filteredMaterials.map(mat => `
-                <div class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.05] transition-all border border-white/5 shadow-lg active:scale-95 text-center group" 
+            let html = memoryHtml + filteredMaterials.map(mat => `
+                <div class="glass-card p-4 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.05] transition-all border border-white/5 shadow-lg active:scale-95 text-center group ${truck && truck.ultimo_material === mat.nombre ? 'ring-2 ring-primary/50 bg-primary/5' : ''}" 
                      onclick="registerAndClose('${camionId}', '${tipo}', ${capacidad}, '${mat.nombre}')">
                     <div class="w-14 h-14 flex items-center justify-center text-3xl mb-1 transform transition-transform group-hover:scale-110">
                         ${getMatIcon(mat.nombre)}
@@ -2667,9 +2714,22 @@
                 </div>
             `).join('');
 
-            if (filteredMaterials.length === 0) {
+            if (filteredMaterials.length === 0 && !memoryHtml) {
                 html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">No hay materiales configurados.</div>';
             }
+
+            // Global helper for quick actions
+            window.handleQuickAction = async (cid, t, cap, mat, loc) => {
+                if (loc) {
+                    const dest = t === 'outgoing' ? loc : null;
+                    const orig = t === 'incoming' ? loc : null;
+                    await registerMovement(cid, t, cap, mat, dest, null, orig);
+                    closeAllModals();
+                } else {
+                    // Just material, proceed to location selector
+                    registerAndClose(cid, t, cap, mat);
+                }
+            };
 
             // Add "Nuevo Material" button
             html += `
@@ -2800,8 +2860,11 @@
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
+            const truck = trucks.find(t => t.id === camionId);
+            const lastDest = truck?.ultimo_destino;
+
             let html = '';
-            // Filter unique names to avoid duplicates since we load from all works
+            // Filter unique names
             const uniqueDestinos = Array.from(new Set(destinos.map(d => d.nombre)))
                 .map(nombre => destinos.find(d => d.nombre === nombre));
 
@@ -2809,12 +2872,13 @@
                 html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin destinos previos</div>';
             } else {
                 html = uniqueDestinos.map(dest => `
-                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
+                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border ${lastDest === dest.nombre ? 'border-primary ring-1 ring-primary/30 bg-primary/5' : 'border-white/5'} shadow-lg active:scale-95 text-center" 
                          onclick="finalRegisterAndClose('${camionId}', '${tipo}', ${capacidad}, '${material}', '${dest.nombre}', '${ubicacion}')">
                         <div class="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent mb-1">
                              <span class="material-symbols-outlined">location_on</span>
                         </div>
                         <span class="text-xs font-bold text-white text-center leading-tight truncate w-full">${dest.nombre}</span>
+                        ${lastDest === dest.nombre ? '<span class="text-[8px] bg-primary text-white px-1 rounded-full font-bold">ÚLTIMO</span>' : ''}
                     </div>
                 `).join('');
             }
@@ -2849,7 +2913,7 @@
                     }]);
                     if (error) throw error;
 
-                    await loadDestinos();
+                    await loadDestinos(true); // Force refresh cache
                     await registerMovement(camionId, tipo, capacidad, material, destinoName, ubicacion);
                     input.value = '';
                     closeAllModals();
@@ -2871,8 +2935,11 @@
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
+            const truck = trucks.find(t => t.id === camionId);
+            const lastOrig = truck?.ultimo_origen;
+
             let html = '';
-            // Filter unique names to avoid duplicates since we load from all works
+            // Filter unique names
             const uniqueOrigenes = Array.from(new Set(origenes.map(o => o.nombre)))
                 .map(nombre => origenes.find(o => o.nombre === nombre));
 
@@ -2880,12 +2947,13 @@
                 html = '<div class="col-span-2 text-center py-6 text-text-muted text-xs">Sin orígenes previos</div>';
             } else {
                 html = uniqueOrigenes.map(orig => `
-                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border border-white/5 shadow-lg active:scale-95 text-center" 
+                    <div class="glass-card p-3 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-white/5 hover:scale-[1.02] transition-all border ${lastOrig === orig.nombre ? 'border-emerald-500 ring-1 ring-emerald-500/30 bg-emerald-500/5' : 'border-white/5'} shadow-lg active:scale-95 text-center" 
                          onclick="finalRegisterAndCloseOrigen('${camionId}', '${tipo}', ${capacidad}, '${material}', '${orig.nombre}', '${ubicacion}')">
                         <div class="w-10 h-10 rounded-full bg-emerald-400/20 flex items-center justify-center text-emerald-400 mb-1">
                              <span class="material-symbols-outlined">local_shipping</span>
                         </div>
                         <span class="text-xs font-bold text-white text-center leading-tight truncate w-full">${orig.nombre}</span>
+                        ${lastOrig === orig.nombre ? '<span class="text-[8px] bg-emerald-500 text-white px-1 rounded-full font-bold">ÚLTIMO</span>' : ''}
                     </div>
                 `).join('');
             }
@@ -2920,7 +2988,7 @@
                     }]);
                     if (error) throw error;
 
-                    await loadOrigenes();
+                    await loadOrigenes(true); // Force refresh cache
                     await registerMovement(camionId, tipo, capacidad, material, null, ubicacion, origenName);
                     input.value = '';
                     closeAllModals();
@@ -2998,20 +3066,27 @@
                 // Update Success: Set cooldown to prevent immediate repeat
                 truckCooldowns[camionId] = Date.now();
 
-                // Mission Reinforcement: If a truck performs a mission, ensure it matches its type
-                // (Optional: Only if NOT mixed. We avoid auto-upgrading to mixed here to keep separation)
+                // Mission Reinforcement & Memory Update
                 const truck = trucks.find(t => t.id === camionId);
                 if (truck) {
                     const currentReg = (truck.tipo_registrado || '').toLowerCase();
+                    const updates = {
+                        ultimo_material: material,
+                        ultimo_destino: destino,
+                        ultimo_origen: origen,
+                        ultima_ubicacion: ubicacion,
+                        updated_at: new Date().toISOString()
+                    };
+
                     if (currentReg !== 'mixed' && currentReg !== tipo) {
                         console.log(`Reaffirming truck mission as ${tipo}:`, camionId);
-                        await supabaseClient
-                            .from('camiones')
-                            .update({ tipo_registrado: tipo })
-                            .eq('id', camionId);
-                        // Refresh local truck data
-                        await loadTrucks();
+                        updates.tipo_registrado = tipo;
                     }
+
+                    await supabaseClient
+                        .from('camiones')
+                        .update(updates)
+                        .eq('id', camionId);
                 }
 
                 // Audio/Visual Feedback (simple)
