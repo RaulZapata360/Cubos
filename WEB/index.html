@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.5.4</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.6.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -554,6 +554,22 @@
                                 </div>
                                 <span class="text-[10px] font-bold text-text-muted uppercase">Excavación</span>
                                 <span class="text-lg font-black text-main" id="analyticsExcavationVolume">-0.0 m³</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Internal Trips Section -->
+                    <div class="glass-card p-5 rounded-2xl neon-shadow border border-cyan-500/20">
+                        <div class="flex items-center gap-2 mb-4 border-b border-white/5 pb-2">
+                            <span class="material-symbols-outlined text-cyan-400">swap_horiz</span>
+                            <h3 class="text-xs font-bold text-cyan-400 uppercase tracking-wider">Viajes Internos</h3>
+                        </div>
+
+                        <div id="internalTripsContainer">
+                            <!-- Populated by JS -->
+                            <div class="text-center py-6 text-text-muted text-xs">
+                                <span class="material-symbols-outlined text-2xl mb-2 opacity-50">swap_horiz</span>
+                                <p>Sin viajes internos hoy</p>
                             </div>
                         </div>
                     </div>
@@ -2023,6 +2039,7 @@
                     window.recentMovements = data || [];
 
                     renderMovementLog();
+                    renderInternalTrips();
                     renderAnalytics();
                     updateSummary();
                     renderTruckList();
@@ -2394,6 +2411,19 @@
             // Update pills
             document.getElementById('movementIncomingCount').textContent = movements.filter(m => m.tipo === 'incoming').length;
             document.getElementById('movementOutgoingCount').textContent = movements.filter(m => m.tipo === 'outgoing').length;
+        }
+
+        function renderInternalTrips() {
+            const container = document.getElementById('internalTripsContainer');
+            if (!container) return;
+            const internalTrips = movements.filter(m => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno'));
+            if (internalTrips.length === 0) {
+                container.innerHTML = '<div class="text-center py-6 text-text-muted text-xs"><span class="material-symbols-outlined text-2xl mb-2 opacity-50">swap_horiz</span><p>Sin viajes internos hoy</p></div>';
+                return;
+            }
+            const totalVolume = internalTrips.reduce((sum, m) => sum + parseFloat(m.capacidad || 0), 0);
+            const uniqueTrucks = new Set(internalTrips.map(m => m.camion_id)).size;
+            container.innerHTML = `<div class="grid grid-cols-3 gap-2 mb-3"><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${internalTrips.length}</div><div class="text-[9px] text-text-muted uppercase">Vueltas</div></div><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${totalVolume.toFixed(1)} m³</div><div class="text-[9px] text-text-muted uppercase">Volumen</div></div><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${uniqueTrucks}</div><div class="text-[9px] text-text-muted uppercase">Camiones</div></div></div><div class="space-y-1">${internalTrips.slice(0, 10).map(trip => `<div class="bg-black/20 border border-cyan-500/20 rounded-lg p-2 flex items-center justify-between"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-cyan-400 text-sm">swap_horiz</span><div><div class="text-xs font-bold text-white">${trip.camiones?.nombre || 'Camión'}</div><div class="text-[9px] text-text-muted">${trip.material || 'Sin material'}</div></div></div><div class="text-xs font-bold text-cyan-400">${trip.capacidad} m³</div></div>`).join('')}</div>`;
         }
 
         function updateSummary() {
