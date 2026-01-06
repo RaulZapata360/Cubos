@@ -431,7 +431,7 @@ class BossDashboardService {
 
             let query = supabaseClient
                 .from('movimientos')
-                .select('fecha, tipo, capacidad')
+                .select('fecha, tipo, capacidad, destino, origen')
                 .gte('fecha', range.start)
                 .lte('fecha', range.end);
 
@@ -439,6 +439,9 @@ class BossDashboardService {
 
             const { data, error } = await query;
             if (error) throw error;
+
+            // Filter out internal trips
+            const regularData = data.filter(m => !this.isInternalTrip(m));
 
             // Generate 7 days (Mon-Sun) for the target week
             const weekDays = [];
@@ -457,11 +460,11 @@ class BossDashboardService {
                     return d.toLocaleDateString('es-ES', { weekday: 'short' });
                 }),
                 incoming: weekDays.map(date =>
-                    data.filter(m => m.fecha === date && m.tipo === 'incoming')
+                    regularData.filter(m => m.fecha === date && m.tipo === 'incoming')
                         .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0)
                 ),
                 outgoing: weekDays.map(date =>
-                    data.filter(m => m.fecha === date && m.tipo === 'outgoing')
+                    regularData.filter(m => m.fecha === date && m.tipo === 'outgoing')
                         .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0)
                 )
             };
