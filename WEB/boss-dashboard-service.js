@@ -289,14 +289,17 @@ class BossDashboardService {
         return hourlyData;
     }
 
-    // Obtener rendimiento de camiones - exclude internal trips
+    // Obtener rendimiento de camiones - include internal trips as separate category
     getTruckPerformance(camiones, movements) {
-        const regularMovements = this.filterRegularMovements(movements);
         return camiones.map(truck => {
-            const truckMovements = regularMovements.filter(m => m.camion_id === truck.id);
-            const incomingCount = truckMovements.filter(m => m.tipo === 'incoming').length;
-            const outgoingCount = truckMovements.filter(m => m.tipo === 'outgoing').length;
-            const totalTrips = incomingCount + outgoingCount;
+            const truckMovements = movements.filter(m => m.camion_id === truck.id);
+            const internalMovements = truckMovements.filter(m => this.isInternalTrip(m));
+            const regularMovements = truckMovements.filter(m => !this.isInternalTrip(m));
+
+            const incomingCount = regularMovements.filter(m => m.tipo === 'incoming').length;
+            const outgoingCount = regularMovements.filter(m => m.tipo === 'outgoing').length;
+            const internalCount = internalMovements.length;
+            const totalTrips = incomingCount + outgoingCount + internalCount;
             const totalVolume = truckMovements.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
 
             return {
@@ -307,6 +310,7 @@ class BossDashboardService {
                 tipo_registrado: truck.tipo_registrado,
                 incomingCount,
                 outgoingCount,
+                internalCount,
                 totalTrips,
                 totalVolume,
                 obraName: truck.obras?.nombre || 'Sin obra'
