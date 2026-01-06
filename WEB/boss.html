@@ -3029,6 +3029,7 @@
 
                 const rellenoPct = truck.totalTrips > 0 ? (truck.incomingCount / truck.totalTrips) * 100 : 0;
                 const excavPct = truck.totalTrips > 0 ? (truck.outgoingCount / truck.totalTrips) * 100 : 0;
+                const internoPct = truck.totalTrips > 0 ? ((truck.internalCount || 0) / truck.totalTrips) * 100 : 0;
 
                 return `
                     <div class="glass-card rounded-2xl p-5 mb-4 group hover:scale-[1.02] transition-all border border-border relative overflow-hidden">
