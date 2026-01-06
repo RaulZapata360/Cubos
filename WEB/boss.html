@@ -704,6 +704,35 @@
                 </div>
             </section>
 
+            <!-- Internal Trips Section -->
+            <section class="px-4 mb-6">
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-400 neon-shadow border-border">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="material-symbols-outlined text-cyan-400">swap_horiz</span>
+                        <p class="text-cyan-400 text-[10px] font-bold uppercase tracking-wider">Viajes Internos</p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 mb-3">
+                        <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
+                            <div class="text-xs text-cyan-400 font-bold" id="obrasInternalTrips">0</div>
+                            <div class="text-[9px] text-text-muted uppercase">Vueltas</div>
+                        </div>
+                        <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
+                            <div class="text-xs text-cyan-400 font-bold" id="obrasInternalVolume">0 m³</div>
+                            <div class="text-[9px] text-text-muted uppercase">Volumen</div>
+                        </div>
+                        <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
+                            <div class="text-xs text-cyan-400 font-bold" id="obrasInternalTrucks">0</div>
+                            <div class="text-[9px] text-text-muted uppercase">Camiones</div>
+                        </div>
+                    </div>
+
+                    <div id="obrasInternalBreakdown" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </section>
+
             <section class="px-4 mb-6">
                 <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
                     Logística por Ubicación

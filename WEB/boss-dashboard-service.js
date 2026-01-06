@@ -690,6 +690,90 @@ class BossDashboardService {
             return { labels: [], datasets: [] };
         }
     }
+
+    // Get internal trips data for daily view
+    async getInternalTripsDailyData(dayOffset = 0) {
+        try {
+            const movements = await this.getTodayMovements(dayOffset);
+            const internalTrips = movements.filter(m => this.isInternalTrip(m));
+
+            return {
+                trips: internalTrips,
+                totalTrips: internalTrips.length,
+                totalVolume: internalTrips.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                uniqueTrucks: new Set(internalTrips.map(t => t.camion_id)).size
+            };
+        } catch (error) {
+            console.error('Error getting internal trips daily data:', error);
+            return { trips: [], totalTrips: 0, totalVolume: 0, uniqueTrucks: 0 };
+        }
+    }
+
+    // Get internal trips data for weekly view
+    async getInternalTripsData(obraId = null, weekOffset = 0) {
+        try {
+            const range = this.getWeekRange(weekOffset);
+
+            let query = supabaseClient
+                .from('movimientos')
+                .select('*, camiones(nombre, patente)')
+                .gte('fecha', range.start)
+                .lte('fecha', range.end);
+
+            if (obraId) query = query.eq('obra_id', obraId);
+
+            const { data, error } = await query;
+            if (error) throw error;
+
+            // Filter only internal trips
+            const internalTrips = data.filter(m => this.isInternalTrip(m));
+
+            // Group by material
+            const byMaterial = {};
+            internalTrips.forEach(t => {
+                const mat = t.material || 'Sin material';
+                byMaterial[mat] = (byMaterial[mat] || 0) + parseFloat(t.capacidad || 0);
+            });
+
+            // Group by day
+            const weekDays = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(range.monday);
+                d.setDate(range.monday.getDate() + i);
+                const y = d.getFullYear();
+                const m = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                weekDays.push(`${y}-${m}-${day}`);
+            }
+
+            const byDay = {
+                labels: weekDays.map(date => {
+                    const d = new Date(date + 'T12:00:00');
+                    return d.toLocaleDateString('es-ES', { weekday: 'short' });
+                }),
+                data: weekDays.map(date =>
+                    internalTrips.filter(t => t.fecha === date).length
+                )
+            };
+
+            return {
+                trips: internalTrips,
+                totalTrips: internalTrips.length,
+                totalVolume: internalTrips.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0),
+                byMaterial,
+                byDay
+            };
+        } catch (error) {
+            console.error('Error getting internal trips data:', error);
+            return {
+                trips: [],
+                totalTrips: 0,
+                totalVolume: 0,
+                byMaterial: {},
+                byDay: { labels: [], data: [] }
+            };
+        }
+    }
 }
 
 // Exportar instancia única
