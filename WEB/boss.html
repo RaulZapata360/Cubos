@@ -2653,13 +2653,17 @@
             const ctx = document.getElementById('dailyVolumeChart')?.getContext('2d');
             if (!ctx) return;
 
+            // Filter out internal trips
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const regularMovements = movements.filter(m => !isInternalTrip(m));
+
             // Group movements by hour (0-23)
             const hourlyVolumes = {};
             for (let h = 0; h < 24; h++) {
                 hourlyVolumes[h] = { incoming: 0, outgoing: 0 };
             }
 
-            movements.forEach(m => {
+            regularMovements.forEach(m => {
                 const date = new Date(m.timestamp);
                 const h = date.getHours();
                 const vol = parseFloat(m.capacidad) || 0;

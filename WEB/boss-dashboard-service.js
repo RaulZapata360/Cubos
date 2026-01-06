@@ -482,7 +482,7 @@ class BossDashboardService {
 
             let query = supabaseClient
                 .from('movimientos')
-                .select('material, capacidad')
+                .select('material, capacidad, destino, origen')
                 .gte('fecha', range.start)
                 .lte('fecha', range.end);
 
@@ -491,8 +491,11 @@ class BossDashboardService {
             const { data, error } = await query;
             if (error) throw error;
 
+            // Filter out internal trips
+            const regularData = data.filter(m => !this.isInternalTrip(m));
+
             const breakdown = {};
-            data.forEach(m => {
+            regularData.forEach(m => {
                 if (!m.material) return;
                 breakdown[m.material] = (breakdown[m.material] || 0) + (parseFloat(m.capacidad) || 0);
             });
@@ -515,7 +518,7 @@ class BossDashboardService {
 
             let query = supabaseClient
                 .from('movimientos')
-                .select('destino, capacidad, material')
+                .select('destino, capacidad, material, origen')
                 .eq('tipo', 'outgoing')
                 .gte('fecha', range.start)
                 .lte('fecha', range.end);
@@ -525,14 +528,17 @@ class BossDashboardService {
             const { data, error } = await query;
             if (error) throw error;
 
-            const destinations = [...new Set(data.map(m => m.destino).filter(d => d))];
-            const materials = [...new Set(data.map(m => m.material).filter(m => m))];
+            // Filter out internal trips
+            const regularData = data.filter(m => !this.isInternalTrip(m));
+
+            const destinations = [...new Set(regularData.map(m => m.destino).filter(d => d))];
+            const materials = [...new Set(regularData.map(m => m.material).filter(m => m))];
 
             const datasets = materials.map(material => {
                 return {
                     label: material,
                     data: destinations.map(dest => {
-                        return data
+                        return regularData
                             .filter(m => m.destino === dest && m.material === material)
                             .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
                     })
@@ -550,7 +556,7 @@ class BossDashboardService {
                 return {
                     label: material,
                     data: sortedLabels.map(dest => {
-                        return data
+                        return regularData
                             .filter(m => m.destino === dest && m.material === material)
                             .reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
                     })
