@@ -369,6 +369,32 @@
                     </button>
                 </section>
 
+                <!-- Internal Trips Card -->
+                <section class="px-4 mb-6">
+                    <div
+                        class="glass-card p-4 rounded-2xl border-l-4 border-l-cyan-400 neon-shadow border border-border">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div class="w-8 h-8 rounded-lg bg-cyan-400/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-cyan-400 text-lg">swap_horiz</span>
+                            </div>
+                            <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Viajes
+                                Internos</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="text-center">
+                                <div class="text-3xl font-black text-cyan-400 leading-none mb-1"
+                                    id="internalTripsCount">0</div>
+                                <div class="text-[9px] text-text-muted uppercase">Vueltas</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-3xl font-black text-cyan-400 leading-none mb-1"
+                                    id="internalTripsVolume">0</div>
+                                <div class="text-[9px] text-text-muted uppercase">m³</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
 
 
                 <!-- Volume Stats -->
@@ -2446,6 +2472,12 @@
             document.getElementById('totalTrucks').textContent = trucks.length;
             document.getElementById('totalTrucksFooter').textContent = trucks.length;
             document.getElementById('totalVolume').textContent = `${(incVol + outVol).toFixed(1)} m³`;
+
+            // Update internal trips counters
+            const internalTrips = movements.filter(m => isInternalTrip(m));
+            const internalVol = internalTrips.reduce((sum, m) => sum + (m.capacidad || 0), 0);
+            document.getElementById('internalTripsCount').textContent = internalTrips.length;
+            document.getElementById('internalTripsVolume').textContent = internalVol.toFixed(1);
         }
 
         // Render Analytics Tab
