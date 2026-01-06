@@ -1600,7 +1600,7 @@
             if (targetTab) targetTab.classList.add('active');
 
             if (tabName === 'movimiento') loadMovements();
-            if (tabName === 'analisis') updateAnalytics();
+            if (tabName === 'analisis') renderAnalytics();
             if (tabName === 'administracion') renderAdministration();
         };
 
@@ -2485,6 +2485,7 @@
             // Exclude internal trips from regular stats
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
             const regularMovements = movements.filter(m => !isInternalTrip(m));
+            const regularMovements2 = regularMovements; // Alias for compatibility
 
             const incMovs = regularMovements.filter(m => m.tipo === 'incoming');
             const outMovs = regularMovements.filter(m => m.tipo === 'outgoing');
