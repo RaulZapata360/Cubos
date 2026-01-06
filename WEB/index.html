@@ -2408,9 +2408,11 @@
                 `;
             }).join('');
 
-            // Update pills
-            document.getElementById('movementIncomingCount').textContent = movements.filter(m => m.tipo === 'incoming').length;
-            document.getElementById('movementOutgoingCount').textContent = movements.filter(m => m.tipo === 'outgoing').length;
+            // Update pills - exclude internal trips
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const regularMovements = movements.filter(m => !isInternalTrip(m));
+            document.getElementById('movementIncomingCount').textContent = regularMovements.filter(m => m.tipo === 'incoming').length;
+            document.getElementById('movementOutgoingCount').textContent = regularMovements.filter(m => m.tipo === 'outgoing').length;
         }
 
         function renderInternalTrips() {
@@ -2427,8 +2429,12 @@
         }
 
         function updateSummary() {
-            const incMovs = movements.filter(m => m.tipo === 'incoming');
-            const outMovs = movements.filter(m => m.tipo === 'outgoing');
+            // Exclude internal trips from regular stats
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const regularMovements = movements.filter(m => !isInternalTrip(m));
+
+            const incMovs = regularMovements.filter(m => m.tipo === 'incoming');
+            const outMovs = regularMovements.filter(m => m.tipo === 'outgoing');
 
             const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
             const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
@@ -2444,8 +2450,12 @@
 
         // Render Analytics Tab
         function renderAnalytics() {
-            const incMovs = movements.filter(m => m.tipo === 'incoming');
-            const outMovs = movements.filter(m => m.tipo === 'outgoing');
+            // Exclude internal trips from regular stats
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const regularMovements = movements.filter(m => !isInternalTrip(m));
+
+            const incMovs = regularMovements.filter(m => m.tipo === 'incoming');
+            const outMovs = regularMovements.filter(m => m.tipo === 'outgoing');
 
             const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
             const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
@@ -2456,12 +2466,15 @@
 
             // 2. Truck Performance
             const perfContainer = document.getElementById('truckPerformance');
-            if (movements.length === 0) {
+            const isInternalTrip2 = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const regularMovements2 = movements.filter(m => !isInternalTrip2(m));
+
+            if (regularMovements2.length === 0) {
                 perfContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas</p>';
             } else {
                 // Group movements by truck
                 const statsMap = {};
-                movements.forEach(m => {
+                regularMovements2.forEach(m => {
                     const truckId = m.camion_id;
                     if (!statsMap[truckId]) {
                         // Support both 'camiones' (plural relation) and 'camion' (singular relation) or fallback to ID
@@ -2526,12 +2539,12 @@
 
             // 3. Hourly Activity
             const activityContainer = document.getElementById('hourlyActivity');
-            if (movements.length === 0) {
+            if (regularMovements2.length === 0) {
                 activityContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver actividad</p>';
             } else {
                 // Group movements by hour
                 const hourlyData = {};
-                movements.forEach(m => {
+                regularMovements2.forEach(m => {
                     const hour = new Date(m.timestamp).getHours();
                     if (!hourlyData[hour]) hourlyData[hour] = 0;
                     hourlyData[hour]++;
@@ -2556,8 +2569,8 @@
             }
 
             // 4. General Summary
-            if (movements.length > 0) {
-                const times = movements.map(m => new Date(m.timestamp));
+            if (regularMovements2.length > 0) {
+                const times = regularMovements2.map(m => new Date(m.timestamp));
                 const firstTrip = new Date(Math.min(...times));
                 const lastTrip = new Date(Math.max(...times));
 
