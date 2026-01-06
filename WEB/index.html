@@ -3025,12 +3025,19 @@
         };
 
         window.registerMovement = async function (camionId, tipo, capacidad, material = null, destino = null, ubicacion = null, origen = null) {
-            // Anti-Double Click Cooldown (1 minute per truck)
+            // Determine trip type: internal if both origen AND destino are present
+            const tipoViaje = (origen && destino) ? 'interno' : 'externo';
+
+            // Anti-Double Click Cooldown (adjusted for trip type)
+            // Internal trips: 30 seconds, External trips: 60 seconds
+            const cooldownTime = tipoViaje === 'interno' ? 30000 : 60000;
             const lastTrip = truckCooldowns[camionId];
             const nowTime = Date.now();
-            if (lastTrip && (nowTime - lastTrip) < 60000) {
-                const rem = Math.ceil((60000 - (nowTime - lastTrip)) / 1000);
-                alert(`⚠️ ¡ESPERA! Este camión acaba de registrar una vuelta.\n\nPor seguridad, debes esperar ${rem} segundos para evitar duplicados.`);
+
+            if (lastTrip && (nowTime - lastTrip) < cooldownTime) {
+                const rem = Math.ceil((cooldownTime - (nowTime - lastTrip)) / 1000);
+                const tripTypeLabel = tipoViaje === 'interno' ? 'interno' : 'normal';
+                alert(`⚠️ ¡ESPERA! Este camión acaba de registrar una vuelta ${tripTypeLabel}.\\n\\nPor seguridad, debes esperar ${rem} segundos para evitar duplicados.`);
                 return;
             }
 
@@ -3055,8 +3062,9 @@
                         capacidad: parseFloat(capacidad),
                         material: material,
                         destino: destino,
-                        origen: origen, // Added
+                        origen: origen,
                         ubicacion: ubicacion,
+                        tipo_viaje: tipoViaje, // NEW: Trip type field
                         fecha: now.toISOString().split('T')[0],
                         timestamp: now.toISOString()
                     }]);
@@ -3091,6 +3099,9 @@
 
                 // Audio/Visual Feedback (simple)
                 if (navigator.vibrate) navigator.vibrate(50);
+
+                // Log trip type for debugging
+                console.log(`✅ ${tipoViaje.toUpperCase()} trip registered:`, { camionId, tipo, material, origen, destino });
 
                 // Force refresh both trucks and movements to ensure UI is in sync
                 await Promise.all([
