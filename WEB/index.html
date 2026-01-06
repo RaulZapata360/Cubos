@@ -2467,31 +2467,35 @@
             // 2. Truck Performance
             const perfContainer = document.getElementById('truckPerformance');
             const isInternalTrip2 = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
-            const regularMovements2 = movements.filter(m => !isInternalTrip2(m));
 
-            if (regularMovements2.length === 0) {
+            if (movements.length === 0) {
                 perfContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas</p>';
             } else {
-                // Group movements by truck
+                // Group movements by truck (including internal trips)
                 const statsMap = {};
-                regularMovements2.forEach(m => {
+                movements.forEach(m => {
                     const truckId = m.camion_id;
                     if (!statsMap[truckId]) {
-                        // Support both 'camiones' (plural relation) and 'camion' (singular relation) or fallback to ID
                         const truckInfo = m.camiones || m.camion || {};
                         statsMap[truckId] = {
                             name: truckInfo.nombre || `Camión ${truckId.substring(0, 4)}`,
                             trips: 0,
                             incomingCount: 0,
                             outgoingCount: 0,
+                            internalCount: 0,
                             incomingVol: 0,
                             outgoingVol: 0,
+                            internalVol: 0,
                             volume: 0
                         };
                     }
                     const s = statsMap[truckId];
                     s.trips++;
-                    if (m.tipo === 'incoming') {
+
+                    if (isInternalTrip2(m)) {
+                        s.internalCount++;
+                        s.internalVol += (parseFloat(m.capacidad) || 0);
+                    } else if (m.tipo === 'incoming') {
                         s.incomingCount++;
                         s.incomingVol += (parseFloat(m.capacidad) || 0);
                     } else {
@@ -2514,6 +2518,9 @@
                         }
                         if (stat.outgoingCount > 0) {
                             typeLabels.push(`<span class="text-[8px] bg-warning/20 text-warning px-1.5 py-0.5 rounded font-bold">EXCAVACIÓN (${stat.outgoingCount}v - ${stat.outgoingVol.toFixed(1)}m³)</span>`);
+                        }
+                        if (stat.internalCount > 0) {
+                            typeLabels.push(`<span class="text-[8px] bg-cyan-400/20 text-cyan-400 px-1.5 py-0.5 rounded font-bold">INTERNO (${stat.internalCount}v - ${stat.internalVol.toFixed(1)}m³)</span>`);
                         }
 
                         return `
