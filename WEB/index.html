@@ -2600,6 +2600,9 @@
                 document.getElementById('operatingTime').textContent = '0h 0m';
                 document.getElementById('avgTripsPerHour').textContent = '0';
             }
+
+            // Render internal trips section
+            renderInternalTrips();
         }
 
         window.openTruckSelector = function (tipo) {
