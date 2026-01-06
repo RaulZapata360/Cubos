@@ -2171,8 +2171,11 @@
 
             container.innerHTML = trucks.map(truck => {
                 const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
-                const inc = truckDayMovs.filter(m => m.tipo === 'incoming').length;
-                const out = truckDayMovs.filter(m => m.tipo === 'outgoing').length;
+                // Filter out internal trips from counters
+                const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+                const regularMovs = truckDayMovs.filter(m => !isInternalTrip(m));
+                const inc = regularMovs.filter(m => m.tipo === 'incoming').length;
+                const out = regularMovs.filter(m => m.tipo === 'outgoing').length;
 
                 const regType = (truck.tipo_registrado || 'outgoing').toLowerCase();
 
