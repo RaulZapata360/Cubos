@@ -473,7 +473,7 @@
                 <div class="flex items-center justify-between mb-8">
                     <div>
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.6.1</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.6.2</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -2836,10 +2836,20 @@
                     document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
                     document.getElementById('kpiAvgPerHour').innerHTML = `${kpis.avgPerHour} <span class="text-xs font-normal text-slate-400">vueltas/hora</span>`;
 
-                    const incomingCount = data.movements.filter(m => m.tipo === 'incoming').length;
-                    const outgoingCount = data.movements.filter(m => m.tipo === 'outgoing').length;
+                    // Filter internal trips from regular counters
+                    const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+                    const regularMovements = data.movements.filter(m => !isInternalTrip(m));
+                    const internalMovements = data.movements.filter(m => isInternalTrip(m));
+
+                    const incomingCount = regularMovements.filter(m => m.tipo === 'incoming').length;
+                    const outgoingCount = regularMovements.filter(m => m.tipo === 'outgoing').length;
                     document.getElementById('kpiIncoming').textContent = incomingCount;
                     document.getElementById('kpiOutgoing').textContent = outgoingCount;
+
+                    // Populate internal trips KPIs
+                    const internalVolume = internalMovements.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
+                    document.getElementById('kpiInternalTrips').textContent = internalMovements.length;
+                    document.getElementById('kpiInternalVolume').textContent = `${internalVolume.toFixed(1)} m³`;
 
                     renderHourlyActivity(data.movements);
                     renderTruckPerformance(data.camiones, data.movements);
@@ -2862,6 +2872,35 @@
                     const outgoingLocs = bossDashboardService.calculateLocationBreakdown(data.movements, 'outgoing');
                     renderLocationBreakdown('dashIncomingLocations', incomingLocs, 'emerald');
                     renderLocationBreakdown('dashOutgoingLocations', outgoingLocs, 'amber');
+
+                    // Populate internal trips section
+                    const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+                    const internalMovements = data.movements.filter(m => isInternalTrip(m));
+                    const internalVolume = internalMovements.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
+                    const internalTrucks = new Set(internalMovements.map(m => m.camion_id)).size;
+
+                    document.getElementById('obrasInternalTrips').textContent = internalMovements.length;
+                    document.getElementById('obrasInternalVolume').textContent = `${internalVolume.toFixed(1)} m³`;
+                    document.getElementById('obrasInternalTrucks').textContent = internalTrucks;
+
+                    // Render internal breakdown by material
+                    const internalByMaterial = {};
+                    internalMovements.forEach(m => {
+                        const mat = m.material || 'Sin material';
+                        internalByMaterial[mat] = (internalByMaterial[mat] || 0) + parseFloat(m.capacidad || 0);
+                    });
+
+                    const breakdownContainer = document.getElementById('obrasInternalBreakdown');
+                    if (Object.keys(internalByMaterial).length > 0) {
+                        breakdownContainer.innerHTML = Object.entries(internalByMaterial).map(([mat, vol]) => `
+                            <div class="flex items-center justify-between p-2 bg-black/20 rounded-lg">
+                                <span class="text-xs text-main">${mat}</span>
+                                <span class="text-xs text-cyan-400 font-bold">${vol.toFixed(1)} m³</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        breakdownContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-2">Sin viajes internos</p>';
+                    }
 
                     renderDailyVolumeChart(data.movements);
                 }
