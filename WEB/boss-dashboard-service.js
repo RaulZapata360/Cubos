@@ -12,6 +12,17 @@ class BossDashboardService {
         this.CACHE_DURATION = 30000; // 30 segundos
     }
 
+    // Helper to detect internal trips
+    isInternalTrip(movement) {
+        return (movement.destino && movement.destino.toLowerCase() === 'interno') ||
+            (movement.origen && movement.origen.toLowerCase() === 'interno');
+    }
+
+    // Filter out internal trips from movements array
+    filterRegularMovements(movements) {
+        return movements.filter(m => !this.isInternalTrip(m));
+    }
+
     // Obtener todas las obras (solo para jefes)
     async getAllObras() {
         try {
@@ -132,16 +143,17 @@ class BossDashboardService {
         }
     }
 
-    // Calcular eficiencia (vueltas/hora)
+    // Calcular eficiencia (vueltas/hora) - exclude internal trips
     calculateEfficiency(movements) {
-        if (movements.length === 0) return 0;
+        const regularMovements = this.filterRegularMovements(movements);
+        if (regularMovements.length === 0) return 0;
 
-        const timestamps = movements.map(m => new Date(m.timestamp).getTime());
+        const timestamps = regularMovements.map(m => new Date(m.timestamp).getTime());
         const min = Math.min(...timestamps);
         const max = Math.max(...timestamps);
         const hours = Math.max(1, (max - min) / (1000 * 60 * 60));
 
-        return (movements.length / hours).toFixed(1);
+        return (regularMovements.length / hours).toFixed(1);
     }
 
     // Calcular comparación con la media (últimos 7 días)
@@ -174,11 +186,12 @@ class BossDashboardService {
         }
     }
 
-    // Calcular KPI's básicos
+    // Calcular KPI's básicos - exclude internal trips
     calculateKPIs(movements) {
-        const totalTrips = movements.length;
+        const regularMovements = this.filterRegularMovements(movements);
+        const totalTrips = regularMovements.length;
 
-        if (movements.length === 0) {
+        if (regularMovements.length === 0) {
             return {
                 totalTrips: 0,
                 operatingTime: '0h 0m',
@@ -187,7 +200,7 @@ class BossDashboardService {
         }
 
         // Calcular tiempo de operación
-        const sorted = [...movements].sort((a, b) =>
+        const sorted = [...regularMovements].sort((a, b) =>
             new Date(a.timestamp) - new Date(b.timestamp)
         );
 
@@ -198,7 +211,7 @@ class BossDashboardService {
         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
 
         const totalHours = diffMs / (1000 * 60 * 60);
-        const avgTrips = totalHours > 0 ? (movements.length / totalHours).toFixed(1) : 0;
+        const avgTrips = totalHours > 0 ? (regularMovements.length / totalHours).toFixed(1) : 0;
 
         return {
             totalTrips,
@@ -207,18 +220,20 @@ class BossDashboardService {
         };
     }
 
-    // Calcular volumen por tipo
+    // Calcular volumen por tipo - exclude internal trips
     calculateVolume(movements, type) {
-        return movements
+        const regularMovements = this.filterRegularMovements(movements);
+        return regularMovements
             .filter(m => m.tipo === type)
             .reduce((sum, m) => sum + (m.capacidad || 0), 0);
     }
 
-    // Calcular desglose de materiales
+    // Calcular desglose de materiales - exclude internal trips
     calculateMaterialBreakdown(movements, type) {
+        const regularMovements = this.filterRegularMovements(movements);
         const breakdown = {};
 
-        movements
+        regularMovements
             .filter(m => m.tipo === type && m.material)
             .forEach(movement => {
                 const material = movement.material;
@@ -231,12 +246,13 @@ class BossDashboardService {
         return breakdown;
     }
 
-    // Calcular desglose por ubicación/destino
+    // Calcular desglose por ubicación/destino - exclude internal trips
     calculateLocationBreakdown(movements, type) {
+        const regularMovements = this.filterRegularMovements(movements);
         const breakdown = {};
         const key = type === 'incoming' ? 'ubicacion' : 'destino';
 
-        movements
+        regularMovements
             .filter(m => m.tipo === type)
             .forEach(movement => {
                 // Determine which field to use for the breakdown
@@ -260,11 +276,12 @@ class BossDashboardService {
         return breakdown;
     }
 
-    // Agrupar movimientos por hora
+    // Agrupar movimientos por hora - exclude internal trips
     groupMovementsByHour(movements) {
+        const regularMovements = this.filterRegularMovements(movements);
         const hourlyData = {};
 
-        movements.forEach(movement => {
+        regularMovements.forEach(movement => {
             const hour = new Date(movement.timestamp).getHours();
             hourlyData[hour] = (hourlyData[hour] || 0) + 1;
         });
@@ -272,10 +289,11 @@ class BossDashboardService {
         return hourlyData;
     }
 
-    // Obtener rendimiento de camiones
+    // Obtener rendimiento de camiones - exclude internal trips
     getTruckPerformance(camiones, movements) {
+        const regularMovements = this.filterRegularMovements(movements);
         return camiones.map(truck => {
-            const truckMovements = movements.filter(m => m.camion_id === truck.id);
+            const truckMovements = regularMovements.filter(m => m.camion_id === truck.id);
             const incomingCount = truckMovements.filter(m => m.tipo === 'incoming').length;
             const outgoingCount = truckMovements.filter(m => m.tipo === 'outgoing').length;
             const totalTrips = incomingCount + outgoingCount;
