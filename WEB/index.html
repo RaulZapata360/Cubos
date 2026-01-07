@@ -3434,20 +3434,21 @@
             modal.classList.add('hidden');
 
             // Visual feedback
-            const formattedDate = new Date(dateStr + '        0').ateString('es-AR', {
-                day: 'numeric', month: 'long                  // Optional: You could use a toast n         on here instead of alert if available
-            // al ert(`Cargando datos del ${formattedDate}...`); 
+            const formattedDate = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', {
+                day: 'numeric', month: 'long'
+            });
+            console.log(`Cargando datos del ${formattedDate}...`);
 
             init(); // Reload all data for new date
-            }
+        }
 
         window.logout = async () => {
-                    await authService.logout();
-                    window.location.href = 'login.html';
-                };
+            await authService.logout();
+            window.location.href = 'login.html';
+        };
 
-            setupEventListeners();
-            init();
+        setupEventListeners();
+        init();
     </script>
 </body>
 
