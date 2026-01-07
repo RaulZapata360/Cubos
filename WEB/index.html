@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.9</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1806,6 +1806,11 @@
 
                     if (error) throw error;
 
+                    // Invalidate cache for today even on update
+                    const targetDate = getTargetDate();
+                    const dateStr = formatDateYYYYMMDD(targetDate);
+                    DataCache.remove(`trucks_${dateStr}`);
+
                     alert(`Camión "${name}" actualizado correctamente.`);
                     currentEditingTruckId = null;
                 } else {
@@ -1851,7 +1856,7 @@
 
                 document.getElementById('truckModal').classList.remove('active');
                 document.getElementById('truckForm').reset();
-                await loadTrucks();
+                await loadTrucks(true);
 
                 // Haptic feedback
                 if (navigator.vibrate) navigator.vibrate([10, 30, 10]);
