@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.2</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.3</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1408,6 +1408,7 @@
 
         let currentObraId = null;
         let trucks = [];
+        let adminTrucks = []; // Added to support editing trucks NOT in today's roster
         let movements = [];
         let materials = [];
         let destinos = []; // Added destinos array
@@ -1657,6 +1658,9 @@
                 const { data, error } = await query.order('nombre');
 
                 if (error) throw error;
+
+                // Store for editing fallback
+                adminTrucks = data || [];
 
                 if (!data || data.length === 0) {
                     list.innerHTML = `
@@ -2403,8 +2407,17 @@
 
         // Edit truck
         window.editTruck = function (truckId) {
-            const truck = trucks.find(t => t.id === truckId);
-            if (!truck) return;
+            let truck = trucks.find(t => t.id === truckId);
+
+            // Fallback to adminTrucks if not found in current roster
+            if (!truck) {
+                truck = adminTrucks.find(t => t.id === truckId);
+            }
+
+            if (!truck) {
+                console.error('Truck not found for editing:', truckId);
+                return;
+            }
 
             // Close menu
             document.querySelectorAll('.truck-menu-dropdown').forEach(m => m.classList.add('hidden'));
