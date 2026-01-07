@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.6.3</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.1</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -648,7 +648,7 @@
                 </section>
             </div>
             <!-- Tab: Administración -->
-            <div id="tab-administracion" class="tab-content">
+            <div id="tab-administracion" class="tab-content hidden">
                 <section class="space-y-6 pb-32">
                     <div class="flex items-center justify-between">
                         <div>
@@ -1595,9 +1595,14 @@
             // Update tab content
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
+                content.classList.add('hidden'); // Ensure hidden by default
             });
+
             const targetTab = document.getElementById(`tab-${tabName}`);
-            if (targetTab) targetTab.classList.add('active');
+            if (targetTab) {
+                targetTab.classList.remove('hidden');
+                targetTab.classList.add('active');
+            }
 
             if (tabName === 'movimiento') loadMovements();
             if (tabName === 'analisis') renderAnalytics();
@@ -2497,8 +2502,11 @@
             const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
 
             // 1. Update Volume Balance
-            document.getElementById('analyticsFillVolume').textContent = `+${incVol.toFixed(1)} m³`;
-            document.getElementById('analyticsExcavationVolume').textContent = `-${outVol.toFixed(1)} m³`;
+            const fillVolElem = document.getElementById('analyticsFillVolume');
+            const excVolElem = document.getElementById('analyticsExcavationVolume');
+
+            if (fillVolElem) fillVolElem.textContent = `+${incVol.toFixed(1)} m³`;
+            if (excVolElem) excVolElem.textContent = `-${outVol.toFixed(1)} m³`;
 
             // 2. Truck Performance
             const perfContainer = document.getElementById('truckPerformance');
@@ -3426,20 +3434,20 @@
             modal.classList.add('hidden');
 
             // Visual feedback
-            const formattedDate = new Date(dateStr + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-            // Optional: You could use a toast notification here instead of alert if available
-            // alert(`Cargando datos del ${formattedDate}...`); 
+            const formattedDate = new Date(dateStr + '        0').ateString('es-AR', {
+                day: 'numeric', month: 'long                  // Optional: You could use a toast n         on here instead of alert if available
+            // al ert(`Cargando datos del ${formattedDate}...`); 
 
             init(); // Reload all data for new date
-        }
+            }
 
         window.logout = async () => {
-            await authService.logout();
-            window.location.href = 'login.html';
-        };
+                    await authService.logout();
+                    window.location.href = 'login.html';
+                };
 
-        setupEventListeners();
-        init();
+            setupEventListeners();
+            init();
     </script>
 </body>
 
