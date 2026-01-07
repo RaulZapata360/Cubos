@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.1</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.2</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1935,18 +1935,17 @@
 
                 if (error) throw error;
 
-                // Filter Logic: 
-                // Show trucks NOT in the roster for today
-                // OR trucks already in the roster that don't match the current mission context (allowing re-assignment)
-                let availableTrucks = (data || []).filter(t => {
-                    const isInRoster = t.nomina_fecha === dateStr;
-                    const isMixed = t.tipo_registrado === 'mixed';
-                    const matchesCurrentMode = t.tipo_registrado === pendingTripMode;
+                // Filter out trucks already in the roster for the selected day
+                let availableTrucks = (data || []).filter(t => t.nomina_fecha !== dateStr);
 
-                    if (!isInRoster) return true;
-                    if (isMixed) return false; // Mixed trucks are always visible in their mission selectors
-                    return !matchesCurrentMode; // If mission doesn't match, show in Recientes to allow "moving" it
-                });
+                // Filter by Mission Type (Strict mode)
+                if (pendingTripMode === 'incoming') {
+                    availableTrucks = availableTrucks.filter(t => t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed');
+                } else if (pendingTripMode === 'outgoing') {
+                    availableTrucks = availableTrucks.filter(t => t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed');
+                } else if (pendingTripMode === 'internal') {
+                    availableTrucks = availableTrucks.filter(t => t.tipo_registrado === 'internal' || t.tipo_registrado === 'mixed');
+                }
 
                 if (availableTrucks.length === 0) {
                     list.innerHTML = `
