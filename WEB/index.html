@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.1</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.2</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1790,7 +1790,7 @@
                     console.log('Registering new truck:', { name, plate, cap, type });
 
                     const targetDate = getTargetDate();
-                    const dateStr = targetDate.toISOString().split('T')[0];
+                    const dateStr = formatDateYYYYMMDD(targetDate);
 
                     const { data, error } = await supabaseClient
                         .from('camiones')
@@ -1844,7 +1844,7 @@
         async function loadTrucks(forceRefresh = false) {
             try {
                 const targetDate = getTargetDate();
-                const dateStr = targetDate.toISOString().split('T')[0];
+                const dateStr = formatDateYYYYMMDD(targetDate);
                 const cacheKey = `trucks_${dateStr}`;
 
                 // 1. Check Cache (Skip if forceRefresh is true)
@@ -1897,7 +1897,7 @@
 
             try {
                 const targetDate = getTargetDate();
-                const dateStr = targetDate.toISOString().split('T')[0];
+                const dateStr = formatDateYYYYMMDD(targetDate);
 
                 const { data, error } = await supabaseClient
                     .from('camiones')
@@ -1954,7 +1954,7 @@
         window.addTruckToRoster = async function (truckId) {
             try {
                 const targetDate = getTargetDate();
-                const dateStr = targetDate.toISOString().split('T')[0];
+                const dateStr = formatDateYYYYMMDD(targetDate);
 
                 const { error } = await supabaseClient
                     .from('camiones')
@@ -2005,6 +2005,15 @@
             }
         };
 
+        function formatDateYYYYMMDD(date) {
+            if (!date) return null;
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         function getTargetDate() {
             const now = new Date();
             const targetDate = new Date(now);
@@ -2015,7 +2024,7 @@
         async function loadMovements(forceRefresh = false) {
             try {
                 const targetDate = getTargetDate();
-                const selectedDateStr = targetDate.toISOString().split('T')[0];
+                const selectedDateStr = formatDateYYYYMMDD(targetDate);
                 const cacheKey = `movements_${selectedDateStr}`;
 
                 // 1. Check Cache (Skip if forceRefresh is true)
@@ -2042,7 +2051,7 @@
                 if (currentCounterDayOffset === 0) {
                     const yesterday = new Date(targetDate);
                     yesterday.setDate(targetDate.getDate() - 1);
-                    startDate = yesterday.toISOString().split('T')[0];
+                    startDate = formatDateYYYYMMDD(yesterday);
                 }
 
                 const { data, error } = await supabaseClient
@@ -2172,7 +2181,7 @@
             }
 
             const targetDate = getTargetDate();
-            const dateStr = targetDate.toISOString().split('T')[0];
+            const dateStr = formatDateYYYYMMDD(targetDate);
 
             container.innerHTML = trucks.map(truck => {
                 const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
@@ -3162,7 +3171,7 @@
                         destino: destino,
                         origen: origen,
                         ubicacion: ubicacion,
-                        fecha: now.toISOString().split('T')[0],
+                        fecha: formatDateYYYYMMDD(now),
                         timestamp: now.toISOString()
                     }]);
 
@@ -3221,12 +3230,12 @@
         async function autoArchivePreviousDays() {
             try {
                 console.group('🔍 Checking for pending archives...');
-                const today = new Date().toISOString().split('T')[0];
+                const today = formatDateYYYYMMDD(new Date());
 
                 // 1. Fetch movements from PREVIOUS days (limited to last 3 days for performance)
                 const limitDate = new Date();
                 limitDate.setDate(limitDate.getDate() - 3);
-                const limitDateStr = limitDate.toISOString().split('T')[0];
+                const limitDateStr = formatDateYYYYMMDD(limitDate);
 
                 const { data: pendingMovs, error: movError } = await supabaseClient
                     .from('movimientos')
