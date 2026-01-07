@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.6</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.7</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -371,8 +371,8 @@
 
                 <!-- Internal Trips Card -->
                 <section class="px-4 mb-6">
-                    <div
-                        class="glass-card p-4 rounded-2xl border-l-4 border-l-cyan-400 neon-shadow border border-border">
+                    <div onclick="openInternalTripSelector()"
+                        class="glass-card p-4 rounded-2xl border-l-4 border-l-cyan-400 neon-shadow border border-border cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all group">
                         <div class="flex items-center gap-2 mb-3">
                             <div class="w-8 h-8 rounded-lg bg-cyan-400/20 flex items-center justify-center">
                                 <span class="material-symbols-outlined text-cyan-400 text-lg">swap_horiz</span>
@@ -2021,6 +2021,20 @@
             return `${year}-${month}-${day}`;
         }
 
+        let isInternalTripFlow = false;
+
+        window.openInternalTripSelector = function () {
+            isInternalTripFlow = true;
+            openTruckSelector('outgoing');
+        };
+
+        function switchTab(tabId) {
+            const now = new Date();
+            const targetDate = new Date(now);
+            targetDate.setDate(now.getDate() + currentCounterDayOffset);
+            return targetDate;
+        }
+
         function getTargetDate() {
             const now = new Date();
             const targetDate = new Date(now);
@@ -2867,20 +2881,26 @@
         }
 
         window.openTruckSelector = function (tipo) {
-            console.log('Opening Truck Selector for:', tipo);
-            pendingTripMode = tipo; // Store context for adding missing trucks
+            console.log('Opening Truck Selector for:', tipo, 'Internal:', isInternalTripFlow);
+            pendingTripMode = isInternalTripFlow ? 'internal' : tipo;
             const modal = document.getElementById('truckSelectorModal');
             const list = document.getElementById('truckSelectorList');
-            document.getElementById('selectorTitle').innerHTML = tipo === 'incoming'
-                ? '<span class="text-success material-symbols-outlined">south_east</span> Selección (Relleno)'
-                : '<span class="text-warning material-symbols-outlined">north_east</span> Selección (Excavación)';
+
+            const titleEl = document.getElementById('selectorTitle');
+            if (isInternalTripFlow) {
+                titleEl.innerHTML = '<span class="text-cyan-400 material-symbols-outlined">swap_horiz</span> Selección (Interno)';
+            } else {
+                titleEl.innerHTML = tipo === 'incoming'
+                    ? '<span class="text-success material-symbols-outlined">south_east</span> Selección (Relleno)'
+                    : '<span class="text-warning material-symbols-outlined">north_east</span> Selección (Excavación)';
+            }
 
             // SHOW MODAL - FIX
             modal.classList.remove('hidden');
             modal.classList.add('active');
 
-            // Strict Mission Selector: Show only trucks matching the mode OR registered as mixed
             const filteredTrucks = trucks.filter(truck => {
+                if (isInternalTripFlow) return true; // Show all trucks for internal flow
                 const reg = (truck.tipo_registrado || '').toLowerCase();
                 if (tipo === 'incoming') {
                     return reg === 'incoming' || reg === 'mixed';
@@ -3034,6 +3054,12 @@
 
             // Global helper for quick actions
             window.handleQuickAction = async (cid, t, cap, mat, loc) => {
+                if (isInternalTripFlow) {
+                    await registerMovement(cid, 'outgoing', cap, mat, 'Interno');
+                    isInternalTripFlow = false;
+                    closeAllModals();
+                    return;
+                }
                 if (loc) {
                     const dest = t === 'outgoing' ? loc : null;
                     const orig = t === 'incoming' ? loc : null;
@@ -3061,6 +3087,13 @@
             // Helper to handle flow
             window.registerAndClose = async (cid, t, cap, matName) => {
                 const loc = null; // Ubicación removida del flujo
+
+                if (isInternalTripFlow) {
+                    await registerMovement(cid, 'outgoing', cap, matName, 'Interno');
+                    isInternalTripFlow = false;
+                    closeAllModals();
+                    return;
+                }
 
                 if (t === 'outgoing') {
                     // Excavatión (Salida): Ask for destination
@@ -3158,6 +3191,9 @@
                     el.classList.add('hidden');
                 }
             });
+
+            // Ensure internal flow is reset when closing modals manually
+            isInternalTripFlow = false;
 
 
         }
