@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.2</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.3</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -557,8 +557,15 @@
             <!-- Tab: Análisis -->
             <div class="tab-content hidden" id="tab-analisis">
                 <section class="mx-4 mb-24 space-y-6">
-                    <div class="flex items-center gap-2 mb-2">
-                        <h2 class="text-lg font-black text-main">📈 Análisis del Día</h2>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-lg font-black text-main">📈 Análisis del Día</h2>
+                        </div>
+                        <button onclick="generateCubosReport()"
+                            class="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-[10px] font-bold text-accent hover:bg-accent/10 transition-all uppercase tracking-wider">
+                            <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                            Exportar PDF
+                        </button>
                     </div>
 
                     <!-- Volume Balance -->
@@ -2470,6 +2477,174 @@
             const uniqueTrucks = new Set(internalTrips.map(m => m.camion_id)).size;
             container.innerHTML = `<div class="grid grid-cols-3 gap-2 mb-3"><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${internalTrips.length}</div><div class="text-[9px] text-text-muted uppercase">Vueltas</div></div><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${totalVolume.toFixed(1)} m³</div><div class="text-[9px] text-text-muted uppercase">Volumen</div></div><div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center"><div class="text-xs text-cyan-400 font-bold">${uniqueTrucks}</div><div class="text-[9px] text-text-muted uppercase">Camiones</div></div></div><div class="space-y-1">${internalTrips.slice(0, 10).map(trip => `<div class="bg-black/20 border border-cyan-500/20 rounded-lg p-2 flex items-center justify-between"><div class="flex items-center gap-2"><span class="material-symbols-outlined text-cyan-400 text-sm">swap_horiz</span><div><div class="text-xs font-bold text-white">${trip.camiones?.nombre || 'Camión'}</div><div class="text-[9px] text-text-muted">${trip.material || 'Sin material'}</div></div></div><div class="text-xs font-bold text-cyan-400">${trip.capacidad} m³</div></div>`).join('')}</div>`;
         }
+
+        // PDF Report Generator
+        window.generateCubosReport = () => {
+            if (!movements || movements.length === 0) {
+                alert('No hay movimientos registrados para generar el reporte.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const targetDate = getTargetDate();
+            const dateStr = formatDateYYYYMMDD(targetDate);
+            const formattedDateDisplay = targetDate.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+
+            const paperWhite = [253, 252, 250];
+
+            const applyPageStyle = () => {
+                const width = doc.internal.pageSize.getWidth();
+                const height = doc.internal.pageSize.getHeight();
+                doc.setFillColor(...paperWhite);
+                doc.rect(0, 0, width, height, 'F');
+            };
+
+            applyPageStyle();
+
+            // 2. CABECERA
+            doc.setFont("times", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(30, 30, 30);
+            doc.text("REPORTE DE MOVIMIENTO DE TIERRAS", 14, 25);
+
+            doc.setFont("times", "normal");
+            doc.setFontSize(7.5);
+            doc.setTextColor(140);
+            doc.text("REGISTRO DE OPERACIONES POR CATEGORÍA Y MATERIAL", 14, 30);
+            doc.text(`FECHA DE EMISIÓN: ${formattedDateDisplay}`, 14, 33.5);
+
+            doc.setDrawColor(210);
+            doc.setLineWidth(0.25);
+            doc.line(14, 38, 196, 38);
+
+            const commonHeadStyles = {
+                textColor: [120, 120, 120],
+                fontSize: 7,
+                fontStyle: 'bold',
+                font: 'times',
+                fillColor: [255, 255, 255, 0]
+            };
+
+            const commonStyles = {
+                fontSize: 8,
+                font: 'times',
+                cellPadding: 2.5,
+                lineColor: [210, 210, 210],
+                lineWidth: 0.25
+            };
+
+            // Helpers for logic
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+
+            const getActivityLabel = (m) => {
+                if (isInternalTrip(m)) return 'Viaje Interno';
+                return m.tipo === 'incoming' ? 'Relleno' : 'Excavación';
+            };
+
+            // 4. RESUMEN EJECUTIVO
+            const getSummaryData = () => {
+                const grouped = {};
+                movements.forEach(m => {
+                    const activity = getActivityLabel(m);
+                    const material = m.material || 'S/M';
+                    const key = `${activity} - ${material}`;
+                    if (!grouped[key]) {
+                        grouped[key] = { activity, material, vueltas: 0, m3: 0 };
+                    }
+                    grouped[key].vueltas += 1;
+                    grouped[key].m3 += parseFloat(m.capacidad || 0);
+                });
+
+                return Object.values(grouped).map(g => [
+                    `${g.activity} (${g.material})`,
+                    g.vueltas,
+                    `${g.m3.toFixed(1)} m³`
+                ]);
+            };
+
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont("times", "bold");
+            doc.text("I. RESUMEN DE JORNADA POR MATERIAL", 14, 48);
+
+            doc.autoTable({
+                startY: 52,
+                head: [['Descripción de Flujo', 'Vueltas', 'Volumen Total']],
+                body: getSummaryData(),
+                theme: 'plain',
+                headStyles: commonHeadStyles,
+                styles: commonStyles,
+                columnStyles: { 0: { halign: 'left' }, 1: { halign: 'center' }, 2: { halign: 'right' } },
+                margin: { left: 14, right: 14 }
+            });
+
+            let yPos = doc.lastAutoTable.finalY + 15;
+
+            // 5. DESGLOSE DETALLADO
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont("times", "bold");
+            doc.text("II. DESGLOSE DETALLADO DE MOVIMIENTOS", 14, yPos);
+            yPos += 6;
+
+            const activities = ['Relleno', 'Excavación', 'Viaje Interno'];
+
+            activities.forEach(actName => {
+                const actData = movements.filter(m => getActivityLabel(m) === actName);
+                if (actData.length === 0) return;
+
+                const materiales = [...new Set(actData.map(m => m.material || 'S/M'))];
+
+                materiales.forEach(matName => {
+                    const list = actData.filter(m => (m.material || 'S/M') === matName);
+
+                    // Group by truck within this activity/material
+                    const truckGroup = {};
+                    list.forEach(m => {
+                        const truckName = m.camiones?.nombre || 'Desconocido';
+                        const plate = m.camiones?.patente || '-';
+                        if (!truckGroup[truckName]) {
+                            truckGroup[truckName] = { nombre: truckName, patente: plate, vueltas: 0, total: 0 };
+                        }
+                        truckGroup[truckName].vueltas += 1;
+                        truckGroup[truckName].total += parseFloat(m.capacidad || 0);
+                    });
+
+                    if (yPos > 250) { doc.addPage(); applyPageStyle(); yPos = 25; }
+
+                    doc.setFontSize(8.5);
+                    doc.setTextColor(110, 110, 110);
+                    doc.setFont("times", "bold");
+                    doc.text(`${actName.toUpperCase()}: ${matName.toUpperCase()}`, 14, yPos);
+
+                    doc.setDrawColor(200);
+                    doc.setLineWidth(0.4);
+                    doc.line(14, yPos + 1.2, 18, yPos + 1.2);
+
+                    doc.autoTable({
+                        startY: yPos + 4,
+                        head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
+                        body: Object.values(truckGroup).map(r => [r.nombre, r.patente, r.vueltas, `${r.total.toFixed(1)} m³`]),
+                        theme: 'plain',
+                        headStyles: commonHeadStyles,
+                        styles: commonStyles,
+                        columnStyles: { 0: { halign: 'left' }, 1: { halign: 'left' }, 2: { halign: 'center' }, 3: { halign: 'right' } },
+                        margin: { left: 14, right: 14 }
+                    });
+                    yPos = doc.lastAutoTable.finalY + 12;
+                });
+            });
+
+            // 6. PIE DE PÁGINA
+            const totalGeneral = movements.reduce((acc, curr) => acc + parseFloat(curr.capacidad || 0), 0);
+            doc.setFontSize(7);
+            doc.setTextColor(190);
+            doc.setFont("times", "normal");
+            doc.text(`DOCUMENTO DE CONTROL INTERNO. TOTAL NETO GESTIONADO: ${totalGeneral.toFixed(1)} m³.`, 14, 285);
+
+            doc.save(`Informe_Cubos_${dateStr}.pdf`);
+        };
 
         function updateSummary() {
             // Exclude internal trips from regular stats
