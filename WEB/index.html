@@ -1921,6 +1921,9 @@
                 } else if (pendingTripMode === 'outgoing') {
                     // Only show trucks registered as SAL (outgoing) or MIX (mixed)
                     availableTrucks = availableTrucks.filter(t => t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed');
+                } else if (pendingTripMode === 'internal') {
+                    // Only show trucks registered as INT (internal) or MIX (mixed)
+                    availableTrucks = availableTrucks.filter(t => t.tipo_registrado === 'internal' || t.tipo_registrado === 'mixed');
                 }
 
                 if (availableTrucks.length === 0) {
