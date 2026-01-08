@@ -251,7 +251,7 @@
                         <!-- ⚠️ IMPORTANTE: SIEMPRE ACTUALIZAR LA VERSIÓN AL HACER CAMBIOS EN EL CÓDIGO -->
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.9.1</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.9.2</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -3843,6 +3843,7 @@
                         const truckInfo = m.camiones || m.camion || {};
                         statsMap[truckId] = {
                             name: truckInfo.nombre || `Camión ${truckId.substring(0, 4)}`,
+                            patente: truckInfo.patente || 'N/A',
                             trips: 0,
                             incomingCount: 0,
                             outgoingCount: 0,
@@ -3892,7 +3893,8 @@
                                 <div class="flex items-center gap-3">
                                     <span class="w-6 h-6 rounded-lg bg-black/40 flex items-center justify-center text-[10px] font-bold text-text-muted border border-white/10 shrink-0">${index + 1}</span>
                                     <div>
-                                        <span class="text-sm font-bold text-white block mb-1">${stat.name}</span>
+                                        <span class="text-sm font-bold text-white block">${stat.name}</span>
+                                        <span class="text-[10px] text-text-muted font-medium block mb-1">${stat.patente}</span>
                                         <div class="flex gap-1.5 flex-wrap">
                                             ${typeLabels.join('')}
                                         </div>

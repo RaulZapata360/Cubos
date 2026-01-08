@@ -1,5 +1,22 @@
 # Changelog - Sistema de Conteo de Camiones
 
+## [v3.9.2] - 2026-01-08
+
+### ✨ Mejora: Visualización de Patentes en Análisis
+
+- **NUEVO**: Ahora se muestra la **patente del camión** en la sección "Rendimiento por Camión"
+  - Ubicado en la pestaña **Análisis**
+  - La patente aparece debajo del nombre del camión con estilo discreto
+  - Facilita la identificación rápida de cada vehículo en el listado de rendimiento
+  
+- **Detalles de Visualización**:
+  - Nombre del camión (texto principal en blanco)
+  - Patente (texto pequeño en gris, debajo del nombre)
+  - Etiquetas de tipo de movimiento (Relleno/Excavación/Interno)
+  - Estadísticas de vueltas y m³
+
+---
+
 ## [v3.8.6] - 2026-01-08
 
 ### ✨ Nueva Funcionalidad: Agregado Manual de Vueltas
