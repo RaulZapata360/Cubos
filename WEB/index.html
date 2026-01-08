@@ -251,7 +251,7 @@
                         <!-- ⚠️ IMPORTANTE: SIEMPRE ACTUALIZAR LA VERSIÓN AL HACER CAMBIOS EN EL CÓDIGO -->
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.9</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.9.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1883,21 +1883,20 @@
             // First try to show today's roster
             let trucksToShow = trucks;
 
-            // If no trucks in today's roster, load frequent trucks
+            // If no trucks in today's roster, load all trucks from database
             if (!trucksToShow || trucksToShow.length === 0) {
                 try {
-                    const { data: frequentTrucks, error } = await supabaseClient
+                    const { data: allTrucks, error } = await supabaseClient
                         .from('camiones')
                         .select('*')
                         .eq('obra_id', currentObraId)
-                        .eq('is_frecuente', true)
                         .order('patente');
 
-                    if (!error && frequentTrucks) {
-                        trucksToShow = frequentTrucks;
+                    if (!error && allTrucks) {
+                        trucksToShow = allTrucks;
                     }
                 } catch (err) {
-                    console.error('Error loading frequent trucks:', err);
+                    console.error('Error loading trucks:', err);
                 }
             }
 
@@ -1951,46 +1950,45 @@
             `).join('');
         }
 
-        // Show Recent Trucks (frequent trucks from admin panel)
+        // Show Recent Trucks (all trucks from database)
         window.showRecentTrucksInManual = async function () {
             const container = document.getElementById('manualTruckList');
 
             try {
-                // Load frequent trucks from database
-                const { data: frequentTrucks, error } = await supabaseClient
+                // Load all trucks from database
+                const { data: allTrucks, error } = await supabaseClient
                     .from('camiones')
                     .select('*')
                     .eq('obra_id', currentObraId)
-                    .eq('is_frecuente', true)
                     .order('patente');
 
                 if (error) throw error;
 
-                if (!frequentTrucks || frequentTrucks.length === 0) {
-                    container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones frecuentes configurados.<br><small class="text-xs">Configúralos en la pestaña Administración</small></p>';
+                if (!allTrucks || allTrucks.length === 0) {
+                    container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles</p>';
                     return;
                 }
 
                 // Filter trucks based on trip type
-                let filteredTrucks = frequentTrucks;
+                let filteredTrucks = allTrucks;
                 const tipo = manualTripData.tipo;
 
                 if (tipo === 'incoming') {
-                    filteredTrucks = frequentTrucks.filter(t =>
+                    filteredTrucks = allTrucks.filter(t =>
                         t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed'
                     );
                 } else if (tipo === 'outgoing') {
-                    filteredTrucks = frequentTrucks.filter(t =>
+                    filteredTrucks = allTrucks.filter(t =>
                         t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                     );
                 } else if (tipo === 'internal') {
-                    filteredTrucks = frequentTrucks.filter(t =>
+                    filteredTrucks = allTrucks.filter(t =>
                         t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                     );
                 }
 
                 if (filteredTrucks.length === 0) {
-                    container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones frecuentes para ${manualTripData.tipoLabel}<br><small class="text-xs">Configúralos en la pestaña Administración</small></p>`;
+                    container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles para ${manualTripData.tipoLabel}</p>`;
                     return;
                 }
 
@@ -2012,8 +2010,8 @@
                     </button>
                 `).join('');
             } catch (err) {
-                console.error('Error loading frequent trucks:', err);
-                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">Error al cargar camiones frecuentes</p>';
+                console.error('Error loading trucks:', err);
+                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">Error al cargar camiones</p>';
             }
         };
 
