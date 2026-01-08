@@ -1709,7 +1709,33 @@
                 return;
             }
 
-            container.innerHTML = trucks.map(truck => `
+            // Filter trucks based on trip type
+            let filteredTrucks = trucks;
+            const tipo = manualTripData.tipo;
+
+            if (tipo === 'incoming') {
+                // Show only incoming or mixed trucks
+                filteredTrucks = trucks.filter(t =>
+                    t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed'
+                );
+            } else if (tipo === 'outgoing') {
+                // Show only outgoing or mixed trucks
+                filteredTrucks = trucks.filter(t =>
+                    t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
+                );
+            } else if (tipo === 'internal') {
+                // For internal trips, typically use outgoing trucks
+                filteredTrucks = trucks.filter(t =>
+                    t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
+                );
+            }
+
+            if (filteredTrucks.length === 0) {
+                container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles para ${manualTripData.tipoLabel}</p>`;
+                return;
+            }
+
+            container.innerHTML = filteredTrucks.map(truck => `
                 <button onclick="selectManualTruck('${truck.id}', '${truck.patente}')" 
                     class="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all text-left group">
                     <div class="flex items-center justify-between">
@@ -1754,7 +1780,25 @@
                     return;
                 }
 
-                container.innerHTML = materialsData.map(mat => `
+                // Filter materials based on trip type
+                let filteredMaterials = materialsData;
+                const tipo = manualTripData.tipo;
+
+                if (tipo === 'incoming') {
+                    // Show only incoming materials
+                    filteredMaterials = materialsData.filter(m => m.tipo === 'incoming');
+                } else if (tipo === 'outgoing') {
+                    // Show only outgoing materials
+                    filteredMaterials = materialsData.filter(m => m.tipo === 'outgoing');
+                }
+                // For internal trips, show all materials
+
+                if (filteredMaterials.length === 0) {
+                    container.innerHTML = `<p class="col-span-2 text-center text-text-muted text-sm py-8">No hay materiales disponibles para ${manualTripData.tipoLabel}</p>`;
+                    return;
+                }
+
+                container.innerHTML = filteredMaterials.map(mat => `
                     <button onclick="selectManualMaterial('${mat.nombre.replace(/'/g, "\\'")}')" 
                         class="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all">
                         <div class="text-sm font-bold text-main text-center">${mat.nombre}</div>
