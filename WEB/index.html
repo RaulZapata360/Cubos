@@ -1581,10 +1581,16 @@
                     <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
                         Camión
                     </label>
-                    <select id="manualTripTruck" onchange="updateManualTripData('camionId', this.value)"
-                        class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                        <option value="">Seleccionar camión...</option>
-                    </select>
+                    <div class="flex gap-2">
+                        <select id="manualTripTruck" onchange="updateManualTripData('camionId', this.value)"
+                            class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            <option value="">Seleccionar camión...</option>
+                        </select>
+                        <button type="button" onclick="openAddTruckFromManual()"
+                            class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Material Selection -->
@@ -1592,10 +1598,16 @@
                     <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
                         Material
                     </label>
-                    <select id="manualTripMaterial" onchange="updateManualTripData('material', this.value)"
-                        class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                        <option value="">Seleccionar material...</option>
-                    </select>
+                    <div class="flex gap-2">
+                        <select id="manualTripMaterial" onchange="updateManualTripData('material', this.value)"
+                            class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            <option value="">Seleccionar material...</option>
+                        </select>
+                        <button type="button" onclick="openAddMaterialFromManual()"
+                            class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
+                            <span class="material-symbols-outlined text-sm">add</span>
+                        </button>
+                    </div>
                 </div>
             `;
 
@@ -1606,10 +1618,16 @@
                         <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
                             Origen
                         </label>
-                        <select id="manualTripOrigen" onchange="updateManualTripData('origen', this.value)"
-                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                            <option value="">Seleccionar origen...</option>
-                        </select>
+                        <div class="flex gap-2">
+                            <select id="manualTripOrigen" onchange="updateManualTripData('origen', this.value)"
+                                class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                                <option value="">Seleccionar origen...</option>
+                            </select>
+                            <button type="button" onclick="openAddOrigenFromManual()"
+                                class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
                     </div>
                 `;
             } else if (tipo === 'outgoing') {
@@ -1618,10 +1636,16 @@
                         <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
                             Destino
                         </label>
-                        <select id="manualTripDestino" onchange="updateManualTripData('destino', this.value)"
-                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                            <option value="">Seleccionar destino...</option>
-                        </select>
+                        <div class="flex gap-2">
+                            <select id="manualTripDestino" onchange="updateManualTripData('destino', this.value)"
+                                class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                                <option value="">Seleccionar destino...</option>
+                            </select>
+                            <button type="button" onclick="openAddDestinoFromManual()"
+                                class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                            </button>
+                        </div>
                     </div>
                 `;
             } else if (tipo === 'internal') {
@@ -1836,6 +1860,145 @@
                 alert('❌ Error al registrar: ' + err.message);
                 document.getElementById('submitManualTripBtn').disabled = false;
                 document.getElementById('submitManualTripBtn').textContent = 'Registrar Vuelta';
+            }
+        };
+
+        // ============================================
+        // ADD NEW ITEMS FROM MANUAL TRIP FORM
+        // ============================================
+
+        // Add new truck from manual form
+        window.openAddTruckFromManual = async function () {
+            const patente = prompt('Ingresa la patente del camión:');
+            if (!patente || !patente.trim()) return;
+
+            const capacidad = prompt('Ingresa la capacidad en m³:');
+            if (!capacidad || isNaN(parseFloat(capacidad))) {
+                alert('Capacidad inválida');
+                return;
+            }
+
+            const tipo = prompt('Tipo de camión (incoming/outgoing/mixed):');
+            if (!tipo || !['incoming', 'outgoing', 'mixed'].includes(tipo.toLowerCase())) {
+                alert('Tipo inválido. Usa: incoming, outgoing o mixed');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('camiones')
+                    .insert([{
+                        obra_id: currentObraId,
+                        nombre: patente.toUpperCase(),
+                        patente: patente.toUpperCase(),
+                        capacidad: parseFloat(capacidad),
+                        tipo_registrado: tipo.toLowerCase()
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                // Reload trucks and repopulate dropdown
+                await loadTrucks(true);
+                await populateManualTripDropdowns(manualTripData.tipo);
+
+                // Auto-select the new truck
+                if (data && data[0]) {
+                    document.getElementById('manualTripTruck').value = data[0].id;
+                    updateManualTripData('camionId', data[0].id);
+                }
+
+                alert('✅ Camión agregado exitosamente');
+            } catch (err) {
+                console.error('Error adding truck:', err);
+                alert('❌ Error al agregar camión: ' + err.message);
+            }
+        };
+
+        // Add new material from manual form
+        window.openAddMaterialFromManual = async function () {
+            const nombre = prompt('Ingresa el nombre del material:');
+            if (!nombre || !nombre.trim()) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('materiales')
+                    .insert([{
+                        obra_id: currentObraId,
+                        nombre: nombre.trim()
+                    }]);
+
+                if (error) throw error;
+
+                // Repopulate dropdown
+                await populateManualTripDropdowns(manualTripData.tipo);
+
+                // Auto-select the new material
+                document.getElementById('manualTripMaterial').value = nombre.trim();
+                updateManualTripData('material', nombre.trim());
+
+                alert('✅ Material agregado exitosamente');
+            } catch (err) {
+                console.error('Error adding material:', err);
+                alert('❌ Error al agregar material: ' + err.message);
+            }
+        };
+
+        // Add new origen from manual form
+        window.openAddOrigenFromManual = async function () {
+            const nombre = prompt('Ingresa el nombre del origen:');
+            if (!nombre || !nombre.trim()) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('origenes')
+                    .insert([{
+                        obra_id: currentObraId,
+                        nombre: nombre.trim()
+                    }]);
+
+                if (error) throw error;
+
+                // Repopulate dropdown
+                await populateManualTripDropdowns(manualTripData.tipo);
+
+                // Auto-select the new origen
+                document.getElementById('manualTripOrigen').value = nombre.trim();
+                updateManualTripData('origen', nombre.trim());
+
+                alert('✅ Origen agregado exitosamente');
+            } catch (err) {
+                console.error('Error adding origen:', err);
+                alert('❌ Error al agregar origen: ' + err.message);
+            }
+        };
+
+        // Add new destino from manual form
+        window.openAddDestinoFromManual = async function () {
+            const nombre = prompt('Ingresa el nombre del destino:');
+            if (!nombre || !nombre.trim()) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('destinos')
+                    .insert([{
+                        obra_id: currentObraId,
+                        nombre: nombre.trim()
+                    }]);
+
+                if (error) throw error;
+
+                // Repopulate dropdown
+                await populateManualTripDropdowns(manualTripData.tipo);
+
+                // Auto-select the new destino
+                document.getElementById('manualTripDestino').value = nombre.trim();
+                updateManualTripData('destino', nombre.trim());
+
+                alert('✅ Destino agregado exitosamente');
+            } catch (err) {
+                console.error('Error adding destino:', err);
+                alert('❌ Error al agregar destino: ' + err.message);
             }
         };
 
