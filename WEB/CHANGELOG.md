@@ -1,5 +1,26 @@
 # Changelog - Sistema de Conteo de Camiones
 
+## [v3.9.3] - 2026-01-08
+
+### 🔧 Mejoras Técnicas: Carga de Datos y Diagnóstico
+
+- **MEJORADO**: Consulta de movimientos ahora trae información completa del camión
+  - Agregados campos: `capacidad` y `tipo_registrado` al JOIN con tabla camiones
+  - Asegura que toda la información necesaria esté disponible para filtros y visualización
+  - Soluciona problemas de datos faltantes en la sección de análisis
+
+- **NUEVO**: Herramientas de diagnóstico integradas
+  - Script `DIAGNOSTICO.js` con funciones de debugging
+  - Funciones disponibles en consola del navegador:
+    - `checkMovements()` - Verifica movimientos cargados
+    - `checkTrucks()` - Verifica camiones cargados  
+    - `checkPerformance()` - Analiza rendimiento y patentes
+    - `testMovementsQuery()` - Prueba consulta a Supabase
+    - `runFullDiagnostic()` - Diagnóstico completo
+  - Facilita identificación de problemas de carga de datos
+
+---
+
 ## [v3.9.2] - 2026-01-08
 
 ### ✨ Mejora: Visualización de Patentes en Análisis
