@@ -1,77 +1,142 @@
 // ============================================
-// SCRIPT DE DIAGNÓSTICO - Pegar en la consola del navegador
+// DIAGNÓSTICO DE DATOS - Sistema de Conteo
 // ============================================
+// Ejecuta estas funciones en la consola del navegador para diagnosticar problemas
 
-console.log('🔍 INICIANDO DIAGNÓSTICO...\n');
+// 1. Verificar movimientos cargados
+window.checkMovements = function () {
+    console.group('📊 DIAGNÓSTICO: Movimientos');
+    console.log('Total de movimientos:', movements ? movements.length : 0);
 
-// 1. Verificar si Supabase está cargado
-console.log('1️⃣ Verificando Supabase...');
-if (typeof supabase !== 'undefined') {
-    console.log('✅ Supabase library cargada');
-} else {
-    console.error('❌ Supabase library NO cargada');
-}
+    if (movements && movements.length > 0) {
+        console.log('Primer movimiento:', movements[0]);
+        console.log('Estructura de camión en movimiento:', movements[0].camiones);
 
-// 2. Verificar cliente de Supabase
-console.log('\n2️⃣ Verificando cliente de Supabase...');
-if (typeof supabaseClient !== 'undefined') {
-    console.log('✅ supabaseClient existe');
-} else {
-    console.error('❌ supabaseClient NO existe');
-}
+        // Verificar si todos los movimientos tienen información de camión
+        const withTruckInfo = movements.filter(m => m.camiones).length;
+        const withoutTruckInfo = movements.filter(m => !m.camiones).length;
 
-// 3. Verificar sesión de usuario
-console.log('\n3️⃣ Verificando sesión...');
-if (typeof authService !== 'undefined') {
-    authService.checkSession().then(session => {
-        if (session.authenticated) {
-            console.log('✅ Usuario autenticado:', session.user?.email);
-            console.log('   Rol:', session.profile?.rol);
-            console.log('   Obra ID:', localStorage.getItem('selectedObraId'));
-        } else {
-            console.error('❌ Usuario NO autenticado');
-            console.log('   → Necesitas hacer login primero');
+        console.log(`✅ Con info de camión: ${withTruckInfo}`);
+        console.log(`❌ Sin info de camión: ${withoutTruckInfo}`);
+
+        // Mostrar campos disponibles en camiones
+        if (movements[0].camiones) {
+            console.log('Campos disponibles en camiones:', Object.keys(movements[0].camiones));
         }
-    });
-} else {
-    console.error('❌ authService NO existe');
-}
+    } else {
+        console.warn('⚠️ No hay movimientos cargados');
+    }
+    console.groupEnd();
+};
 
-// 4. Verificar obra seleccionada
-console.log('\n4️⃣ Verificando obra seleccionada...');
-const obraId = localStorage.getItem('selectedObraId');
-const obraNombre = localStorage.getItem('selectedObraNombre');
-if (obraId) {
-    console.log('✅ Obra seleccionada:', obraNombre, '(ID:', obraId + ')');
-} else {
-    console.error('❌ NO hay obra seleccionada');
-    console.log('   → Necesitas seleccionar una obra');
-}
+// 2. Verificar camiones cargados
+window.checkTrucks = function () {
+    console.group('🚛 DIAGNÓSTICO: Camiones');
+    console.log('Total de camiones:', trucks ? trucks.length : 0);
 
-// 5. Verificar conexión a Supabase
-console.log('\n5️⃣ Verificando conexión a Supabase...');
-if (typeof supabaseClient !== 'undefined') {
-    supabaseClient.from('camiones').select('count').limit(1)
-        .then(({ data, error }) => {
-            if (error) {
-                console.error('❌ Error conectando a Supabase:', error.message);
-            } else {
-                console.log('✅ Conexión a Supabase OK');
-            }
+    if (trucks && trucks.length > 0) {
+        console.log('Primer camión:', trucks[0]);
+        console.log('Campos disponibles:', Object.keys(trucks[0]));
+
+        // Agrupar por tipo
+        const byType = {};
+        trucks.forEach(t => {
+            const tipo = t.tipo_registrado || 'sin_tipo';
+            byType[tipo] = (byType[tipo] || 0) + 1;
         });
-}
+        console.log('Camiones por tipo:', byType);
+    } else {
+        console.warn('⚠️ No hay camiones cargados');
+    }
+    console.groupEnd();
+};
 
-// 6. Verificar si hay datos en caché
-console.log('\n6️⃣ Verificando caché...');
-const cacheKeys = Object.keys(localStorage).filter(k => k.startsWith('cache_'));
-if (cacheKeys.length > 0) {
-    console.log('✅ Hay', cacheKeys.length, 'items en caché');
-    console.log('   Keys:', cacheKeys);
-} else {
-    console.log('⚠️ No hay datos en caché');
-}
+// 3. Verificar análisis de rendimiento
+window.checkPerformance = function () {
+    console.group('📈 DIAGNÓSTICO: Rendimiento');
 
-console.log('\n✅ DIAGNÓSTICO COMPLETO');
-console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-console.log('Si ves errores arriba (❌), esos son los problemas.');
-console.log('Si todo está OK (✅), el problema es otro.');
+    if (!movements || movements.length === 0) {
+        console.warn('⚠️ No hay movimientos para analizar');
+        console.groupEnd();
+        return;
+    }
+
+    const statsMap = {};
+    movements.forEach(m => {
+        const truckId = m.camion_id;
+        if (!statsMap[truckId]) {
+            const truckInfo = m.camiones || m.camion || {};
+            statsMap[truckId] = {
+                id: truckId,
+                name: truckInfo.nombre || 'N/A',
+                patente: truckInfo.patente || 'N/A',
+                capacidad: truckInfo.capacidad || 'N/A',
+                tipo_registrado: truckInfo.tipo_registrado || 'N/A',
+                trips: 0
+            };
+        }
+        statsMap[truckId].trips++;
+    });
+
+    const truckStats = Object.values(statsMap);
+    console.log('Estadísticas de camiones:', truckStats);
+    console.table(truckStats);
+
+    // Verificar cuántos tienen patente
+    const withPatente = truckStats.filter(t => t.patente !== 'N/A').length;
+    const withoutPatente = truckStats.filter(t => t.patente === 'N/A').length;
+
+    console.log(`✅ Con patente: ${withPatente}`);
+    console.log(`❌ Sin patente: ${withoutPatente}`);
+
+    console.groupEnd();
+};
+
+// 4. Verificar consulta de movimientos
+window.testMovementsQuery = async function () {
+    console.group('🔍 DIAGNÓSTICO: Consulta de Movimientos');
+
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        console.log('Consultando movimientos para:', today);
+        console.log('Obra ID:', currentObraId);
+
+        const { data, error } = await supabaseClient
+            .from('movimientos')
+            .select(`
+                *,
+                camiones (nombre, patente, capacidad, tipo_registrado)
+            `)
+            .eq('obra_id', currentObraId)
+            .eq('fecha', today)
+            .order('timestamp', { ascending: false });
+
+        if (error) {
+            console.error('❌ Error en consulta:', error);
+        } else {
+            console.log('✅ Consulta exitosa');
+            console.log('Total de movimientos:', data.length);
+            if (data.length > 0) {
+                console.log('Primer movimiento:', data[0]);
+                console.log('Info de camión:', data[0].camiones);
+            }
+        }
+    } catch (err) {
+        console.error('❌ Error:', err);
+    }
+
+    console.groupEnd();
+};
+
+// 5. Ejecutar diagnóstico completo
+window.runFullDiagnostic = function () {
+    console.clear();
+    console.log('🔧 INICIANDO DIAGNÓSTICO COMPLETO...\n');
+    checkMovements();
+    checkTrucks();
+    checkPerformance();
+    testMovementsQuery();
+    console.log('\n✅ DIAGNÓSTICO COMPLETO');
+};
+
+console.log('✅ Funciones de diagnóstico cargadas. Ejecuta runFullDiagnostic() para ver el estado completo.');
