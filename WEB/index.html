@@ -251,7 +251,7 @@
                         <!-- ⚠️ IMPORTANTE: SIEMPRE ACTUALIZAR LA VERSIÓN AL HACER CAMBIOS EN EL CÓDIGO -->
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.8</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.9</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1880,28 +1880,49 @@
         async function renderManualTruckList() {
             const container = document.getElementById('manualTruckList');
 
-            if (!trucks || trucks.length === 0) {
+            // First try to show today's roster
+            let trucksToShow = trucks;
+
+            // If no trucks in today's roster, load frequent trucks
+            if (!trucksToShow || trucksToShow.length === 0) {
+                try {
+                    const { data: frequentTrucks, error } = await supabaseClient
+                        .from('camiones')
+                        .select('*')
+                        .eq('obra_id', currentObraId)
+                        .eq('is_frecuente', true)
+                        .order('patente');
+
+                    if (!error && frequentTrucks) {
+                        trucksToShow = frequentTrucks;
+                    }
+                } catch (err) {
+                    console.error('Error loading frequent trucks:', err);
+                }
+            }
+
+            if (!trucksToShow || trucksToShow.length === 0) {
                 container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles</p>';
                 return;
             }
 
             // Filter trucks based on trip type
-            let filteredTrucks = trucks;
+            let filteredTrucks = trucksToShow;
             const tipo = manualTripData.tipo;
 
             if (tipo === 'incoming') {
                 // Show only incoming or mixed trucks
-                filteredTrucks = trucks.filter(t =>
+                filteredTrucks = trucksToShow.filter(t =>
                     t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed'
                 );
             } else if (tipo === 'outgoing') {
                 // Show only outgoing or mixed trucks
-                filteredTrucks = trucks.filter(t =>
+                filteredTrucks = trucksToShow.filter(t =>
                     t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                 );
             } else if (tipo === 'internal') {
                 // For internal trips, show only outgoing or mixed trucks (NOT incoming-only)
-                filteredTrucks = trucks.filter(t =>
+                filteredTrucks = trucksToShow.filter(t =>
                     t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                 );
             }
@@ -1930,45 +1951,46 @@
             `).join('');
         }
 
-        // Show Recent Trucks (all trucks from database)
+        // Show Recent Trucks (frequent trucks from admin panel)
         window.showRecentTrucksInManual = async function () {
             const container = document.getElementById('manualTruckList');
 
             try {
-                // Load all trucks from database
-                const { data: allTrucks, error } = await supabaseClient
+                // Load frequent trucks from database
+                const { data: frequentTrucks, error } = await supabaseClient
                     .from('camiones')
                     .select('*')
                     .eq('obra_id', currentObraId)
+                    .eq('is_frecuente', true)
                     .order('patente');
 
                 if (error) throw error;
 
-                if (!allTrucks || allTrucks.length === 0) {
-                    container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles</p>';
+                if (!frequentTrucks || frequentTrucks.length === 0) {
+                    container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones frecuentes configurados.<br><small class="text-xs">Configúralos en la pestaña Administración</small></p>';
                     return;
                 }
 
                 // Filter trucks based on trip type
-                let filteredTrucks = allTrucks;
+                let filteredTrucks = frequentTrucks;
                 const tipo = manualTripData.tipo;
 
                 if (tipo === 'incoming') {
-                    filteredTrucks = allTrucks.filter(t =>
+                    filteredTrucks = frequentTrucks.filter(t =>
                         t.tipo_registrado === 'incoming' || t.tipo_registrado === 'mixed'
                     );
                 } else if (tipo === 'outgoing') {
-                    filteredTrucks = allTrucks.filter(t =>
+                    filteredTrucks = frequentTrucks.filter(t =>
                         t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                     );
                 } else if (tipo === 'internal') {
-                    filteredTrucks = allTrucks.filter(t =>
+                    filteredTrucks = frequentTrucks.filter(t =>
                         t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                     );
                 }
 
                 if (filteredTrucks.length === 0) {
-                    container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones recientes para ${manualTripData.tipoLabel}</p>`;
+                    container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones frecuentes para ${manualTripData.tipoLabel}<br><small class="text-xs">Configúralos en la pestaña Administración</small></p>`;
                     return;
                 }
 
@@ -1977,8 +1999,8 @@
                         class="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all text-left group">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                    <span class="material-symbols-outlined text-primary">local_shipping</span>
+                                <div class="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-accent">history</span>
                                 </div>
                                 <div>
                                     <div class="text-sm font-bold text-main">${truck.patente}</div>
@@ -1990,8 +2012,8 @@
                     </button>
                 `).join('');
             } catch (err) {
-                console.error('Error loading recent trucks:', err);
-                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">Error al cargar camiones</p>';
+                console.error('Error loading frequent trucks:', err);
+                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">Error al cargar camiones frecuentes</p>';
             }
         };
 
