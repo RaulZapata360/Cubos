@@ -1921,9 +1921,9 @@
                     t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                 );
             } else if (tipo === 'internal') {
-                // For internal trips, show only outgoing or mixed trucks (NOT incoming-only)
+                // Para viajes internos, mostrar camiones 'internal', 'outgoing' o 'mixed'
                 filteredTrucks = trucksToShow.filter(t =>
-                    t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
+                    t.tipo_registrado === 'internal' || t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                 );
             }
 
@@ -1990,7 +1990,7 @@
                     );
                 } else if (tipo === 'internal') {
                     filteredTrucks = availableTrucks.filter(t =>
-                        t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
+                        t.tipo_registrado === 'internal' || t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                     );
                 }
 
