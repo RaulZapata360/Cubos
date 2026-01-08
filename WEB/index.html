@@ -249,7 +249,7 @@
                     <div class="flex items-center gap-2 mb-1">
                         <span class="text-xs font-bold text-accent tracking-widest uppercase">Conteo Camiones</span>
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.3</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.5</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -2579,14 +2579,14 @@
 
             const commonHeadStyles = {
                 textColor: [80, 80, 80],
-                fontSize: 7,
+                fontSize: 10.5,  // Aumentado de 7pt a 10.5pt (+50%)
                 fontStyle: 'bold',
                 font: 'times',
                 fillColor: [240, 240, 240] // Gris claro para los títulos
             };
 
             const commonStyles = {
-                fontSize: 8,
+                fontSize: 12,  // Aumentado de 8pt a 12pt (+50%)
                 font: 'times',
                 cellPadding: 2.5,
                 lineColor: [210, 210, 210],
@@ -2715,7 +2715,7 @@
 
             // 6. PIE DE PÁGINA
             const totalGeneral = movements.reduce((acc, curr) => acc + parseFloat(curr.capacidad || 0), 0);
-            doc.setFontSize(7);
+            doc.setFontSize(10.5);  // Aumentado de 7pt a 10.5pt (+50%)
             doc.setTextColor(190);
             doc.setFont("times", "normal");
             doc.text(`DOCUMENTO DE CONTROL INTERNO. TOTAL NETO GESTIONADO: ${totalGeneral.toFixed(1)} m³.`, 14, 285);
