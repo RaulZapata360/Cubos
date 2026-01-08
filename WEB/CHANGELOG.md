@@ -1,5 +1,13 @@
 # Changelog - Sistema de Conteo de Camiones
 
+## [v3.9.4] - 2026-01-08
+
+### 🐛 Fix: Filtrado en Modo Manual
+- **CORREGIDO**: Los camiones marcados como `internal` (Jorge Salamanca, etc.) ya aparecen correctamente al seleccionar "Interno" en el Agregado Manual.
+- Se actualizó la lógica de filtrado para permitir tipos `internal`, `outgoing` y `mixed` en viajes internos.
+
+---
+
 ## [v3.9.3] - 2026-01-08
 
 ### 🔧 Mejoras Técnicas: Carga de Datos y Diagnóstico
