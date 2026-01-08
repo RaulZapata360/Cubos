@@ -395,7 +395,24 @@
                     </div>
                 </section>
 
-
+                <!-- Manual Trip Addition Button -->
+                <section class="px-4 mb-6">
+                    <button onclick="openManualTripModal()"
+                        class="glass-card w-full p-4 rounded-2xl border-l-4 border-l-purple-500 neon-shadow border border-border cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-purple-500 text-xl">edit_note</span>
+                            </div>
+                            <div class="flex-1 text-left">
+                                <span class="text-sm font-bold text-purple-400 uppercase tracking-wider block">Agregado
+                                    Manual</span>
+                                <span class="text-[10px] text-text-muted">Registrar vuelta manualmente</span>
+                            </div>
+                            <span
+                                class="material-symbols-outlined text-purple-400 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                        </div>
+                    </button>
+                </section>
 
                 <!-- Volume Stats -->
                 <!-- Volume Stats -->
@@ -1398,6 +1415,75 @@
         </div>
     </div>
 
+    <!-- Manual Trip Addition Modal -->
+    <div id="manualTripModal" class="fixed inset-0 z-[70] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeManualTripModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[90vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <h3 class="text-lg font-black text-main tracking-tight flex items-center gap-2">
+                        ✏️ Agregar Vuelta Manual
+                    </h3>
+                    <button onclick="closeManualTripModal()"
+                        class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <!-- Form Content -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Trip Type Selection -->
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Tipo de Viaje
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button type="button" onclick="selectManualTripType('incoming')"
+                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-success/30 bg-success/10 text-success hover:bg-success/20 transition-all text-center"
+                                data-type="incoming">
+                                <span class="material-symbols-outlined text-2xl mb-1 block">south_east</span>
+                                <div class="text-[10px] font-bold uppercase">Relleno</div>
+                            </button>
+                            <button type="button" onclick="selectManualTripType('outgoing')"
+                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-all text-center"
+                                data-type="outgoing">
+                                <span class="material-symbols-outlined text-2xl mb-1 block">north_east</span>
+                                <div class="text-[10px] font-bold uppercase">Excavación</div>
+                            </button>
+                            <button type="button" onclick="selectManualTripType('internal')"
+                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-all text-center"
+                                data-type="internal">
+                                <span class="material-symbols-outlined text-2xl mb-1 block">swap_horiz</span>
+                                <div class="text-[10px] font-bold uppercase">Interno</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Form Fields (populated by JS) -->
+                    <div id="manualTripFormFields" class="space-y-4">
+                        <p class="text-center text-text-muted text-sm py-8">
+                            Selecciona un tipo de viaje para continuar
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="p-4 border-t border-white/10 flex gap-3 shrink-0">
+                    <button onclick="closeManualTripModal()"
+                        class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted font-bold text-sm transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="submitManualTrip()"
+                        class="flex-1 py-3 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        id="submitManualTripBtn" disabled>
+                        Registrar Vuelta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
 
@@ -1417,6 +1503,341 @@
         let pendingTripMode = null; // Track if we are in the middle of a trip recording flow
         let currentEditingTruckId = null; // Track which truck is being edited
         let truckCooldowns = {}; // Global for preventing double-clicking accidents
+
+        // ============================================
+        // MANUAL TRIP ADDITION
+        // ============================================
+        let manualTripData = {
+            tipo: null,
+            camionId: null,
+            material: null,
+            destino: null,
+            origen: null,
+            ubicacion: null,
+            fecha: null,
+            hora: null
+        };
+
+        // Open Manual Trip Modal
+        window.openManualTripModal = function () {
+            document.getElementById('manualTripModal').classList.remove('hidden');
+            resetManualTripForm();
+        };
+
+        // Close Manual Trip Modal
+        window.closeManualTripModal = function () {
+            document.getElementById('manualTripModal').classList.add('hidden');
+            resetManualTripForm();
+        };
+
+        // Reset Form
+        function resetManualTripForm() {
+            manualTripData = {
+                tipo: null,
+                camionId: null,
+                material: null,
+                destino: null,
+                origen: null,
+                ubicacion: null,
+                fecha: null,
+                hora: null
+            };
+
+            // Reset UI
+            document.querySelectorAll('.manual-trip-type-btn').forEach(btn => {
+                btn.classList.remove('ring-4', 'ring-white/30');
+            });
+
+            document.getElementById('manualTripFormFields').innerHTML = `
+                <p class="text-center text-text-muted text-sm py-8">
+                    Selecciona un tipo de viaje para continuar
+                </p>
+            `;
+
+            document.getElementById('submitManualTripBtn').disabled = true;
+        }
+
+        // Select Trip Type
+        window.selectManualTripType = function (tipo) {
+            manualTripData.tipo = tipo;
+
+            // Update button states
+            document.querySelectorAll('.manual-trip-type-btn').forEach(btn => {
+                btn.classList.remove('ring-4', 'ring-white/30');
+            });
+            document.querySelector(`[data-type="${tipo}"]`).classList.add('ring-4', 'ring-white/30');
+
+            // Render dynamic form fields
+            renderManualTripFields(tipo);
+        };
+
+        // Render Dynamic Form Fields
+        async function renderManualTripFields(tipo) {
+            const container = document.getElementById('manualTripFormFields');
+
+            let fieldsHTML = `
+                <!-- Truck Selection -->
+                <div>
+                    <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                        Camión
+                    </label>
+                    <select id="manualTripTruck" onchange="updateManualTripData('camionId', this.value)"
+                        class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                        <option value="">Seleccionar camión...</option>
+                    </select>
+                </div>
+                
+                <!-- Material Selection -->
+                <div>
+                    <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                        Material
+                    </label>
+                    <select id="manualTripMaterial" onchange="updateManualTripData('material', this.value)"
+                        class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                        <option value="">Seleccionar material...</option>
+                    </select>
+                </div>
+            `;
+
+            // Add origin/destination based on trip type
+            if (tipo === 'incoming') {
+                fieldsHTML += `
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Origen
+                        </label>
+                        <select id="manualTripOrigen" onchange="updateManualTripData('origen', this.value)"
+                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            <option value="">Seleccionar origen...</option>
+                        </select>
+                    </div>
+                `;
+            } else if (tipo === 'outgoing') {
+                fieldsHTML += `
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Destino
+                        </label>
+                        <select id="manualTripDestino" onchange="updateManualTripData('destino', this.value)"
+                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            <option value="">Seleccionar destino...</option>
+                        </select>
+                    </div>
+                `;
+            } else if (tipo === 'internal') {
+                // Internal trips use 'Interno' as destination
+                manualTripData.destino = 'Interno';
+            }
+
+            // Date and Time inputs
+            const today = new Date().toISOString().split('T')[0];
+            fieldsHTML += `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Fecha
+                        </label>
+                        <input type="date" id="manualTripDate" max="${today}" 
+                            onchange="updateManualTripData('fecha', this.value)"
+                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Hora
+                        </label>
+                        <input type="time" id="manualTripTime" 
+                            onchange="updateManualTripData('hora', this.value)"
+                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = fieldsHTML;
+
+            // Populate dropdowns
+            await populateManualTripDropdowns(tipo);
+        }
+
+        // Populate Dropdowns
+        async function populateManualTripDropdowns(tipo) {
+            // Populate trucks
+            const truckSelect = document.getElementById('manualTripTruck');
+            if (truckSelect && trucks.length > 0) {
+                trucks.forEach(truck => {
+                    const option = document.createElement('option');
+                    option.value = truck.id;
+                    option.textContent = `${truck.patente} (${truck.capacidad}m³)`;
+                    truckSelect.appendChild(option);
+                });
+            }
+
+            // Populate materials
+            const materialSelect = document.getElementById('manualTripMaterial');
+            if (materialSelect) {
+                try {
+                    const { data: materialsData } = await supabaseClient
+                        .from('materiales')
+                        .select('*')
+                        .eq('obra_id', currentObraId)
+                        .order('nombre');
+
+                    if (materialsData) {
+                        materialsData.forEach(mat => {
+                            const option = document.createElement('option');
+                            option.value = mat.nombre;
+                            option.textContent = mat.nombre;
+                            materialSelect.appendChild(option);
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error loading materials:', err);
+                }
+            }
+
+            // Populate origins/destinations
+            if (tipo === 'incoming') {
+                const origenSelect = document.getElementById('manualTripOrigen');
+                if (origenSelect) {
+                    try {
+                        const { data: origenesData } = await supabaseClient
+                            .from('origenes')
+                            .select('*')
+                            .eq('obra_id', currentObraId)
+                            .order('nombre');
+
+                        if (origenesData) {
+                            origenesData.forEach(orig => {
+                                const option = document.createElement('option');
+                                option.value = orig.nombre;
+                                option.textContent = orig.nombre;
+                                origenSelect.appendChild(option);
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error loading origins:', err);
+                    }
+                }
+            } else if (tipo === 'outgoing') {
+                const destinoSelect = document.getElementById('manualTripDestino');
+                if (destinoSelect) {
+                    try {
+                        const { data: destinosData } = await supabaseClient
+                            .from('destinos')
+                            .select('*')
+                            .eq('obra_id', currentObraId)
+                            .order('nombre');
+
+                        if (destinosData) {
+                            destinosData.forEach(dest => {
+                                const option = document.createElement('option');
+                                option.value = dest.nombre;
+                                option.textContent = dest.nombre;
+                                destinoSelect.appendChild(option);
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error loading destinations:', err);
+                    }
+                }
+            }
+        }
+
+        // Update Manual Trip Data
+        window.updateManualTripData = function (field, value) {
+            manualTripData[field] = value;
+            validateManualTripForm();
+        };
+
+        // Validate Form
+        function validateManualTripForm() {
+            const { tipo, camionId, material, fecha, hora } = manualTripData;
+
+            let isValid = tipo && camionId && material && fecha && hora;
+
+            // Additional validation based on trip type
+            if (tipo === 'incoming') {
+                isValid = isValid && manualTripData.origen;
+            } else if (tipo === 'outgoing') {
+                isValid = isValid && manualTripData.destino;
+            }
+
+            document.getElementById('submitManualTripBtn').disabled = !isValid;
+        }
+
+        // Submit Manual Trip
+        window.submitManualTrip = async function () {
+            try {
+                const { tipo, camionId, material, destino, origen, fecha, hora } = manualTripData;
+
+                // Get truck capacity
+                const truck = trucks.find(t => t.id === camionId);
+                if (!truck) {
+                    alert('Camión no encontrado');
+                    return;
+                }
+
+                // Confirm with user
+                const tipoLabel = tipo === 'incoming' ? 'Relleno' : tipo === 'outgoing' ? 'Excavación' : 'Interno';
+                const confirmMsg = `¿Confirmar registro manual?\n\nCamión: ${truck.patente}\nTipo: ${tipoLabel}\nMaterial: ${material}\nFecha: ${fecha}\nHora: ${hora}`;
+
+                if (!confirm(confirmMsg)) return;
+
+                // Disable button to prevent double submission
+                const submitBtn = document.getElementById('submitManualTripBtn');
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Registrando...';
+
+                // Get user session
+                const session = await supabaseClient.auth.getSession();
+                const userId = session.data.session?.user?.id;
+
+                if (!userId) {
+                    alert('Sesión expirada');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Create timestamp from date and time
+                const timestamp = new Date(`${fecha}T${hora}:00`).toISOString();
+
+                // Insert movement
+                const { error } = await supabaseClient
+                    .from('movimientos')
+                    .insert([{
+                        obra_id: currentObraId,
+                        camion_id: camionId,
+                        usuario_id: userId,
+                        tipo: tipo === 'internal' ? 'outgoing' : tipo, // Internal trips are stored as outgoing
+                        capacidad: parseFloat(truck.capacidad),
+                        material: material,
+                        destino: tipo === 'internal' ? 'Interno' : destino,
+                        origen: origen,
+                        ubicacion: null,
+                        fecha: fecha,
+                        timestamp: timestamp
+                    }]);
+
+                if (error) throw error;
+
+                // Success feedback
+                alert('✅ Vuelta registrada exitosamente');
+
+                // Refresh data
+                await Promise.all([
+                    loadTrucks(true),
+                    loadMovements(true)
+                ]);
+
+                renderTruckList();
+                closeManualTripModal();
+
+            } catch (err) {
+                console.error('Error registering manual trip:', err);
+                alert('❌ Error al registrar: ' + err.message);
+                document.getElementById('submitManualTripBtn').disabled = false;
+                document.getElementById('submitManualTripBtn').textContent = 'Registrar Vuelta';
+            }
+        };
 
         // ============================================
         // DATA CACHE UTILITY (Plan B)
