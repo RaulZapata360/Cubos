@@ -1,6 +1,6 @@
 # Changelog - Sistema de Conteo de Camiones
 
-## [v3.8.0] - 2026-01-08
+## [v3.8.6] - 2026-01-08
 
 ### ✨ Nueva Funcionalidad: Agregado Manual de Vueltas
 
