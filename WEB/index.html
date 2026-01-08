@@ -1419,8 +1419,7 @@
     <div id="manualTripModal" class="fixed inset-0 z-[70] hidden">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeManualTripModal()"></div>
         <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
-            <div
-                class="glass-card w-full max-w-md max-h-[90vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+            <div class="glass-card w-full max-w-md flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
                 <!-- Header -->
                 <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
                     <h3 class="text-lg font-black text-main tracking-tight flex items-center gap-2">
@@ -1432,54 +1431,163 @@
                     </button>
                 </div>
 
-                <!-- Form Content -->
-                <div class="flex-1 overflow-y-auto p-4 space-y-4">
-                    <!-- Trip Type Selection -->
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            Tipo de Viaje
+                <!-- Step-by-Step Content -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <!-- Step 1: Trip Type Selection -->
+                    <div id="manualStep1" class="manual-step">
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-3 block">
+                            TIPO DE VIAJE
                         </label>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-3 gap-3">
                             <button type="button" onclick="selectManualTripType('incoming')"
-                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-success/30 bg-success/10 text-success hover:bg-success/20 transition-all text-center"
-                                data-type="incoming">
-                                <span class="material-symbols-outlined text-2xl mb-1 block">south_east</span>
-                                <div class="text-[10px] font-bold uppercase">Relleno</div>
+                                class="p-4 rounded-xl border-2 border-success/30 bg-success/10 hover:bg-success/20 active:scale-95 transition-all text-center group">
+                                <span
+                                    class="material-symbols-outlined text-3xl mb-2 block text-success">south_east</span>
+                                <div class="text-xs font-bold uppercase text-success">Relleno</div>
                             </button>
                             <button type="button" onclick="selectManualTripType('outgoing')"
-                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-warning/30 bg-warning/10 text-warning hover:bg-warning/20 transition-all text-center"
-                                data-type="outgoing">
-                                <span class="material-symbols-outlined text-2xl mb-1 block">north_east</span>
-                                <div class="text-[10px] font-bold uppercase">Excavación</div>
+                                class="p-4 rounded-xl border-2 border-warning/30 bg-warning/10 hover:bg-warning/20 active:scale-95 transition-all text-center group">
+                                <span
+                                    class="material-symbols-outlined text-3xl mb-2 block text-warning">north_east</span>
+                                <div class="text-xs font-bold uppercase text-warning">Excavación</div>
                             </button>
                             <button type="button" onclick="selectManualTripType('internal')"
-                                class="manual-trip-type-btn p-3 rounded-xl border-2 border-cyan-500/30 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-all text-center"
-                                data-type="internal">
-                                <span class="material-symbols-outlined text-2xl mb-1 block">swap_horiz</span>
-                                <div class="text-[10px] font-bold uppercase">Interno</div>
+                                class="p-4 rounded-xl border-2 border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 active:scale-95 transition-all text-center group">
+                                <span
+                                    class="material-symbols-outlined text-3xl mb-2 block text-cyan-400">swap_horiz</span>
+                                <div class="text-xs font-bold uppercase text-cyan-400">Interno</div>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Dynamic Form Fields (populated by JS) -->
-                    <div id="manualTripFormFields" class="space-y-4">
-                        <p class="text-center text-text-muted text-sm py-8">
-                            Selecciona un tipo de viaje para continuar
-                        </p>
+                    <!-- Step 2: Truck Selection -->
+                    <div id="manualStep2" class="manual-step hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider">
+                                CAMIÓN
+                            </label>
+                            <button onclick="goBackManualStep(1)"
+                                class="text-xs text-primary hover:text-white transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                                Volver
+                            </button>
+                        </div>
+                        <div id="manualTruckList" class="space-y-2 max-h-[400px] overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="openAddTruckFromManual()"
+                            class="w-full mt-3 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">add</span>
+                            <span class="font-bold text-sm">Agregar Nuevo Camión</span>
+                        </button>
                     </div>
-                </div>
 
-                <!-- Footer Actions -->
-                <div class="p-4 border-t border-white/10 flex gap-3 shrink-0">
-                    <button onclick="closeManualTripModal()"
-                        class="flex-1 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-text-muted font-bold text-sm transition-all">
-                        Cancelar
-                    </button>
-                    <button onclick="submitManualTrip()"
-                        class="flex-1 py-3 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        id="submitManualTripBtn" disabled>
-                        Registrar Vuelta
-                    </button>
+                    <!-- Step 3: Material Selection -->
+                    <div id="manualStep3" class="manual-step hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider">
+                                MATERIAL
+                            </label>
+                            <button onclick="goBackManualStep(2)"
+                                class="text-xs text-primary hover:text-white transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                                Volver
+                            </button>
+                        </div>
+                        <div id="manualMaterialList" class="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button onclick="openAddMaterialFromManual()"
+                            class="w-full mt-3 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">add</span>
+                            <span class="font-bold text-sm">Agregar Nuevo Material</span>
+                        </button>
+                    </div>
+
+                    <!-- Step 4: Origin/Destination Selection -->
+                    <div id="manualStep4" class="manual-step hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider"
+                                id="manualStep4Label">
+                                DESTINO
+                            </label>
+                            <button onclick="goBackManualStep(3)"
+                                class="text-xs text-primary hover:text-white transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                                Volver
+                            </button>
+                        </div>
+                        <div id="manualLocationList" class="space-y-2 max-h-[400px] overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                        <button id="addLocationBtn" onclick="openAddLocationFromManual()"
+                            class="w-full mt-3 py-3 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">add</span>
+                            <span class="font-bold text-sm" id="addLocationBtnText">Agregar Nuevo Destino</span>
+                        </button>
+                    </div>
+
+                    <!-- Step 5: Date & Time Selection -->
+                    <div id="manualStep5" class="manual-step hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider">
+                                FECHA Y HORA
+                            </label>
+                            <button onclick="goBackManualStep(4)"
+                                class="text-xs text-primary hover:text-white transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">arrow_back</span>
+                                Volver
+                            </button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                                    Fecha
+                                </label>
+                                <input type="date" id="manualTripDate"
+                                    onchange="updateManualTripData('fecha', this.value)"
+                                    class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                                    Hora
+                                </label>
+                                <input type="time" id="manualTripTime"
+                                    onchange="updateManualTripData('hora', this.value)"
+                                    class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="mt-6 p-4 rounded-xl bg-white/5 border border-white/10">
+                            <h4 class="text-xs font-bold text-text-muted uppercase tracking-wider mb-3">Resumen</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-text-muted">Tipo:</span>
+                                    <span class="text-main font-bold" id="summaryType">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-muted">Camión:</span>
+                                    <span class="text-main font-bold" id="summaryTruck">-</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-text-muted">Material:</span>
+                                    <span class="text-main font-bold" id="summaryMaterial">-</span>
+                                </div>
+                                <div class="flex justify-between" id="summaryLocationRow">
+                                    <span class="text-text-muted" id="summaryLocationLabel">-</span>
+                                    <span class="text-main font-bold" id="summaryLocation">-</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="submitManualTrip()"
+                            class="w-full mt-4 py-3 rounded-xl bg-purple-500 hover:bg-purple-600 text-white font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            id="submitManualTripBtn" disabled>
+                            Registrar Vuelta
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1505,17 +1613,19 @@
         let truckCooldowns = {}; // Global for preventing double-clicking accidents
 
         // ============================================
-        // MANUAL TRIP ADDITION
+        // MANUAL TRIP ADDITION - STEP BY STEP FLOW
         // ============================================
         let manualTripData = {
             tipo: null,
+            tipoLabel: null,
             camionId: null,
+            camionNombre: null,
             material: null,
             destino: null,
             origen: null,
-            ubicacion: null,
             fecha: null,
-            hora: null
+            hora: null,
+            currentStep: 1
         };
 
         // Open Manual Trip Modal
@@ -1534,239 +1644,227 @@
         function resetManualTripForm() {
             manualTripData = {
                 tipo: null,
+                tipoLabel: null,
                 camionId: null,
+                camionNombre: null,
                 material: null,
                 destino: null,
                 origen: null,
-                ubicacion: null,
                 fecha: null,
-                hora: null
+                hora: null,
+                currentStep: 1
             };
 
-            // Reset UI
-            document.querySelectorAll('.manual-trip-type-btn').forEach(btn => {
-                btn.classList.remove('ring-4', 'ring-white/30');
-            });
-
-            document.getElementById('manualTripFormFields').innerHTML = `
-                <p class="text-center text-text-muted text-sm py-8">
-                    Selecciona un tipo de viaje para continuar
-                </p>
-            `;
-
-            document.getElementById('submitManualTripBtn').disabled = true;
+            showManualStep(1);
         }
 
-        // Select Trip Type
-        window.selectManualTripType = function (tipo) {
-            manualTripData.tipo = tipo;
+        // Show specific step
+        function showManualStep(stepNumber) {
+            // Hide all steps
+            for (let i = 1; i <= 5; i++) {
+                const step = document.getElementById(`manualStep${i}`);
+                if (step) step.classList.add('hidden');
+            }
 
-            // Update button states
-            document.querySelectorAll('.manual-trip-type-btn').forEach(btn => {
-                btn.classList.remove('ring-4', 'ring-white/30');
-            });
-            document.querySelector(`[data-type="${tipo}"]`).classList.add('ring-4', 'ring-white/30');
+            // Show requested step
+            const targetStep = document.getElementById(`manualStep${stepNumber}`);
+            if (targetStep) {
+                targetStep.classList.remove('hidden');
+                manualTripData.currentStep = stepNumber;
+            }
+        }
 
-            // Render dynamic form fields
-            renderManualTripFields(tipo);
+        // Go back to previous step
+        window.goBackManualStep = function (stepNumber) {
+            showManualStep(stepNumber);
         };
 
-        // Render Dynamic Form Fields
-        async function renderManualTripFields(tipo) {
-            const container = document.getElementById('manualTripFormFields');
+        // Step 1: Select Trip Type
+        window.selectManualTripType = async function (tipo) {
+            const labels = {
+                'incoming': 'Relleno',
+                'outgoing': 'Excavación',
+                'internal': 'Interno'
+            };
 
-            let fieldsHTML = `
-                <!-- Truck Selection -->
-                <div>
-                    <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                        Camión
-                    </label>
-                    <div class="flex gap-2">
-                        <select id="manualTripTruck" onchange="updateManualTripData('camionId', this.value)"
-                            class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                            <option value="">Seleccionar camión...</option>
-                        </select>
-                        <button type="button" onclick="openAddTruckFromManual()"
-                            class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
-                            <span class="material-symbols-outlined text-sm">add</span>
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Material Selection -->
-                <div>
-                    <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                        Material
-                    </label>
-                    <div class="flex gap-2">
-                        <select id="manualTripMaterial" onchange="updateManualTripData('material', this.value)"
-                            class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                            <option value="">Seleccionar material...</option>
-                        </select>
-                        <button type="button" onclick="openAddMaterialFromManual()"
-                            class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
-                            <span class="material-symbols-outlined text-sm">add</span>
-                        </button>
-                    </div>
-                </div>
-            `;
+            manualTripData.tipo = tipo;
+            manualTripData.tipoLabel = labels[tipo];
 
-            // Add origin/destination based on trip type
-            if (tipo === 'incoming') {
-                fieldsHTML += `
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            Origen
-                        </label>
-                        <div class="flex gap-2">
-                            <select id="manualTripOrigen" onchange="updateManualTripData('origen', this.value)"
-                                class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                                <option value="">Seleccionar origen...</option>
-                            </select>
-                            <button type="button" onclick="openAddOrigenFromManual()"
-                                class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
-                                <span class="material-symbols-outlined text-sm">add</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else if (tipo === 'outgoing') {
-                fieldsHTML += `
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            Destino
-                        </label>
-                        <div class="flex gap-2">
-                            <select id="manualTripDestino" onchange="updateManualTripData('destino', this.value)"
-                                class="flex-1 p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                                <option value="">Seleccionar destino...</option>
-                            </select>
-                            <button type="button" onclick="openAddDestinoFromManual()"
-                                class="px-3 py-2 rounded-xl bg-primary/20 border border-primary/30 text-primary hover:bg-primary/30 transition-all flex items-center gap-1 shrink-0">
-                                <span class="material-symbols-outlined text-sm">add</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else if (tipo === 'internal') {
-                // Internal trips use 'Interno' as destination
+            // For internal trips, set destino automatically
+            if (tipo === 'internal') {
                 manualTripData.destino = 'Interno';
             }
 
-            // Date and Time inputs
+            // Load and show truck list
+            await renderManualTruckList();
+            showManualStep(2);
+        };
+
+        // Step 2: Render Truck List
+        async function renderManualTruckList() {
+            const container = document.getElementById('manualTruckList');
+
+            if (!trucks || trucks.length === 0) {
+                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles</p>';
+                return;
+            }
+
+            container.innerHTML = trucks.map(truck => `
+                <button onclick="selectManualTruck('${truck.id}', '${truck.patente}')" 
+                    class="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all text-left group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                                <span class="material-symbols-outlined text-primary">local_shipping</span>
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-main">${truck.patente}</div>
+                                <div class="text-xs text-text-muted">${truck.capacidad} m³</div>
+                            </div>
+                        </div>
+                        <span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">chevron_right</span>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        // Select Truck
+        window.selectManualTruck = async function (camionId, camionNombre) {
+            manualTripData.camionId = camionId;
+            manualTripData.camionNombre = camionNombre;
+
+            // Load and show material list
+            await renderManualMaterialList();
+            showManualStep(3);
+        };
+
+        // Step 3: Render Material List
+        async function renderManualMaterialList() {
+            const container = document.getElementById('manualMaterialList');
+
+            try {
+                const { data: materialsData } = await supabaseClient
+                    .from('materiales')
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (!materialsData || materialsData.length === 0) {
+                    container.innerHTML = '<p class="col-span-2 text-center text-text-muted text-sm py-8">No hay materiales disponibles</p>';
+                    return;
+                }
+
+                container.innerHTML = materialsData.map(mat => `
+                    <button onclick="selectManualMaterial('${mat.nombre.replace(/'/g, "\\'")}')" 
+                        class="p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all">
+                        <div class="text-sm font-bold text-main text-center">${mat.nombre}</div>
+                    </button>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading materials:', err);
+                container.innerHTML = '<p class="col-span-2 text-center text-text-muted text-sm py-8">Error al cargar materiales</p>';
+            }
+        }
+
+        // Select Material
+        window.selectManualMaterial = async function (material) {
+            manualTripData.material = material;
+
+            // If internal trip, skip to date/time
+            if (manualTripData.tipo === 'internal') {
+                renderManualSummary();
+                showManualStep(5);
+            } else {
+                // Load and show location list
+                await renderManualLocationList();
+                showManualStep(4);
+            }
+        };
+
+        // Step 4: Render Location List (Origin or Destination)
+        async function renderManualLocationList() {
+            const container = document.getElementById('manualLocationList');
+            const isIncoming = manualTripData.tipo === 'incoming';
+            const tableName = isIncoming ? 'origenes' : 'destinos';
+            const label = isIncoming ? 'ORIGEN' : 'DESTINO';
+
+            // Update labels
+            document.getElementById('manualStep4Label').textContent = label;
+            document.getElementById('addLocationBtnText').textContent = `Agregar Nuevo ${isIncoming ? 'Origen' : 'Destino'}`;
+
+            try {
+                const { data: locationsData } = await supabaseClient
+                    .from(tableName)
+                    .select('*')
+                    .eq('obra_id', currentObraId)
+                    .order('nombre');
+
+                if (!locationsData || locationsData.length === 0) {
+                    container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay ${isIncoming ? 'orígenes' : 'destinos'} disponibles</p>`;
+                    return;
+                }
+
+                container.innerHTML = locationsData.map(loc => `
+                    <button onclick="selectManualLocation('${loc.nombre.replace(/'/g, "\\'")}')" 
+                        class="w-full p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all text-left group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-${isIncoming ? 'emerald' : 'amber'}-500/10 flex items-center justify-center shrink-0">
+                                    <span class="material-symbols-outlined text-${isIncoming ? 'emerald' : 'amber'}-500">${isIncoming ? 'home_pin' : 'location_on'}</span>
+                                </div>
+                                <div class="text-sm font-bold text-main">${loc.nombre}</div>
+                            </div>
+                            <span class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors">chevron_right</span>
+                        </div>
+                    </button>
+                `).join('');
+            } catch (err) {
+                console.error('Error loading locations:', err);
+                container.innerHTML = '<p class="text-center text-text-muted text-sm py-8">Error al cargar ubicaciones</p>';
+            }
+        }
+
+        // Select Location
+        window.selectManualLocation = function (location) {
+            if (manualTripData.tipo === 'incoming') {
+                manualTripData.origen = location;
+            } else {
+                manualTripData.destino = location;
+            }
+
+            // Set max date to today
             const today = new Date().toISOString().split('T')[0];
-            fieldsHTML += `
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            Fecha
-                        </label>
-                        <input type="date" id="manualTripDate" max="${today}" 
-                            onchange="updateManualTripData('fecha', this.value)"
-                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                    </div>
-                    <div>
-                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
-                            Hora
-                        </label>
-                        <input type="time" id="manualTripTime" 
-                            onchange="updateManualTripData('hora', this.value)"
-                            class="w-full p-3 rounded-xl bg-black/30 border border-white/10 text-main font-bold focus:border-primary focus:outline-none">
-                    </div>
-                </div>
-            `;
+            document.getElementById('manualTripDate').max = today;
 
-            container.innerHTML = fieldsHTML;
+            renderManualSummary();
+            showManualStep(5);
+        };
 
-            // Populate dropdowns
-            await populateManualTripDropdowns(tipo);
-        }
+        // Render Summary
+        function renderManualSummary() {
+            document.getElementById('summaryType').textContent = manualTripData.tipoLabel || '-';
+            document.getElementById('summaryTruck').textContent = manualTripData.camionNombre || '-';
+            document.getElementById('summaryMaterial').textContent = manualTripData.material || '-';
 
-        // Populate Dropdowns
-        async function populateManualTripDropdowns(tipo) {
-            // Populate trucks
-            const truckSelect = document.getElementById('manualTripTruck');
-            if (truckSelect && trucks.length > 0) {
-                trucks.forEach(truck => {
-                    const option = document.createElement('option');
-                    option.value = truck.id;
-                    option.textContent = `${truck.patente} (${truck.capacidad}m³)`;
-                    truckSelect.appendChild(option);
-                });
-            }
+            const locationRow = document.getElementById('summaryLocationRow');
+            const locationLabel = document.getElementById('summaryLocationLabel');
+            const locationValue = document.getElementById('summaryLocation');
 
-            // Populate materials
-            const materialSelect = document.getElementById('manualTripMaterial');
-            if (materialSelect) {
-                try {
-                    const { data: materialsData } = await supabaseClient
-                        .from('materiales')
-                        .select('*')
-                        .eq('obra_id', currentObraId)
-                        .order('nombre');
-
-                    if (materialsData) {
-                        materialsData.forEach(mat => {
-                            const option = document.createElement('option');
-                            option.value = mat.nombre;
-                            option.textContent = mat.nombre;
-                            materialSelect.appendChild(option);
-                        });
-                    }
-                } catch (err) {
-                    console.error('Error loading materials:', err);
-                }
-            }
-
-            // Populate origins/destinations
-            if (tipo === 'incoming') {
-                const origenSelect = document.getElementById('manualTripOrigen');
-                if (origenSelect) {
-                    try {
-                        const { data: origenesData } = await supabaseClient
-                            .from('origenes')
-                            .select('*')
-                            .eq('obra_id', currentObraId)
-                            .order('nombre');
-
-                        if (origenesData) {
-                            origenesData.forEach(orig => {
-                                const option = document.createElement('option');
-                                option.value = orig.nombre;
-                                option.textContent = orig.nombre;
-                                origenSelect.appendChild(option);
-                            });
-                        }
-                    } catch (err) {
-                        console.error('Error loading origins:', err);
-                    }
-                }
-            } else if (tipo === 'outgoing') {
-                const destinoSelect = document.getElementById('manualTripDestino');
-                if (destinoSelect) {
-                    try {
-                        const { data: destinosData } = await supabaseClient
-                            .from('destinos')
-                            .select('*')
-                            .eq('obra_id', currentObraId)
-                            .order('nombre');
-
-                        if (destinosData) {
-                            destinosData.forEach(dest => {
-                                const option = document.createElement('option');
-                                option.value = dest.nombre;
-                                option.textContent = dest.nombre;
-                                destinoSelect.appendChild(option);
-                            });
-                        }
-                    } catch (err) {
-                        console.error('Error loading destinations:', err);
-                    }
+            if (manualTripData.tipo === 'internal') {
+                locationRow.classList.add('hidden');
+            } else {
+                locationRow.classList.remove('hidden');
+                if (manualTripData.tipo === 'incoming') {
+                    locationLabel.textContent = 'Origen:';
+                    locationValue.textContent = manualTripData.origen || '-';
+                } else {
+                    locationLabel.textContent = 'Destino:';
+                    locationValue.textContent = manualTripData.destino || '-';
                 }
             }
         }
 
-        // Update Manual Trip Data
+        // Update Manual Trip Data (for date/time inputs)
         window.updateManualTripData = function (field, value) {
             manualTripData[field] = value;
             validateManualTripForm();
@@ -1774,15 +1872,15 @@
 
         // Validate Form
         function validateManualTripForm() {
-            const { tipo, camionId, material, fecha, hora } = manualTripData;
+            const { tipo, camionId, material, fecha, hora, destino, origen } = manualTripData;
 
             let isValid = tipo && camionId && material && fecha && hora;
 
             // Additional validation based on trip type
             if (tipo === 'incoming') {
-                isValid = isValid && manualTripData.origen;
+                isValid = isValid && origen;
             } else if (tipo === 'outgoing') {
-                isValid = isValid && manualTripData.destino;
+                isValid = isValid && destino;
             }
 
             document.getElementById('submitManualTripBtn').disabled = !isValid;
@@ -1799,12 +1897,6 @@
                     alert('Camión no encontrado');
                     return;
                 }
-
-                // Confirm with user
-                const tipoLabel = tipo === 'incoming' ? 'Relleno' : tipo === 'outgoing' ? 'Excavación' : 'Interno';
-                const confirmMsg = `¿Confirmar registro manual?\n\nCamión: ${truck.patente}\nTipo: ${tipoLabel}\nMaterial: ${material}\nFecha: ${fecha}\nHora: ${hora}`;
-
-                if (!confirm(confirmMsg)) return;
 
                 // Disable button to prevent double submission
                 const submitBtn = document.getElementById('submitManualTripBtn');
@@ -1831,7 +1923,7 @@
                         obra_id: currentObraId,
                         camion_id: camionId,
                         usuario_id: userId,
-                        tipo: tipo === 'internal' ? 'outgoing' : tipo, // Internal trips are stored as outgoing
+                        tipo: tipo === 'internal' ? 'outgoing' : tipo,
                         capacidad: parseFloat(truck.capacidad),
                         material: material,
                         destino: tipo === 'internal' ? 'Interno' : destino,
@@ -1898,15 +1990,9 @@
 
                 if (error) throw error;
 
-                // Reload trucks and repopulate dropdown
+                // Reload trucks and repopulate list
                 await loadTrucks(true);
-                await populateManualTripDropdowns(manualTripData.tipo);
-
-                // Auto-select the new truck
-                if (data && data[0]) {
-                    document.getElementById('manualTripTruck').value = data[0].id;
-                    updateManualTripData('camionId', data[0].id);
-                }
+                await renderManualTruckList();
 
                 alert('✅ Camión agregado exitosamente');
             } catch (err) {
@@ -1930,12 +2016,8 @@
 
                 if (error) throw error;
 
-                // Repopulate dropdown
-                await populateManualTripDropdowns(manualTripData.tipo);
-
-                // Auto-select the new material
-                document.getElementById('manualTripMaterial').value = nombre.trim();
-                updateManualTripData('material', nombre.trim());
+                // Repopulate list
+                await renderManualMaterialList();
 
                 alert('✅ Material agregado exitosamente');
             } catch (err) {
@@ -1944,14 +2026,18 @@
             }
         };
 
-        // Add new origen from manual form
-        window.openAddOrigenFromManual = async function () {
-            const nombre = prompt('Ingresa el nombre del origen:');
+        // Add new location (origen or destino) from manual form
+        window.openAddLocationFromManual = async function () {
+            const isIncoming = manualTripData.tipo === 'incoming';
+            const label = isIncoming ? 'origen' : 'destino';
+            const tableName = isIncoming ? 'origenes' : 'destinos';
+
+            const nombre = prompt(`Ingresa el nombre del ${label}:`);
             if (!nombre || !nombre.trim()) return;
 
             try {
                 const { error } = await supabaseClient
-                    .from('origenes')
+                    .from(tableName)
                     .insert([{
                         obra_id: currentObraId,
                         nombre: nombre.trim()
@@ -1959,46 +2045,13 @@
 
                 if (error) throw error;
 
-                // Repopulate dropdown
-                await populateManualTripDropdowns(manualTripData.tipo);
+                // Repopulate list
+                await renderManualLocationList();
 
-                // Auto-select the new origen
-                document.getElementById('manualTripOrigen').value = nombre.trim();
-                updateManualTripData('origen', nombre.trim());
-
-                alert('✅ Origen agregado exitosamente');
+                alert(`✅ ${isIncoming ? 'Origen' : 'Destino'} agregado exitosamente`);
             } catch (err) {
-                console.error('Error adding origen:', err);
-                alert('❌ Error al agregar origen: ' + err.message);
-            }
-        };
-
-        // Add new destino from manual form
-        window.openAddDestinoFromManual = async function () {
-            const nombre = prompt('Ingresa el nombre del destino:');
-            if (!nombre || !nombre.trim()) return;
-
-            try {
-                const { error } = await supabaseClient
-                    .from('destinos')
-                    .insert([{
-                        obra_id: currentObraId,
-                        nombre: nombre.trim()
-                    }]);
-
-                if (error) throw error;
-
-                // Repopulate dropdown
-                await populateManualTripDropdowns(manualTripData.tipo);
-
-                // Auto-select the new destino
-                document.getElementById('manualTripDestino').value = nombre.trim();
-                updateManualTripData('destino', nombre.trim());
-
-                alert('✅ Destino agregado exitosamente');
-            } catch (err) {
-                console.error('Error adding destino:', err);
-                alert('❌ Error al agregar destino: ' + err.message);
+                console.error(`Error adding ${label}:`, err);
+                alert(`❌ Error al agregar ${label}: ` + err.message);
             }
         };
 
