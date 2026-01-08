@@ -251,7 +251,7 @@
                         <!-- ⚠️ IMPORTANTE: SIEMPRE ACTUALIZAR LA VERSIÓN AL HACER CAMBIOS EN EL CÓDIGO -->
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.6</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.8.7</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -1892,8 +1892,12 @@
                 filteredTrucks = trucks.filter(t =>
                     t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
                 );
+            } else if (tipo === 'internal') {
+                // For internal trips, show only outgoing or mixed trucks (NOT incoming-only)
+                filteredTrucks = trucks.filter(t =>
+                    t.tipo_registrado === 'outgoing' || t.tipo_registrado === 'mixed'
+                );
             }
-            // For internal trips, show ALL trucks (no filter)
 
             if (filteredTrucks.length === 0) {
                 container.innerHTML = `<p class="text-center text-text-muted text-sm py-8">No hay camiones disponibles para ${manualTripData.tipoLabel}</p>`;
