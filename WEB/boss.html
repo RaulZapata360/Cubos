@@ -2111,7 +2111,7 @@
                         data: {
                             labels: internalData.byDay.labels,
                             datasets: [{
-                                label: 'Viajes Internos',
+                                label: 'Volumen (m³)',
                                 data: internalData.byDay.data,
                                 borderColor: '#06b6d4',
                                 backgroundColor: 'rgba(6, 182, 212, 0.1)',
@@ -2136,14 +2136,25 @@
                                     borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
                                     borderWidth: 1,
                                     padding: 12,
-                                    cornerRadius: 12
+                                    cornerRadius: 12,
+                                    callbacks: {
+                                        label: function (context) {
+                                            return `Volumen: ${context.parsed.y.toFixed(1)} m³`;
+                                        }
+                                    }
                                 }
                             },
                             scales: {
                                 y: {
                                     beginAtZero: true,
                                     grid: { color: gridColor, drawBorder: false },
-                                    ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                                    ticks: {
+                                        color: textColor,
+                                        font: { size: 10, weight: '500' },
+                                        callback: function (value) {
+                                            return value + ' m³';
+                                        }
+                                    }
                                 },
                                 x: {
                                     grid: { display: false },
@@ -2199,7 +2210,9 @@
                                     cornerRadius: 12,
                                     callbacks: {
                                         label: function (context) {
-                                            return `${context.label}: ${context.parsed.toFixed(1)} m³`;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                            return `${context.label}: ${context.parsed.toFixed(1)} m³ (${percentage}%)`;
                                         }
                                     }
                                 }
@@ -2213,14 +2226,14 @@
                 if (ctxTrucks) {
                     if (weeklyInternalTrucksChartInstance) weeklyInternalTrucksChartInstance.destroy();
 
-                    // Group trips by truck
+                    // Group volume by truck
                     const truckStats = {};
                     internalData.trips.forEach(trip => {
                         const truckName = trip.camiones?.nombre || trip.camiones?.patente || 'Desconocido';
                         if (!truckStats[truckName]) {
                             truckStats[truckName] = 0;
                         }
-                        truckStats[truckName]++;
+                        truckStats[truckName] += parseFloat(trip.capacidad) || 0;
                     });
 
                     // Sort and get top 10
@@ -2229,15 +2242,15 @@
                         .slice(0, 10);
 
                     const truckNames = sortedTrucks.map(t => t[0]);
-                    const truckCounts = sortedTrucks.map(t => t[1]);
+                    const truckVolumes = sortedTrucks.map(t => t[1]);
 
                     weeklyInternalTrucksChartInstance = new Chart(ctxTrucks, {
                         type: 'bar',
                         data: {
                             labels: truckNames,
                             datasets: [{
-                                label: 'Vueltas',
-                                data: truckCounts,
+                                label: 'Volumen (m³)',
+                                data: truckVolumes,
                                 backgroundColor: '#06b6d4',
                                 borderRadius: 6
                             }]

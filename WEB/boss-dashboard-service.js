@@ -762,7 +762,9 @@ class BossDashboardService {
                     return d.toLocaleDateString('es-ES', { weekday: 'short' });
                 }),
                 data: weekDays.map(date =>
-                    internalTrips.filter(t => t.fecha === date).length
+                    internalTrips
+                        .filter(t => t.fecha === date)
+                        .reduce((sum, t) => sum + (parseFloat(t.capacidad) || 0), 0)
                 )
             };
 
