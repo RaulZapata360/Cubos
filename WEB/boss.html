@@ -368,13 +368,32 @@
         }
 
         .date-item.active {
-            background: #102010;
-            /* Dark green */
+            background: #10152a;
+            /* Dark blue/slate */
             border: 2px solid #5048e5;
             box-shadow: 0 0 15px rgba(80, 72, 229, 0.5);
             transform: scale(1.05);
             padding: 8px 16px;
             border-radius: 16px;
+        }
+
+        /* Highlight for Today when active */
+        .date-item.active.is-today {
+            background: #062d1f;
+            /* Emerald very dark */
+            border-color: #10b981;
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+        }
+
+        /* Highlight for Today when NOT active */
+        .date-item.is-today:not(.active) {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px dashed rgba(16, 185, 129, 0.5);
+            opacity: 1;
+        }
+
+        .date-item.active.is-today .date-label {
+            color: #10b981;
         }
 
         .date-item.inactive {
@@ -1821,6 +1840,8 @@
                 const isAyer = offset === -1;
                 const isManana = offset === 1;
 
+                const todayClass = isToday ? 'is-today' : '';
+
                 if (isActive) {
                     let topLabel = '';
                     if (isToday) topLabel = 'HOY';
@@ -1830,7 +1851,7 @@
                     const bottomLabel = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 
                     return `
-                        <div class="date-item active fade-in" onclick="setSelectedDayInicio(${offset})">
+                        <div class="date-item active ${todayClass} fade-in" onclick="setSelectedDayInicio(${offset})">
                             ${topLabel ? `<span class="day-label">${topLabel}</span>` : ''}
                             <span class="date-label">${bottomLabel}</span>
                         </div>
@@ -1838,7 +1859,7 @@
                 } else {
                     const label = `${date.getDate()} ${getMonthShort(date)}`;
                     return `
-                        <div class="date-item inactive" onclick="setSelectedDayInicio(${offset})">
+                        <div class="date-item inactive ${todayClass}" onclick="setSelectedDayInicio(${offset})">
                             <span class="date-label">${label}</span>
                         </div>
                     `;
