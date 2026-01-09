@@ -887,6 +887,60 @@
                                 <canvas id="dailyObrasVolumeChart"></canvas>
                             </div>
                         </div>
+
+                        <!-- Internal Trips Section (Daily) -->
+                        <div class="mt-6">
+                            <h3
+                                class="text-[10px] font-bold text-cyan-400 mb-4 uppercase tracking-widest flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+                                Viajes Internos del Día
+                                <span class="h-px flex-1 bg-cyan-400/20 ml-2"></span>
+                            </h3>
+
+                            <!-- KPIs Grid -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-400">
+                                    <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                                        Vueltas</p>
+                                    <p class="text-2xl font-black text-cyan-400" id="dailyInternalTrips">0</p>
+                                </div>
+                                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-400">
+                                    <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                                        Volumen</p>
+                                    <p class="text-2xl font-black text-cyan-400" id="dailyInternalVolume">0 <span
+                                            class="text-sm font-normal text-text-muted">m³</span></p>
+                                </div>
+                                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-400">
+                                    <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                                        Camiones</p>
+                                    <p class="text-2xl font-black text-cyan-400" id="dailyInternalTrucks">0</p>
+                                </div>
+                                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-400">
+                                    <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">
+                                        Promedio</p>
+                                    <p class="text-2xl font-black text-cyan-400" id="dailyInternalAvg">0 <span
+                                            class="text-sm font-normal text-text-muted">m³/v</span></p>
+                                </div>
+                            </div>
+
+                            <!-- Charts Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="glass-card rounded-2xl p-4">
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">
+                                        Vueltas Internas por Hora</p>
+                                    <div style="height: 250px; position: relative; width: 100%;">
+                                        <canvas id="dailyInternalHourlyChart"></canvas>
+                                    </div>
+                                </div>
+                                <div class="glass-card rounded-2xl p-4">
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">
+                                        Distribución de Materiales</p>
+                                    <div style="height: 250px; position: relative; width: 100%;">
+                                        <canvas id="dailyInternalMaterialsChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -979,6 +1033,43 @@
                         </div>
                         <div style="height: 200px; position: relative; width: 100%;">
                             <canvas id="obrasVolumeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Internal Trips Section (Weekly) -->
+                    <div class="mt-6">
+                        <h3
+                            class="text-[10px] font-bold text-cyan-400 mb-4 uppercase tracking-widest flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+                            Análisis Semanal de Viajes Internos
+                            <span class="h-px flex-1 bg-cyan-400/20 ml-2"></span>
+                        </h3>
+
+                        <!-- Weekly Internal Trend Chart -->
+                        <div class="glass-card rounded-2xl p-4 mb-6">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Tendencia
+                                Semanal de Viajes Internos</p>
+                            <div style="height: 250px; position: relative; width: 100%;">
+                                <canvas id="weeklyInternalTrendChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Charts Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="glass-card rounded-2xl p-4">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Volumen
+                                    por Material (Semanal)</p>
+                                <div style="height: 250px; position: relative; width: 100%;">
+                                    <canvas id="weeklyInternalMaterialsChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="glass-card rounded-2xl p-4">
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mb-4">Top
+                                    Camiones en Viajes Internos</p>
+                                <div style="height: 250px; position: relative; width: 100%;">
+                                    <canvas id="weeklyInternalTrucksChart"></canvas>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1340,6 +1431,12 @@
         let dailyOriginsChartInstance = null;
         let dailyDestinationsChartInstance = null;
         let dailyObrasVolumeChartInstance = null;
+        // Internal trips chart instances
+        let dailyInternalHourlyChartInstance = null;
+        let dailyInternalMaterialsChartInstance = null;
+        let weeklyInternalTrendChartInstance = null;
+        let weeklyInternalMaterialsChartInstance = null;
+        let weeklyInternalTrucksChartInstance = null;
         let currentWeekOffset = 0;
         let currentDayOffset = 0;
         let currentDayOffsetInicio = 0;
@@ -1969,8 +2066,197 @@
                     effElement.textContent = kpis.avgPerHour || '0';
                 }
 
+                // Render weekly internal trips charts
+                await renderWeeklyInternalTripsCharts();
+
             } catch (error) {
                 console.error('Error rendering real charts:', error);
+            }
+        };
+
+        window.renderWeeklyInternalTripsCharts = async function () {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const textColor = isLight ? '#64748b' : '#94a3b8';
+            const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+            try {
+                // Get internal trips data from service
+                const internalData = await window.bossDashboardService.getInternalTripsData(window.selectedObraId, currentWeekOffset);
+
+                // 1. Weekly Trend Chart
+                const ctxTrend = document.getElementById('weeklyInternalTrendChart')?.getContext('2d');
+                if (ctxTrend) {
+                    if (weeklyInternalTrendChartInstance) weeklyInternalTrendChartInstance.destroy();
+
+                    weeklyInternalTrendChartInstance = new Chart(ctxTrend, {
+                        type: 'line',
+                        data: {
+                            labels: internalData.byDay.labels,
+                            datasets: [{
+                                label: 'Viajes Internos',
+                                data: internalData.byDay.data,
+                                borderColor: '#06b6d4',
+                                backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                                fill: true,
+                                tension: 0.4,
+                                pointRadius: 5,
+                                pointBackgroundColor: '#06b6d4',
+                                pointBorderColor: '#fff',
+                                pointBorderWidth: 2,
+                                borderWidth: 3
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                    titleColor: isLight ? '#1e293b' : '#ffffff',
+                                    bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    cornerRadius: 12
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: gridColor, drawBorder: false },
+                                    ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 2. Materials Distribution Chart
+                const ctxMaterials = document.getElementById('weeklyInternalMaterialsChart')?.getContext('2d');
+                if (ctxMaterials) {
+                    if (weeklyInternalMaterialsChartInstance) weeklyInternalMaterialsChartInstance.destroy();
+
+                    const materials = Object.keys(internalData.byMaterial);
+                    const volumes = Object.values(internalData.byMaterial);
+
+                    weeklyInternalMaterialsChartInstance = new Chart(ctxMaterials, {
+                        type: 'doughnut',
+                        data: {
+                            labels: materials,
+                            datasets: [{
+                                data: volumes,
+                                backgroundColor: materials.map(mat => getMaterialColor(mat)),
+                                borderWidth: 2,
+                                borderColor: isLight ? '#ffffff' : '#1e293b',
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: textColor,
+                                        font: { size: 10, weight: '600' },
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                    titleColor: isLight ? '#1e293b' : '#ffffff',
+                                    bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    cornerRadius: 12,
+                                    callbacks: {
+                                        label: function (context) {
+                                            return `${context.label}: ${context.parsed.toFixed(1)} m³`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 3. Top Trucks Chart
+                const ctxTrucks = document.getElementById('weeklyInternalTrucksChart')?.getContext('2d');
+                if (ctxTrucks) {
+                    if (weeklyInternalTrucksChartInstance) weeklyInternalTrucksChartInstance.destroy();
+
+                    // Group trips by truck
+                    const truckStats = {};
+                    internalData.trips.forEach(trip => {
+                        const truckName = trip.camiones?.nombre || trip.camiones?.patente || 'Desconocido';
+                        if (!truckStats[truckName]) {
+                            truckStats[truckName] = 0;
+                        }
+                        truckStats[truckName]++;
+                    });
+
+                    // Sort and get top 10
+                    const sortedTrucks = Object.entries(truckStats)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 10);
+
+                    const truckNames = sortedTrucks.map(t => t[0]);
+                    const truckCounts = sortedTrucks.map(t => t[1]);
+
+                    weeklyInternalTrucksChartInstance = new Chart(ctxTrucks, {
+                        type: 'bar',
+                        data: {
+                            labels: truckNames,
+                            datasets: [{
+                                label: 'Vueltas',
+                                data: truckCounts,
+                                backgroundColor: '#06b6d4',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                    titleColor: isLight ? '#1e293b' : '#ffffff',
+                                    bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    cornerRadius: 12
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    grid: { display: false },
+                                    ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                                },
+                                x: {
+                                    beginAtZero: true,
+                                    grid: { color: gridColor, drawBorder: false },
+                                    ticks: { color: textColor, font: { size: 10, weight: '500' } }
+                                }
+                            }
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error rendering weekly internal trips charts:', error);
             }
         };
 
@@ -2079,6 +2365,126 @@
                 data: { labels: obraNames, datasets: obraDatasets.length > 0 ? obraDatasets : [{ label: 'Vaciío', data: obraNames.map(() => 0) }] },
                 options: getChartOptions(true, true)
             });
+
+            // Render internal trips charts
+            await renderDailyInternalTripsCharts(movements, getChartOptions);
+        };
+
+        window.renderDailyInternalTripsCharts = async function (movements, getChartOptions) {
+            const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+            const textColor = isLight ? '#64748b' : '#94a3b8';
+            const gridColor = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)';
+
+            // Filter internal trips
+            const internalTrips = movements.filter(m =>
+                (m.destino && m.destino.toLowerCase() === 'interno') ||
+                (m.origen && m.origen.toLowerCase() === 'interno')
+            );
+
+            // Update KPIs
+            const totalTrips = internalTrips.length;
+            const totalVolume = internalTrips.reduce((sum, m) => sum + (parseFloat(m.capacidad) || 0), 0);
+            const uniqueTrucks = new Set(internalTrips.map(t => t.camion_id)).size;
+            const avgVolume = totalTrips > 0 ? (totalVolume / totalTrips).toFixed(1) : 0;
+
+            document.getElementById('dailyInternalTrips').textContent = totalTrips;
+            document.getElementById('dailyInternalVolume').innerHTML = `${totalVolume.toFixed(1)} <span class="text-sm font-normal text-text-muted">m³</span>`;
+            document.getElementById('dailyInternalTrucks').textContent = uniqueTrucks;
+            document.getElementById('dailyInternalAvg').innerHTML = `${avgVolume} <span class="text-sm font-normal text-text-muted">m³/v</span>`;
+
+            // 1. Hourly Activity Chart
+            const ctxHourly = document.getElementById('dailyInternalHourlyChart')?.getContext('2d');
+            if (ctxHourly) {
+                if (dailyInternalHourlyChartInstance) dailyInternalHourlyChartInstance.destroy();
+
+                // Group by hour
+                const hourlyData = {};
+                internalTrips.forEach(m => {
+                    const hour = new Date(m.timestamp).getHours();
+                    hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+                });
+
+                const hours = Object.keys(hourlyData).sort((a, b) => a - b);
+                const counts = hours.map(h => hourlyData[h]);
+
+                dailyInternalHourlyChartInstance = new Chart(ctxHourly, {
+                    type: 'bar',
+                    data: {
+                        labels: hours.map(h => `${h.toString().padStart(2, '0')}:00`),
+                        datasets: [{
+                            label: 'Vueltas',
+                            data: counts,
+                            backgroundColor: '#06b6d4',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        ...getChartOptions(true, false),
+                        indexAxis: 'y'
+                    }
+                });
+            }
+
+            // 2. Materials Distribution Chart
+            const ctxMaterials = document.getElementById('dailyInternalMaterialsChart')?.getContext('2d');
+            if (ctxMaterials) {
+                if (dailyInternalMaterialsChartInstance) dailyInternalMaterialsChartInstance.destroy();
+
+                // Group by material
+                const materialData = {};
+                internalTrips.forEach(m => {
+                    const mat = m.material || 'Sin material';
+                    materialData[mat] = (materialData[mat] || 0) + (parseFloat(m.capacidad) || 0);
+                });
+
+                const materials = Object.keys(materialData);
+                const volumes = Object.values(materialData);
+
+                dailyInternalMaterialsChartInstance = new Chart(ctxMaterials, {
+                    type: 'doughnut',
+                    data: {
+                        labels: materials,
+                        datasets: [{
+                            data: volumes,
+                            backgroundColor: materials.map(mat => getMaterialColor(mat)),
+                            borderWidth: 2,
+                            borderColor: isLight ? '#ffffff' : '#1e293b',
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: textColor,
+                                    font: { size: 10, weight: '600' },
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                titleColor: isLight ? '#1e293b' : '#ffffff',
+                                bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                borderWidth: 1,
+                                padding: 12,
+                                cornerRadius: 12,
+                                callbacks: {
+                                    label: function (context) {
+                                        return `${context.label}: ${context.parsed.toFixed(1)} m³`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         };
 
         window.exportToPDF = function () {
