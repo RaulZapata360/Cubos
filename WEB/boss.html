@@ -335,6 +335,80 @@
             width: 20px;
             border-radius: 3px;
         }
+
+        /* New Date Selector Styles */
+        .date-selector-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+        }
+
+        .date-scroll-viewport {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 0;
+            overflow: hidden;
+        }
+
+        .date-item {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 50px;
+        }
+
+        .date-item.active {
+            background: #102010;
+            /* Dark green */
+            border: 2px solid #5048e5;
+            box-shadow: 0 0 15px rgba(80, 72, 229, 0.5);
+            transform: scale(1.05);
+            padding: 8px 16px;
+            border-radius: 16px;
+        }
+
+        .date-item.inactive {
+            color: #94a3b8;
+            opacity: 0.6;
+        }
+
+        .date-item.inactive:hover {
+            opacity: 1;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .date-item .day-label {
+            font-size: 8px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 2px;
+        }
+
+        .date-item .date-label {
+            font-size: 11px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+
+        .date-item.active .day-label {
+            color: #94a3b8;
+        }
+
+        .date-item.active .date-label {
+            font-size: 14px;
+            color: #ffffff;
+        }
     </style>
 </head>
 
@@ -537,17 +611,19 @@
             <!-- Day Navigation for Inicio -->
             <section class="px-4 mb-6">
                 <div id="dayDisplayInicioContainer"
-                    class="glass-card rounded-xl p-3 flex items-center justify-between neon-shadow border border-border">
+                    class="glass-card rounded-2xl p-2 flex items-center justify-between neon-shadow border border-border overflow-hidden">
                     <button onclick="changeDayInicio(-1)"
-                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0">
                         <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                     </button>
-                    <div class="flex-1 text-center">
-                        <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">Fecha</p>
-                        <p id="dayDisplayInicio" class="text-main text-sm font-black">Hoy</p>
+
+                    <div id="dateSelectorViewport" class="date-scroll-viewport">
+                        <!-- Dates will be injected by JavaScript -->
                     </div>
+
                     <button onclick="changeDayInicio(1)"
-                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted" id="nextDayBtnInicio">
+                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0"
+                        id="nextDayBtnInicio">
                         <span class="material-symbols-outlined text-[20px]">chevron_right</span>
                     </button>
                 </div>
@@ -1688,44 +1764,28 @@
         window.carousels = {};
 
         // Day navigation for Inicio section
+        window.setSelectedDayInicio = function (offset) {
+            if (offset > 3) return;
+            currentDayOffsetInicio = offset;
+            window.updateDayDisplayInicio();
+            window.loadDashboard(false);
+        };
+
         window.changeDayInicio = function (direction) {
-            if (direction > 0 && currentDayOffsetInicio >= 0) return;
-            currentDayOffsetInicio += direction;
+            const nextOffset = currentDayOffsetInicio + direction;
+            if (nextOffset > 3) return;
+            currentDayOffsetInicio = nextOffset;
             window.updateDayDisplayInicio();
             window.loadDashboard(false);
         };
 
         window.updateDayDisplayInicio = function () {
-            const today = new Date();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + currentDayOffsetInicio);
+            const viewport = document.getElementById('dateSelectorViewport');
+            if (!viewport) return;
 
-            const formatDate = (date) => {
-                const day = date.getDate().toString().padStart(2, '0');
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}/${month}/${year}`;
-            };
-
-            const displayElement = document.getElementById('dayDisplayInicio');
             const nextBtn = document.getElementById('nextDayBtnInicio');
-
-            if (displayElement) {
-                const container = document.getElementById('dayDisplayInicioContainer');
-                if (currentDayOffsetInicio === 0) {
-                    displayElement.textContent = 'Hoy';
-                    displayElement.className = "text-main text-sm font-black";
-                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
-                } else {
-                    displayElement.textContent = currentDayOffsetInicio === -1 ? 'Ayer' : formatDate(targetDate);
-                    displayElement.className = "text-warning text-sm font-black animate-pulse";
-                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
-                }
-            }
-
-            // Disable next button if we're at today
             if (nextBtn) {
-                if (currentDayOffsetInicio >= 0) {
+                if (currentDayOffsetInicio >= 3) {
                     nextBtn.disabled = true;
                     nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
                 } else {
@@ -1733,6 +1793,57 @@
                     nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
                 }
             }
+
+            const today = new Date();
+            const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const MONTHS_SHORT = ['OCT', 'NOV', 'DIC', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP'];
+            // Dynamic months short based on date
+            const getMonthShort = (d) => {
+                const m = d.getMonth();
+                const shorts = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+                return shorts[m];
+            };
+
+            // Calculate range to display (5 dates centered on selection)
+            const datesToDisplay = [];
+            for (let i = -2; i <= 2; i++) {
+                const offset = currentDayOffsetInicio + i;
+                if (offset > 3) continue; // Future cap
+                datesToDisplay.push(offset);
+            }
+
+            viewport.innerHTML = datesToDisplay.map(offset => {
+                const date = new Date(today);
+                date.setDate(today.getDate() + offset);
+
+                const isActive = offset === currentDayOffsetInicio;
+                const isToday = offset === 0;
+                const isAyer = offset === -1;
+                const isManana = offset === 1;
+
+                if (isActive) {
+                    let topLabel = '';
+                    if (isToday) topLabel = 'HOY';
+                    else if (isAyer) topLabel = 'AYER';
+                    else if (isManana) topLabel = 'MAÑANA';
+
+                    const bottomLabel = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
+
+                    return `
+                        <div class="date-item active fade-in" onclick="setSelectedDayInicio(${offset})">
+                            ${topLabel ? `<span class="day-label">${topLabel}</span>` : ''}
+                            <span class="date-label">${bottomLabel}</span>
+                        </div>
+                    `;
+                } else {
+                    const label = `${date.getDate()} ${getMonthShort(date)}`;
+                    return `
+                        <div class="date-item inactive" onclick="setSelectedDayInicio(${offset})">
+                            <span class="date-label">${label}</span>
+                        </div>
+                    `;
+                }
+            }).join('');
         };
 
         // Day navigation for Obras section
