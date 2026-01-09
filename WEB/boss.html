@@ -3172,7 +3172,7 @@
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
             const regularMovements = movements.filter(m => !isInternalTrip(m));
 
-            // Group movements by hour (0-23)
+            // Group movements by hour (only working hours 8-20)
             const hourlyVolumes = {};
             for (let h = 0; h < 24; h++) {
                 hourlyVolumes[h] = { incoming: 0, outgoing: 0 };
@@ -3189,7 +3189,7 @@
                 }
             });
 
-            // Create arrays for all 24 hours with cumulative values
+            // Create arrays for working hours only (8-20)
             const chartLabels = [];
             const chartIn = [];
             const chartOut = [];
@@ -3197,8 +3197,8 @@
             let sumIn = 0;
             let sumOut = 0;
 
-            // Generate data for all 24 hours (0-23)
-            for (let h = 0; h < 24; h++) {
+            // Generate data for working hours (8-20)
+            for (let h = 8; h <= 20; h++) {
                 sumIn += hourlyVolumes[h].incoming;
                 sumOut += hourlyVolumes[h].outgoing;
 
@@ -3238,6 +3238,7 @@
                 },
                 options: {
                     responsive: true,
+                    maintainAspectRatio: false,
                     interaction: { intersect: false, mode: 'index' },
                     plugins: {
                         legend: { display: false },
@@ -3257,13 +3258,25 @@
                     scales: {
                         y: {
                             display: true,
+                            beginAtZero: true,
                             grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#64748b', font: { size: 9 } },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 9 },
+                                callback: function (value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
                             title: { display: true, text: 'Volumen Acumulado (m³)', color: '#64748b', font: { size: 10 } }
                         },
                         x: {
                             grid: { display: false },
-                            ticks: { color: '#64748b', font: { size: 10 } },
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 10 },
+                                maxRotation: 0,
+                                autoSkip: false
+                            },
                             title: { display: true, text: 'Hora del Día', color: '#64748b', font: { size: 10 } }
                         }
                     }
