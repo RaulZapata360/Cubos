@@ -623,10 +623,32 @@
 
             <!-- Truck Performance -->
             <section class="px-4 mb-6">
-                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                    Rendimiento por Camión
-                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
-                </h3>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Rendimiento por Camión
+                        <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                    </h3>
+
+                    <!-- Filter Buttons -->
+                    <div class="flex gap-1.5">
+                        <button onclick="filterTruckPerformance('all')" id="filterAll"
+                            class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border border-slate-600 bg-slate-700 text-white">
+                            Todos
+                        </button>
+                        <button onclick="filterTruckPerformance('incoming')" id="filterIncoming"
+                            class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400">
+                            Relleno
+                        </button>
+                        <button onclick="filterTruckPerformance('outgoing')" id="filterOutgoing"
+                            class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border border-amber-500/30 hover:bg-amber-500/20 text-amber-400">
+                            Botadero
+                        </button>
+                        <button onclick="filterTruckPerformance('internal')" id="filterInternal"
+                            class="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all border border-cyan-500/30 hover:bg-cyan-500/20 text-cyan-400">
+                            Interno
+                        </button>
+                    </div>
+                </div>
                 <div id="performanceList"></div>
             </section>
 
@@ -1459,6 +1481,11 @@
         let currentDayOffset = 0;
         let currentDayOffsetInicio = 0;
         let currentDayOffsetObras = 0;
+
+        // Truck performance filter
+        let currentTruckFilter = 'all';
+        let cachedTrucksData = [];
+        let cachedMovementsData = [];
 
         // Configuration
         // Configuration: Extended Material Palette for high contrast
@@ -3632,6 +3659,10 @@
         function renderTruckPerformance(camiones, movements) {
             const containerId = 'performanceList';
 
+            // Cache data for filtering
+            cachedTrucksData = camiones;
+            cachedMovementsData = movements;
+
             if (camiones.length === 0) {
                 const container = document.getElementById(containerId);
                 if (container) {
@@ -3640,7 +3671,19 @@
                 return;
             }
 
-            const performance = bossDashboardService.getTruckPerformance(camiones, movements);
+            // Apply current filter
+            let filteredMovements = movements;
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+
+            if (currentTruckFilter === 'incoming') {
+                filteredMovements = movements.filter(m => m.tipo === 'incoming' && !isInternalTrip(m));
+            } else if (currentTruckFilter === 'outgoing') {
+                filteredMovements = movements.filter(m => m.tipo === 'outgoing' && !isInternalTrip(m));
+            } else if (currentTruckFilter === 'internal') {
+                filteredMovements = movements.filter(m => isInternalTrip(m));
+            }
+
+            const performance = bossDashboardService.getTruckPerformance(camiones, filteredMovements);
 
             // Initialize carousel if not exists
             if (!window.carousels[containerId]) {
@@ -3655,6 +3698,46 @@
             window.carousels[containerId].setItems(performance);
             window.carousels[containerId].render();
         }
+
+        // Filter truck performance by trip type
+        window.filterTruckPerformance = function (filterType) {
+            currentTruckFilter = filterType;
+
+            // Update button states
+            const buttons = {
+                'all': document.getElementById('filterAll'),
+                'incoming': document.getElementById('filterIncoming'),
+                'outgoing': document.getElementById('filterOutgoing'),
+                'internal': document.getElementById('filterInternal')
+            };
+
+            // Reset all buttons
+            Object.values(buttons).forEach(btn => {
+                if (btn) {
+                    btn.classList.remove('bg-slate-700', 'bg-emerald-500/20', 'bg-amber-500/20', 'bg-cyan-500/20');
+                    btn.classList.remove('border-slate-600', 'border-emerald-500', 'border-amber-500', 'border-cyan-500');
+                }
+            });
+
+            // Highlight active button
+            const activeBtn = buttons[filterType];
+            if (activeBtn) {
+                if (filterType === 'all') {
+                    activeBtn.classList.add('bg-slate-700', 'border-slate-600');
+                } else if (filterType === 'incoming') {
+                    activeBtn.classList.add('bg-emerald-500/20', 'border-emerald-500');
+                } else if (filterType === 'outgoing') {
+                    activeBtn.classList.add('bg-amber-500/20', 'border-amber-500');
+                } else if (filterType === 'internal') {
+                    activeBtn.classList.add('bg-cyan-500/20', 'border-cyan-500');
+                }
+            }
+
+            // Re-render with cached data
+            if (cachedTrucksData.length > 0) {
+                renderTruckPerformance(cachedTrucksData, cachedMovementsData);
+            }
+        };
 
         // Render function for truck performance items
         function renderTruckItems(trucks) {
