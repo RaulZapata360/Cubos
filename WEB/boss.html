@@ -3520,7 +3520,8 @@
                                 nombre: m.camiones?.nombre || 'Desconocido',
                                 patente: m.camiones?.patente || 'N/A',
                                 capacidad: m.camiones?.capacidad || 0,
-                                obra_id: m.obra_id
+                                obra_id: m.obra_id,
+                                obras: m.obras ? { nombre: m.obras.nombre } : null
                             });
                         }
                     });
