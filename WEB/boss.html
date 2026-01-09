@@ -2392,39 +2392,44 @@
             document.getElementById('dailyInternalTrucks').textContent = uniqueTrucks;
             document.getElementById('dailyInternalAvg').innerHTML = `${avgVolume} <span class="text-sm font-normal text-text-muted">m³/v</span>`;
 
-            // 1. Hourly Activity Chart (Scatter plot, 8 AM - 7 PM)
+            // 1. Hourly Activity Chart (Scatter plot with cumulative count, 8 AM - 7 PM)
             const ctxHourly = document.getElementById('dailyInternalHourlyChart')?.getContext('2d');
             if (ctxHourly) {
                 if (dailyInternalHourlyChartInstance) dailyInternalHourlyChartInstance.destroy();
 
-                // Prepare scatter data points (only for hours 8-19)
-                const scatterData = [];
-                internalTrips.forEach(m => {
-                    const date = new Date(m.timestamp);
-                    const hour = date.getHours();
-                    const minute = date.getMinutes();
+                // Sort trips by timestamp and calculate cumulative count
+                const sortedTrips = internalTrips
+                    .map(m => ({
+                        timestamp: new Date(m.timestamp),
+                        hour: new Date(m.timestamp).getHours(),
+                        minute: new Date(m.timestamp).getMinutes()
+                    }))
+                    .filter(t => t.hour >= 8 && t.hour <= 19) // Only 8 AM - 7 PM
+                    .sort((a, b) => a.timestamp - b.timestamp);
 
-                    // Only include trips between 8:00 and 19:59
-                    if (hour >= 8 && hour <= 19) {
-                        // Convert to decimal hour (e.g., 8:30 = 8.5)
-                        const decimalHour = hour + (minute / 60);
-                        scatterData.push({
-                            x: decimalHour,
-                            y: 1 // Each trip is represented as a point
-                        });
-                    }
+                // Create cumulative scatter data
+                const scatterData = [];
+                sortedTrips.forEach((trip, index) => {
+                    const decimalHour = trip.hour + (trip.minute / 60);
+                    scatterData.push({
+                        x: decimalHour,
+                        y: index + 1 // Cumulative count
+                    });
                 });
 
                 dailyInternalHourlyChartInstance = new Chart(ctxHourly, {
                     type: 'scatter',
                     data: {
                         datasets: [{
-                            label: 'Viajes Internos',
+                            label: 'Viajes Internos Acumulados',
                             data: scatterData,
                             backgroundColor: '#06b6d4',
                             borderColor: '#06b6d4',
-                            pointRadius: 6,
-                            pointHoverRadius: 8
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            showLine: true, // Connect points with line
+                            borderWidth: 2,
+                            tension: 0.1
                         }]
                     },
                     options: {
@@ -2447,7 +2452,7 @@
                                         return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                                     },
                                     label: function (context) {
-                                        return 'Viaje interno registrado';
+                                        return `Viajes acumulados: ${context.parsed.y}`;
                                     }
                                 }
                             }
@@ -2474,9 +2479,19 @@
                                 }
                             },
                             y: {
-                                display: false,
-                                min: 0,
-                                max: 2
+                                beginAtZero: true,
+                                ticks: {
+                                    color: textColor,
+                                    font: { size: 10, weight: '500' },
+                                    stepSize: 1
+                                },
+                                grid: { color: gridColor, drawBorder: false },
+                                title: {
+                                    display: true,
+                                    text: 'Viajes Acumulados',
+                                    color: textColor,
+                                    font: { size: 11, weight: '600' }
+                                }
                             }
                         }
                     }
