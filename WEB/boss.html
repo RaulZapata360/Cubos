@@ -3525,7 +3525,6 @@
                 // 2. UPDATE VIEW-SPECIFIC ELEMENTS
                 if (activeView === 'inicio') {
                     const kpis = bossDashboardService.calculateKPIs(data.movements);
-                    document.getElementById('kpiTotalTrips').textContent = kpis.totalTrips;
                     document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
                     document.getElementById('kpiAvgPerHour').innerHTML = `${kpis.avgPerHour} <span class="text-xs font-normal text-slate-400">vueltas/hora</span>`;
 
