@@ -3080,6 +3080,7 @@
                 }
             });
 
+            // Create arrays for all 24 hours with cumulative values
             const chartLabels = [];
             const chartIn = [];
             const chartOut = [];
@@ -3087,36 +3088,14 @@
             let sumIn = 0;
             let sumOut = 0;
 
-            // 1. Initial point at 8:00 (includes everything before 8:00 AM)
-            for (let h = 0; h < 8; h++) {
+            // Generate data for all 24 hours (0-23)
+            for (let h = 0; h < 24; h++) {
                 sumIn += hourlyVolumes[h].incoming;
                 sumOut += hourlyVolumes[h].outgoing;
-            }
-            chartLabels.push('8:00');
-            chartIn.push(sumIn);
-            chartOut.push(sumOut);
 
-            // 2. Points from 9:00 to 19:00
-            for (let h = 8; h <= 18; h++) {
-                sumIn += hourlyVolumes[h].incoming;
-                sumOut += hourlyVolumes[h].outgoing;
-                chartLabels.push(`${h + 1}:00`);
-                chartIn.push(sumIn);
-                chartOut.push(sumOut);
-            }
-
-            // 3. Final point at 20:00 (sum remaining hours to match totals)
-            for (let h = 19; h < 24; h++) {
-                sumIn += hourlyVolumes[h].incoming;
-                sumOut += hourlyVolumes[h].outgoing;
-            }
-            // Overwrite last point label and data if it's already there or add it
-            if (chartLabels.includes('20:00')) {
-                const idx = chartLabels.indexOf('20:00');
-                chartIn[idx] = sumIn;
-                chartOut[idx] = sumOut;
-            } else {
-                chartLabels.push('20:00');
+                // Format hour label (e.g., "08:00", "14:00")
+                const hourLabel = `${h.toString().padStart(2, '0')}:00`;
+                chartLabels.push(hourLabel);
                 chartIn.push(sumIn);
                 chartOut.push(sumOut);
             }
