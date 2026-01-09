@@ -2392,28 +2392,31 @@
             document.getElementById('dailyInternalTrucks').textContent = uniqueTrucks;
             document.getElementById('dailyInternalAvg').innerHTML = `${avgVolume} <span class="text-sm font-normal text-text-muted">m³/v</span>`;
 
-            // 1. Hourly Activity Chart (Scatter plot with cumulative count, 8 AM - 7 PM)
+            // 1. Hourly Activity Chart (Scatter plot with cumulative volume, 8 AM - 7 PM)
             const ctxHourly = document.getElementById('dailyInternalHourlyChart')?.getContext('2d');
             if (ctxHourly) {
                 if (dailyInternalHourlyChartInstance) dailyInternalHourlyChartInstance.destroy();
 
-                // Sort trips by timestamp and calculate cumulative count
+                // Sort trips by timestamp and calculate cumulative volume
                 const sortedTrips = internalTrips
                     .map(m => ({
                         timestamp: new Date(m.timestamp),
                         hour: new Date(m.timestamp).getHours(),
-                        minute: new Date(m.timestamp).getMinutes()
+                        minute: new Date(m.timestamp).getMinutes(),
+                        volume: parseFloat(m.capacidad) || 0
                     }))
                     .filter(t => t.hour >= 8 && t.hour <= 19) // Only 8 AM - 7 PM
                     .sort((a, b) => a.timestamp - b.timestamp);
 
-                // Create cumulative scatter data
+                // Create cumulative scatter data with volume
                 const scatterData = [];
-                sortedTrips.forEach((trip, index) => {
+                let cumulativeVolume = 0;
+                sortedTrips.forEach((trip) => {
+                    cumulativeVolume += trip.volume;
                     const decimalHour = trip.hour + (trip.minute / 60);
                     scatterData.push({
                         x: decimalHour,
-                        y: index + 1 // Cumulative count
+                        y: cumulativeVolume // Cumulative volume in m³
                     });
                 });
 
@@ -2421,7 +2424,7 @@
                     type: 'scatter',
                     data: {
                         datasets: [{
-                            label: 'Viajes Internos Acumulados',
+                            label: 'Volumen Acumulado (m³)',
                             data: scatterData,
                             backgroundColor: '#06b6d4',
                             borderColor: '#06b6d4',
@@ -2452,7 +2455,7 @@
                                         return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                                     },
                                     label: function (context) {
-                                        return `Viajes acumulados: ${context.parsed.y}`;
+                                        return `Volumen acumulado: ${context.parsed.y.toFixed(1)} m³`;
                                     }
                                 }
                             }
@@ -2483,12 +2486,14 @@
                                 ticks: {
                                     color: textColor,
                                     font: { size: 10, weight: '500' },
-                                    stepSize: 1
+                                    callback: function (value) {
+                                        return value.toFixed(0) + ' m³';
+                                    }
                                 },
                                 grid: { color: gridColor, drawBorder: false },
                                 title: {
                                     display: true,
-                                    text: 'Viajes Acumulados',
+                                    text: 'Volumen Acumulado (m³)',
                                     color: textColor,
                                     font: { size: 11, weight: '600' }
                                 }
