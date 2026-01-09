@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.9.7</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.9.8</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -631,18 +631,17 @@
             <section class="px-4 mb-6">
                 <div id="dayDisplayInicioContainer"
                     class="glass-card rounded-2xl p-2 flex items-center justify-between neon-shadow border border-border overflow-hidden">
-                    <button onclick="changeDayInicio(-1)"
+                    <button onclick="changeGlobalDay(-1)"
                         class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0">
                         <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                     </button>
 
-                    <div id="dateSelectorViewport" class="date-scroll-viewport">
+                    <div class="date-scroll-viewport date-viewport-inicio">
                         <!-- Dates will be injected by JavaScript -->
                     </div>
 
-                    <button onclick="changeDayInicio(1)"
-                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0"
-                        id="nextDayBtnInicio">
+                    <button onclick="changeGlobalDay(1)"
+                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0 next-day-btn">
                         <span class="material-symbols-outlined text-[20px]">chevron_right</span>
                     </button>
                 </div>
@@ -779,18 +778,18 @@
             <!-- Day Navigation for Obras -->
             <section class="px-4 mb-4">
                 <div id="dayDisplayObrasContainer"
-                    class="glass-card rounded-xl p-3 flex items-center justify-between neon-shadow border border-border">
-                    <button onclick="changeDayObras(-1)"
-                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted">
+                    class="glass-card rounded-2xl p-2 flex items-center justify-between neon-shadow border border-border overflow-hidden">
+                    <button onclick="changeGlobalDay(-1)"
+                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0">
                         <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                     </button>
-                    <div class="flex-1 text-center">
-                        <p class="text-[10px] text-text-muted font-bold uppercase tracking-wider mb-1">Fecha de Gestión
-                        </p>
-                        <p id="dayDisplayObras" class="text-main text-sm font-black">Hoy</p>
+
+                    <div class="date-scroll-viewport date-viewport-obras">
+                        <!-- Dates will be injected by JavaScript -->
                     </div>
-                    <button onclick="changeDayObras(1)"
-                        class="p-2 hover:bg-white/10 rounded-lg transition-all text-text-muted" id="nextDayBtnObras">
+
+                    <button onclick="changeGlobalDay(1)"
+                        class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0 next-day-btn">
                         <span class="material-symbols-outlined text-[20px]">chevron_right</span>
                     </button>
                 </div>
@@ -950,17 +949,19 @@
                 <div id="report-content-diario" class="report-sub-content active">
                     <!-- Day Selector -->
                     <div id="dayDisplayReportContainer"
-                        class="glass-card rounded-xl p-3 mb-6 flex items-center justify-between neon-shadow">
-                        <button onclick="changeDay(-1)" class="p-2 hover:bg-white/10 rounded-lg transition-all">
-                            <span class="material-symbols-outlined text-main text-[20px]">chevron_left</span>
+                        class="glass-card rounded-2xl p-2 flex items-center justify-between neon-shadow border border-border overflow-hidden">
+                        <button onclick="changeGlobalDay(-1)"
+                            class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0">
+                            <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                         </button>
-                        <div class="flex-1 text-center">
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Fecha</p>
-                            <p id="dayDisplay" class="text-main text-xs font-bold">Hoy</p>
+
+                        <div class="date-scroll-viewport date-viewport-report">
+                            <!-- Dates will be injected by JavaScript -->
                         </div>
-                        <button id="nextDayBtnReport" onclick="changeDay(1)"
-                            class="p-2 hover:bg-white/10 rounded-lg transition-all">
-                            <span class="material-symbols-outlined text-main text-[20px]">chevron_right</span>
+
+                        <button onclick="changeGlobalDay(1)"
+                            class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0 next-day-btn">
+                            <span class="material-symbols-outlined text-[20px]">chevron_right</span>
                         </button>
                     </div>
 
@@ -1406,9 +1407,16 @@
             document.getElementById(`nav-${tabId}`).classList.add('active');
 
             // View specific logic
-            if (tabId === 'inicio') window.loadDashboard(false);
-            if (tabId === 'obras') window.loadDashboard(false);
+            if (tabId === 'inicio') {
+                window.updateGlobalDayDisplay();
+                window.loadDashboard(false);
+            }
+            if (tabId === 'obras') {
+                window.updateGlobalDayDisplay();
+                window.loadDashboard(false);
+            }
             if (tabId === 'reportes') {
+                window.updateGlobalDayDisplay();
                 const isDiario = document.getElementById('report-content-diario').classList.contains('active');
                 if (isDiario) window.loadDashboard(false);
                 else renderCharts();
@@ -1431,6 +1439,7 @@
                 diarioContent.classList.add('active');
                 semanalContent.classList.add('hidden');
                 semanalContent.classList.remove('active');
+                window.updateGlobalDayDisplay();
                 window.loadDashboard(false); // Refresh daily report data
             } else {
                 semanalBtn.classList.add('active-subtab');
@@ -1577,9 +1586,7 @@
         let weeklyInternalTrucksChartInstance = null;
         let obrasInternalTripsChartInstance = null; // For Obras tab
         let currentWeekOffset = 0;
-        let currentDayOffset = 0;
-        let currentDayOffsetInicio = 0;
-        let currentDayOffsetObras = 0;
+        let currentGlobalDayOffset = 0; // Unified offset for all views
 
         // Truck performance filter
         let currentTruckFilter = 'all';
@@ -1782,41 +1789,40 @@
         // Global carousel instances
         window.carousels = {};
 
-        // Day navigation for Inicio section
-        window.setSelectedDayInicio = function (offset) {
+        // Unified global day navigation
+        window.setGlobalSelectedDay = function (offset) {
             if (offset > 3) return;
-            currentDayOffsetInicio = offset;
-            window.updateDayDisplayInicio();
+            currentGlobalDayOffset = offset;
+            window.updateGlobalDayDisplay();
             window.loadDashboard(false);
         };
 
-        window.changeDayInicio = function (direction) {
-            const nextOffset = currentDayOffsetInicio + direction;
+        window.changeGlobalDay = function (direction) {
+            const nextOffset = currentGlobalDayOffset + direction;
             if (nextOffset > 3) return;
-            currentDayOffsetInicio = nextOffset;
-            window.updateDayDisplayInicio();
+            currentGlobalDayOffset = nextOffset;
+            window.updateGlobalDayDisplay();
             window.loadDashboard(false);
         };
 
-        window.updateDayDisplayInicio = function () {
-            const viewport = document.getElementById('dateSelectorViewport');
-            if (!viewport) return;
+        window.updateGlobalDayDisplay = function () {
+            // Select all date viewports across all tabs
+            const viewports = document.querySelectorAll('.date-scroll-viewport');
+            const nextBtns = document.querySelectorAll('.next-day-btn');
 
-            const nextBtn = document.getElementById('nextDayBtnInicio');
-            if (nextBtn) {
-                if (currentDayOffsetInicio >= 3) {
-                    nextBtn.disabled = true;
-                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+            // Update buttons state
+            nextBtns.forEach(btn => {
+                if (currentGlobalDayOffset >= 3) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-30', 'cursor-not-allowed');
                 } else {
-                    nextBtn.disabled = false;
-                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-30', 'cursor-not-allowed');
                 }
-            }
+            });
 
             const today = new Date();
             const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            const MONTHS_SHORT = ['OCT', 'NOV', 'DIC', 'ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP'];
-            // Dynamic months short based on date
             const getMonthShort = (d) => {
                 const m = d.getMonth();
                 const shorts = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
@@ -1826,16 +1832,16 @@
             // Calculate range to display (5 dates centered on selection)
             const datesToDisplay = [];
             for (let i = -2; i <= 2; i++) {
-                const offset = currentDayOffsetInicio + i;
+                const offset = currentGlobalDayOffset + i;
                 if (offset > 3) continue; // Future cap
                 datesToDisplay.push(offset);
             }
 
-            viewport.innerHTML = datesToDisplay.map(offset => {
+            const html = datesToDisplay.map(offset => {
                 const date = new Date(today);
                 date.setDate(today.getDate() + offset);
 
-                const isActive = offset === currentDayOffsetInicio;
+                const isActive = offset === currentGlobalDayOffset;
                 const isToday = offset === 0;
                 const isAyer = offset === -1;
                 const isManana = offset === 1;
@@ -1851,7 +1857,7 @@
                     const bottomLabel = `${date.getDate()} ${MONTHS[date.getMonth()]}`;
 
                     return `
-                        <div class="date-item active ${todayClass} fade-in" onclick="setSelectedDayInicio(${offset})">
+                        <div class="date-item active ${todayClass} fade-in" onclick="setGlobalSelectedDay(${offset})">
                             ${topLabel ? `<span class="day-label">${topLabel}</span>` : ''}
                             <span class="date-label">${bottomLabel}</span>
                         </div>
@@ -1859,107 +1865,28 @@
                 } else {
                     const label = `${date.getDate()} ${getMonthShort(date)}`;
                     return `
-                        <div class="date-item inactive ${todayClass}" onclick="setSelectedDayInicio(${offset})">
+                        <div class="date-item inactive ${todayClass}" onclick="setGlobalSelectedDay(${offset})">
                             <span class="date-label">${label}</span>
                         </div>
                     `;
                 }
             }).join('');
+
+            viewports.forEach(vp => {
+                vp.innerHTML = html;
+            });
         };
 
-        // Day navigation for Obras section
-        window.changeDayObras = function (direction) {
-            if (direction > 0 && currentDayOffsetObras >= 0) return;
-            currentDayOffsetObras += direction;
-            window.updateDayDisplayObras();
-            window.loadDashboard(false);
-        };
-
-        window.updateDayDisplayObras = function () {
-            const today = new Date();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + currentDayOffsetObras);
-
-            const formatDate = (date) => {
-                const day = date.getDate().toString().padStart(2, '0');
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}/${month}/${year}`;
-            };
-
-            const displayElement = document.getElementById('dayDisplayObras');
-            const nextBtn = document.getElementById('nextDayBtnObras');
-
-            if (displayElement) {
-                const container = document.getElementById('dayDisplayObrasContainer');
-                if (currentDayOffsetObras === 0) {
-                    displayElement.textContent = 'Hoy';
-                    displayElement.className = "text-main text-sm font-black";
-                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
-                } else {
-                    displayElement.textContent = currentDayOffsetObras === -1 ? 'Ayer' : formatDate(targetDate);
-                    displayElement.className = "text-warning text-sm font-black animate-pulse";
-                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
-                }
+        // Disable next button if we're at today
+        if (nextBtn) {
+            if (currentDayOffset >= 0) {
+                nextBtn.disabled = true;
+                nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
+            } else {
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
             }
-
-            // Disable next button if we're at today
-            if (nextBtn) {
-                if (currentDayOffsetObras >= 0) {
-                    nextBtn.disabled = true;
-                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
-                } else {
-                    nextBtn.disabled = false;
-                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-                }
-            }
-        };
-
-        window.changeDay = function (direction) {
-            if (direction > 0 && currentDayOffset >= 0) return;
-            currentDayOffset += direction;
-            window.updateDayDisplay();
-            window.loadDashboard(false);
-        };
-
-        window.updateDayDisplay = function () {
-            const today = new Date();
-            const targetDate = new Date(today);
-            targetDate.setDate(today.getDate() + currentDayOffset);
-
-            const formatDate = (date) => {
-                const day = date.getDate().toString().padStart(2, '0');
-                const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear();
-                return `${day}/${month}/${year}`;
-            };
-
-            const displayElement = document.getElementById('dayDisplay');
-            const nextBtn = document.getElementById('nextDayBtnReport');
-
-            if (displayElement) {
-                const container = document.getElementById('dayDisplayReportContainer');
-                if (currentDayOffset === 0) {
-                    displayElement.textContent = 'Hoy';
-                    displayElement.className = "text-main text-sm font-black";
-                    if (container) container.classList.remove('border-warning/50', 'bg-warning/5');
-                } else {
-                    displayElement.textContent = currentDayOffset === -1 ? 'Ayer' : formatDate(targetDate);
-                    displayElement.className = "text-warning text-sm font-black animate-pulse";
-                    if (container) container.classList.add('border-warning/50', 'bg-warning/5');
-                }
-            }
-
-            // Disable next button if we're at today
-            if (nextBtn) {
-                if (currentDayOffset >= 0) {
-                    nextBtn.disabled = true;
-                    nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
-                } else {
-                    nextBtn.disabled = false;
-                    nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-                }
-            }
+        }
         };
 
         window.changeWeek = function (direction) {
@@ -3581,36 +3508,27 @@
             if (forceRefresh) loadingOverlay.style.display = 'flex';
 
             try {
-                // Determine active offset based on current view
-                const viewInicio = document.getElementById('view-inicio');
+                // Unified offset usage
+                let activeOffset = currentGlobalDayOffset;
+                let activeView = 'inicio';
+
                 const viewObras = document.getElementById('view-obras');
                 const viewReportes = document.getElementById('view-reportes');
 
-                let activeOffset = 0;
-                let activeView = 'inicio';
-
                 if (viewObras.classList.contains('active')) {
-                    activeOffset = currentDayOffsetObras;
                     activeView = 'obras';
-                    window.updateDayDisplayObras();
                 } else if (viewReportes.classList.contains('active')) {
                     const isDiario = document.getElementById('report-content-diario').classList.contains('active');
                     if (isDiario) {
-                        activeOffset = currentDayOffset;
                         activeView = 'reportes-diario';
-                        window.updateDayDisplay();
                     } else {
-                        // In weekly report, we don't use loadDashboard's main loop usually
-                        // but if we do, use 0 or handle accordingly
                         activeView = 'reportes-semanal';
                         if (forceRefresh) renderCharts();
                         return;
                     }
-                } else {
-                    activeOffset = currentDayOffsetInicio;
-                    activeView = 'inicio';
-                    window.updateDayDisplayInicio();
                 }
+
+                window.updateGlobalDayDisplay();
 
                 const rawData = await bossDashboardService.getConsolidatedData(forceRefresh, activeOffset);
                 const data = filterDataByObra(rawData);
