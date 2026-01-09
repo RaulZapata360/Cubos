@@ -3479,7 +3479,26 @@
                     document.getElementById('kpiInternalVolume').textContent = `${internalVolume.toFixed(1)} m³`;
 
                     renderHourlyActivity(data.movements);
-                    renderTruckPerformance(data.camiones, data.movements);
+
+                    // Extract unique trucks from movements instead of using nomina
+                    // This ensures we show all trucks that made trips, not just those in the roster
+                    const trucksFromMovements = [];
+                    const seenTruckIds = new Set();
+
+                    data.movements.forEach(m => {
+                        if (m.camion_id && !seenTruckIds.has(m.camion_id)) {
+                            seenTruckIds.add(m.camion_id);
+                            trucksFromMovements.push({
+                                id: m.camion_id,
+                                nombre: m.camiones?.nombre || 'Desconocido',
+                                patente: m.camiones?.patente || 'N/A',
+                                capacidad: m.camiones?.capacidad || 0,
+                                obra_id: m.obra_id
+                            });
+                        }
+                    });
+
+                    renderTruckPerformance(trucksFromMovements, data.movements);
                     renderMovementHistory(data.movements);
                 }
 
