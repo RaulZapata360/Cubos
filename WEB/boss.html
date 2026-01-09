@@ -1877,18 +1877,6 @@
             });
         };
 
-        // Disable next button if we're at today
-        if (nextBtn) {
-            if (currentDayOffset >= 0) {
-                nextBtn.disabled = true;
-                nextBtn.classList.add('opacity-30', 'cursor-not-allowed');
-            } else {
-                nextBtn.disabled = false;
-                nextBtn.classList.remove('opacity-30', 'cursor-not-allowed');
-            }
-        }
-        };
-
         window.changeWeek = function (direction) {
             if (direction > 0 && currentWeekOffset >= 0) return;
             currentWeekOffset += direction;
