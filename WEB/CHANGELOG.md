@@ -1,5 +1,21 @@
 # Changelog - Sistema de Conteo de Camiones
 
+## [v3.9.5] - 2026-01-09
+
+### 🐛 Fix: Menú de Navegación Inferior en iOS Safari
+- **CORREGIDO**: El menú de navegación inferior (accesos directos) se desplazaba al hacer scroll en dispositivos iOS
+- **Problema**: En iOS Safari, el menú con `position: fixed` se movía junto con el contenido al hacer scroll, tapando información de la interfaz
+- **Solución**: 
+  - Agregadas propiedades CSS específicas para iOS: `transform: translateZ(0)`, `-webkit-transform`, `will-change: transform`
+  - Forzada aceleración por hardware con `backface-visibility: hidden`
+  - Aplicado en ambos archivos: `index.html` (contador) y `boss.html` (supervisor)
+- **Archivos modificados**:
+  - `styles.css` - Actualizada clase `.bottom-nav`
+  - `index.html` - Agregado estilo inline al elemento `<nav>`
+  - `boss.html` - Agregado estilo inline al elemento `<nav>`
+
+---
+
 ## [v3.9.4] - 2026-01-08
 
 ### 🐛 Fix: Filtrado en Modo Manual

@@ -2787,6 +2787,12 @@ form {
     padding: 8px 0 max(8px, env(safe-area-inset-bottom));
     z-index: 1000;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+    /* iOS Safari fix: Force hardware acceleration and prevent scroll issues */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
 }
 
 .nav-item {
