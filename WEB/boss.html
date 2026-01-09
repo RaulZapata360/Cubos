@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.10.0</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.10.1</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -804,7 +804,28 @@
                 </div>
             </section>
 
-            <!-- Daily Volume Chart - MOVED TO TOP -->
+            <!-- Internal Trips Volume Chart - MOVED TO TOP -->
+            <section class="px-4 mb-6">
+                <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Viajes Internos (Hora
+                            vs m³)</p>
+                        <div class="flex items-center gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                            <span class="text-[8px] text-slate-500">INTERNOS</span>
+                        </div>
+                    </div>
+                    <div style="height: 200px; position: relative; width: 100%;">
+                        <canvas id="obrasInternalTripsChart"></canvas>
+                        <div id="obrasInternalTripsChartEmpty"
+                            class="absolute inset-0 flex items-center justify-center hidden">
+                            <p class="text-slate-500 text-sm font-medium">Hoy no hubo movimientos</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Daily Volume Chart -->
             <section class="px-4 mb-6">
                 <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -823,6 +844,10 @@
                     </div>
                     <div style="height: 200px; position: relative; width: 100%;">
                         <canvas id="dailyVolumeChart"></canvas>
+                        <div id="dailyVolumeChartEmpty"
+                            class="absolute inset-0 flex items-center justify-center hidden">
+                            <p class="text-slate-500 text-sm font-medium">Hoy no hubo movimientos</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -887,23 +912,6 @@
 
                     <div id="obrasInternalBreakdown" class="space-y-2">
                         <!-- Populated by JS -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Internal Trips Volume Chart -->
-            <section class="px-4 mb-6">
-                <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Viajes Internos (Hora
-                            vs m³)</p>
-                        <div class="flex items-center gap-1">
-                            <div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
-                            <span class="text-[8px] text-slate-500">INTERNOS</span>
-                        </div>
-                    </div>
-                    <div style="height: 200px; position: relative; width: 100%;">
-                        <canvas id="obrasInternalTripsChart"></canvas>
                     </div>
                 </div>
             </section>
@@ -3242,11 +3250,24 @@
         // Render daily volume chart for Obras section
         async function renderDailyVolumeChart(movements) {
             const ctx = document.getElementById('dailyVolumeChart')?.getContext('2d');
+            const emptyMessage = document.getElementById('dailyVolumeChartEmpty');
             if (!ctx) return;
 
             // Filter out internal trips
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
             const regularMovements = movements.filter(m => !isInternalTrip(m));
+
+            // Check if there are no movements
+            if (regularMovements.length === 0) {
+                if (emptyMessage) emptyMessage.classList.remove('hidden');
+                if (dailyVolumeChart) {
+                    dailyVolumeChart.destroy();
+                    dailyVolumeChart = null;
+                }
+                return;
+            } else {
+                if (emptyMessage) emptyMessage.classList.add('hidden');
+            }
 
             // Group movements by hour (only working hours 8-20)
             const hourlyVolumes = {};
@@ -3363,11 +3384,24 @@
         // Render internal trips volume chart for Obras section
         async function renderObrasInternalTripsChart(movements) {
             const ctx = document.getElementById('obrasInternalTripsChart')?.getContext('2d');
+            const emptyMessage = document.getElementById('obrasInternalTripsChartEmpty');
             if (!ctx) return;
 
             // Filter only internal trips
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
             const internalTrips = movements.filter(m => isInternalTrip(m));
+
+            // Check if there are no internal trips
+            if (internalTrips.length === 0) {
+                if (emptyMessage) emptyMessage.classList.remove('hidden');
+                if (obrasInternalTripsChartInstance) {
+                    obrasInternalTripsChartInstance.destroy();
+                    obrasInternalTripsChartInstance = null;
+                }
+                return;
+            } else {
+                if (emptyMessage) emptyMessage.classList.add('hidden');
+            }
 
             // Sort trips by timestamp and calculate cumulative volume
             const sortedTrips = internalTrips
