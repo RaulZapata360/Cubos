@@ -276,14 +276,15 @@ class BossDashboardService {
         return breakdown;
     }
 
-    // Agrupar movimientos por hora - exclude internal trips
+    // Agrupar movimientos por hora - exclude internal trips - SUM VOLUME
     groupMovementsByHour(movements) {
         const regularMovements = this.filterRegularMovements(movements);
         const hourlyData = {};
 
         regularMovements.forEach(movement => {
             const hour = new Date(movement.timestamp).getHours();
-            hourlyData[hour] = (hourlyData[hour] || 0) + 1;
+            const volume = parseFloat(movement.capacidad) || 0;
+            hourlyData[hour] = (hourlyData[hour] || 0) + volume;
         });
 
         return hourlyData;

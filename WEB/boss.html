@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.10.1</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.10.2</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -3709,12 +3709,12 @@
             }
 
             const hourlyData = bossDashboardService.groupMovementsByHour(movements);
-            const maxCount = Math.max(...Object.values(hourlyData), 1);
+            const maxVolume = Math.max(...Object.values(hourlyData), 1);
             const hours = Object.keys(hourlyData).sort((a, b) => a - b);
 
             const html = hours.map(hour => {
-                const count = hourlyData[hour];
-                const percentage = (count / maxCount) * 100;
+                const volume = hourlyData[hour];
+                const percentage = (volume / maxVolume) * 100;
                 const displayHour = parseInt(hour) % 12 || 12;
                 const period = parseInt(hour) >= 12 ? 'PM' : 'AM';
 
@@ -3724,7 +3724,7 @@
                         <div class="flex-1 h-6 bg-white/5 rounded-full overflow-hidden">
                             <div class="h-full bg-gradient-to-r from-primary to-purple-600 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
                         </div>
-                        <span class="text-[10px] text-white font-semibold w-8 text-right">${count}</span>
+                        <span class="text-[10px] text-white font-semibold w-14 text-right">${volume.toFixed(1)} m³</span>
                     </div>
                 `;
             }).join('');
