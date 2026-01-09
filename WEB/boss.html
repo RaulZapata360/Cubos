@@ -772,6 +772,23 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Internal Trips Volume Chart -->
+            <section class="px-4 mb-6">
+                <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Viajes Internos (Hora
+                            vs m³)</p>
+                        <div class="flex items-center gap-1">
+                            <div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
+                            <span class="text-[8px] text-slate-500">INTERNOS</span>
+                        </div>
+                    </div>
+                    <div style="height: 200px; position: relative; width: 100%;">
+                        <canvas id="obrasInternalTripsChart"></canvas>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- Tab: Reportes -->
@@ -1437,6 +1454,7 @@
         let weeklyInternalTrendChartInstance = null;
         let weeklyInternalMaterialsChartInstance = null;
         let weeklyInternalTrucksChartInstance = null;
+        let obrasInternalTripsChartInstance = null; // For Obras tab
         let currentWeekOffset = 0;
         let currentDayOffset = 0;
         let currentDayOffsetInicio = 0;
@@ -3240,6 +3258,122 @@
             });
         }
 
+        // Render internal trips volume chart for Obras section
+        async function renderObrasInternalTripsChart(movements) {
+            const ctx = document.getElementById('obrasInternalTripsChart')?.getContext('2d');
+            if (!ctx) return;
+
+            // Filter only internal trips
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const internalTrips = movements.filter(m => isInternalTrip(m));
+
+            // Sort trips by timestamp and calculate cumulative volume
+            const sortedTrips = internalTrips
+                .map(m => ({
+                    timestamp: new Date(m.timestamp),
+                    hour: new Date(m.timestamp).getHours(),
+                    minute: new Date(m.timestamp).getMinutes(),
+                    volume: parseFloat(m.capacidad) || 0
+                }))
+                .filter(t => t.hour >= 8 && t.hour <= 19) // Only 8 AM - 7 PM
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            // Create cumulative scatter data with volume
+            const scatterData = [];
+            let cumulativeVolume = 0;
+            sortedTrips.forEach((trip) => {
+                cumulativeVolume += trip.volume;
+                const decimalHour = trip.hour + (trip.minute / 60);
+                scatterData.push({
+                    x: decimalHour,
+                    y: cumulativeVolume // Cumulative volume in m³
+                });
+            });
+
+            if (obrasInternalTripsChartInstance) obrasInternalTripsChartInstance.destroy();
+
+            obrasInternalTripsChartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Volumen Acumulado (m³)',
+                        data: scatterData,
+                        backgroundColor: '#06b6d4',
+                        borderColor: '#06b6d4',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        showLine: true, // Connect points with line
+                        borderWidth: 2,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                            titleColor: '#fff',
+                            bodyColor: '#94a3b8',
+                            padding: 10,
+                            cornerRadius: 8,
+                            callbacks: {
+                                title: function (context) {
+                                    const hour = Math.floor(context[0].parsed.x);
+                                    const minute = Math.round((context[0].parsed.x - hour) * 60);
+                                    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                },
+                                label: function (context) {
+                                    return `Volumen acumulado: ${context.parsed.y.toFixed(1)} m³`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            min: 8,
+                            max: 20,
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 10 },
+                                stepSize: 1,
+                                callback: function (value) {
+                                    return `${Math.floor(value)}:00`;
+                                }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: {
+                                display: true,
+                                text: 'Hora del Día',
+                                color: '#64748b',
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 9 },
+                                callback: function (value) {
+                                    return value.toFixed(0) + ' m³';
+                                }
+                            },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            title: {
+                                display: true,
+                                text: 'Volumen Acumulado (m³)',
+                                color: '#64748b',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Filter data by obra
         function filterDataByObra(data) {
             if (!window.selectedObraId) return data;
@@ -3370,6 +3504,7 @@
                     }
 
                     renderDailyVolumeChart(data.movements);
+                    renderObrasInternalTripsChart(data.movements);
                 }
 
                 else if (activeView === 'reportes-diario') {
