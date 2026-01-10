@@ -3720,7 +3720,6 @@
                 // 2. UPDATE VIEW-SPECIFIC ELEMENTS
                 if (activeView === 'inicio') {
                     const kpis = bossDashboardService.calculateKPIs(data.movements);
-                    document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
 
                     // Filter internal trips from regular counters
                     const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
