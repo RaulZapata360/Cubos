@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.12.2</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.12.3</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -1035,6 +1035,11 @@
                                     por Cantera (m³)</p>
                                 <div style="height: 250px; position: relative; width: 100%;">
                                     <canvas id="dailyOriginsChart"></canvas>
+                                    <div id="dailyOriginsChartEmpty"
+                                        class="absolute inset-0 flex items-center justify-center hidden">
+                                        <p class="text-slate-500 text-sm font-medium">No hay datos registrados el día de
+                                            hoy</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="glass-card rounded-2xl p-4">
@@ -1042,6 +1047,11 @@
                                     por Botadero (m³)</p>
                                 <div style="height: 250px; position: relative; width: 100%;">
                                     <canvas id="dailyDestinationsChart"></canvas>
+                                    <div id="dailyDestinationsChartEmpty"
+                                        class="absolute inset-0 flex items-center justify-center hidden">
+                                        <p class="text-slate-500 text-sm font-medium">No hay datos registrados el día de
+                                            hoy</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1066,6 +1076,11 @@
                             </div>
                             <div style="height: 200px; position: relative; width: 100%;">
                                 <canvas id="dailyObrasVolumeChart"></canvas>
+                                <div id="dailyObrasVolumeChartEmpty"
+                                    class="absolute inset-0 flex items-center justify-center hidden">
+                                    <p class="text-slate-500 text-sm font-medium">No hay datos registrados el día de hoy
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -1111,6 +1126,11 @@
                                         Vueltas Internas por Hora</p>
                                     <div style="height: 250px; position: relative; width: 100%;">
                                         <canvas id="dailyInternalHourlyChart"></canvas>
+                                        <div id="dailyInternalHourlyChartEmpty"
+                                            class="absolute inset-0 flex items-center justify-center hidden">
+                                            <p class="text-slate-500 text-sm font-medium">No hay datos registrados el
+                                                día de hoy</p>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="glass-card rounded-2xl p-4">
@@ -1118,6 +1138,11 @@
                                         Distribución de Materiales</p>
                                     <div style="height: 250px; position: relative; width: 100%;">
                                         <canvas id="dailyInternalMaterialsChart"></canvas>
+                                        <div id="dailyInternalMaterialsChartEmpty"
+                                            class="absolute inset-0 flex items-center justify-center hidden">
+                                            <p class="text-slate-500 text-sm font-medium">No hay datos registrados el
+                                                día de hoy</p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2454,6 +2479,10 @@
             const ctxDest = document.getElementById('dailyDestinationsChart')?.getContext('2d');
             const ctxObras = document.getElementById('dailyObrasVolumeChart')?.getContext('2d');
 
+            const emptyOrig = document.getElementById('dailyOriginsChartEmpty');
+            const emptyDest = document.getElementById('dailyDestinationsChartEmpty');
+            const emptyObras = document.getElementById('dailyObrasVolumeChartEmpty');
+
             if (!ctxOrig || !ctxDest || !ctxObras) return;
 
             if (dailyOriginsChartInstance) dailyOriginsChartInstance.destroy();
@@ -2463,36 +2492,50 @@
             // 1. Origins (Incoming only)
             const incomingMovs = movements.filter(m => m.tipo === 'incoming');
             const origins = [...new Set(incomingMovs.map(m => m.origen || m.ubicacion).filter(o => o))];
-            const origMaterials = [...new Set(incomingMovs.map(m => m.material).filter(m => m))];
-            const origDatasets = origMaterials.map(mat => ({
-                label: mat,
-                data: origins.map(orig => incomingMovs.filter(m => (m.origen === orig || (!m.origen && m.ubicacion === orig)) && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
-                backgroundColor: getMaterialColor(mat),
-                borderRadius: 6
-            }));
 
-            dailyOriginsChartInstance = new Chart(ctxOrig, {
-                type: 'bar',
-                data: { labels: origins, datasets: origDatasets.length > 0 ? origDatasets : [{ label: 'Vaciío', data: origins.map(() => 0) }] },
-                options: { ...getChartOptions(true, true), indexAxis: 'y' }
-            });
+            if (origins.length === 0 || incomingMovs.length === 0) {
+                if (emptyOrig) emptyOrig.classList.remove('hidden');
+                dailyOriginsChartInstance = null;
+            } else {
+                if (emptyOrig) emptyOrig.classList.add('hidden');
+                const origMaterials = [...new Set(incomingMovs.map(m => m.material).filter(m => m))];
+                const origDatasets = origMaterials.map(mat => ({
+                    label: mat,
+                    data: origins.map(orig => incomingMovs.filter(m => (m.origen === orig || (!m.origen && m.ubicacion === orig)) && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
+                    backgroundColor: getMaterialColor(mat),
+                    borderRadius: 6
+                }));
+
+                dailyOriginsChartInstance = new Chart(ctxOrig, {
+                    type: 'bar',
+                    data: { labels: origins, datasets: origDatasets.length > 0 ? origDatasets : [{ label: 'Vacío', data: origins.map(() => 0) }] },
+                    options: { ...getChartOptions(true, true), indexAxis: 'y' }
+                });
+            }
 
             // 2. Destinations (Outgoing only)
             const outgoingMovs = movements.filter(m => m.tipo === 'outgoing');
             const destinations = [...new Set(outgoingMovs.map(m => m.destino).filter(d => d))];
-            const destMaterials = [...new Set(outgoingMovs.map(m => m.material).filter(m => m))];
-            const destDatasets = destMaterials.map(mat => ({
-                label: mat,
-                data: destinations.map(dest => outgoingMovs.filter(m => m.destino === dest && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
-                backgroundColor: getMaterialColor(mat),
-                borderRadius: 6
-            }));
 
-            dailyDestinationsChartInstance = new Chart(ctxDest, {
-                type: 'bar',
-                data: { labels: destinations, datasets: destDatasets.length > 0 ? destDatasets : [{ label: 'Vaciío', data: destinations.map(() => 0) }] },
-                options: { ...getChartOptions(true, true), indexAxis: 'y' }
-            });
+            if (destinations.length === 0 || outgoingMovs.length === 0) {
+                if (emptyDest) emptyDest.classList.remove('hidden');
+                dailyDestinationsChartInstance = null;
+            } else {
+                if (emptyDest) emptyDest.classList.add('hidden');
+                const destMaterials = [...new Set(outgoingMovs.map(m => m.material).filter(m => m))];
+                const destDatasets = destMaterials.map(mat => ({
+                    label: mat,
+                    data: destinations.map(dest => outgoingMovs.filter(m => m.destino === dest && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
+                    backgroundColor: getMaterialColor(mat),
+                    borderRadius: 6
+                }));
+
+                dailyDestinationsChartInstance = new Chart(ctxDest, {
+                    type: 'bar',
+                    data: { labels: destinations, datasets: destDatasets.length > 0 ? destDatasets : [{ label: 'Vacío', data: destinations.map(() => 0) }] },
+                    options: { ...getChartOptions(true, true), indexAxis: 'y' }
+                });
+            }
 
             // 3. Obras
             const filterType = document.getElementById('dailyObrasVolumeType')?.value || 'all';
@@ -2503,20 +2546,27 @@
 
             const activeObraIds = [...new Set(obrasMovs.map(m => m.obra_id))];
             const obraNames = activeObraIds.map(id => obrasMap[id] || 'Desconocida');
-            const obraMaterials = [...new Set(obrasMovs.map(m => m.material).filter(m => m))];
 
-            const obraDatasets = obraMaterials.map(mat => ({
-                label: mat,
-                data: activeObraIds.map(id => obrasMovs.filter(m => m.obra_id === id && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
-                backgroundColor: getMaterialColor(mat),
-                borderRadius: 6
-            }));
+            if (obraNames.length === 0 || obrasMovs.length === 0) {
+                if (emptyObras) emptyObras.classList.remove('hidden');
+                dailyObrasVolumeChartInstance = null;
+            } else {
+                if (emptyObras) emptyObras.classList.add('hidden');
+                const obraMaterials = [...new Set(obrasMovs.map(m => m.material).filter(m => m))];
 
-            dailyObrasVolumeChartInstance = new Chart(ctxObras, {
-                type: 'bar',
-                data: { labels: obraNames, datasets: obraDatasets.length > 0 ? obraDatasets : [{ label: 'Vaciío', data: obraNames.map(() => 0) }] },
-                options: getChartOptions(true, true)
-            });
+                const obraDatasets = obraMaterials.map(mat => ({
+                    label: mat,
+                    data: activeObraIds.map(id => obrasMovs.filter(m => m.obra_id === id && m.material === mat).reduce((s, m) => s + (parseFloat(m.capacidad) || 0), 0)),
+                    backgroundColor: getMaterialColor(mat),
+                    borderRadius: 6
+                }));
+
+                dailyObrasVolumeChartInstance = new Chart(ctxObras, {
+                    type: 'bar',
+                    data: { labels: obraNames, datasets: obraDatasets.length > 0 ? obraDatasets : [{ label: 'Vacío', data: obraNames.map(() => 0) }] },
+                    options: getChartOptions(true, true)
+                });
+            }
 
             // Render internal trips charts
             await renderDailyInternalTripsCharts(movements, getChartOptions);
@@ -2546,6 +2596,8 @@
 
             // 1. Hourly Activity Chart (Scatter plot with cumulative volume, 8 AM - 7 PM)
             const ctxHourly = document.getElementById('dailyInternalHourlyChart')?.getContext('2d');
+            const emptyHourly = document.getElementById('dailyInternalHourlyChartEmpty');
+
             if (ctxHourly) {
                 if (dailyInternalHourlyChartInstance) dailyInternalHourlyChartInstance.destroy();
 
@@ -2560,103 +2612,112 @@
                     .filter(t => t.hour >= 8 && t.hour <= 19) // Only 8 AM - 7 PM
                     .sort((a, b) => a.timestamp - b.timestamp);
 
-                // Create cumulative scatter data with volume
-                const scatterData = [];
-                let cumulativeVolume = 0;
-                sortedTrips.forEach((trip) => {
-                    cumulativeVolume += trip.volume;
-                    const decimalHour = trip.hour + (trip.minute / 60);
-                    scatterData.push({
-                        x: decimalHour,
-                        y: cumulativeVolume // Cumulative volume in m³
-                    });
-                });
+                if (sortedTrips.length === 0) {
+                    if (emptyHourly) emptyHourly.classList.remove('hidden');
+                    dailyInternalHourlyChartInstance = null;
+                } else {
+                    if (emptyHourly) emptyHourly.classList.add('hidden');
 
-                dailyInternalHourlyChartInstance = new Chart(ctxHourly, {
-                    type: 'scatter',
-                    data: {
-                        datasets: [{
-                            label: 'Volumen Acumulado (m³)',
-                            data: scatterData,
-                            backgroundColor: '#06b6d4',
-                            borderColor: '#06b6d4',
-                            pointRadius: 5,
-                            pointHoverRadius: 7,
-                            showLine: true, // Connect points with line
-                            borderWidth: 2,
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                backgroundColor: isLight ? '#ffffff' : '#1e293b',
-                                titleColor: isLight ? '#1e293b' : '#ffffff',
-                                bodyColor: isLight ? '#64748b' : '#cbd5e1',
-                                borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
-                                borderWidth: 1,
-                                padding: 12,
-                                cornerRadius: 12,
-                                callbacks: {
-                                    title: function (context) {
-                                        const hour = Math.floor(context[0].parsed.x);
-                                        const minute = Math.round((context[0].parsed.x - hour) * 60);
-                                        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                                    },
-                                    label: function (context) {
-                                        return `Volumen acumulado: ${context.parsed.y.toFixed(1)} m³`;
-                                    }
-                                }
-                            }
+                    // Create cumulative scatter data with volume
+                    const scatterData = [];
+                    let cumulativeVolume = 0;
+                    sortedTrips.forEach((trip) => {
+                        cumulativeVolume += trip.volume;
+                        const decimalHour = trip.hour + (trip.minute / 60);
+                        scatterData.push({
+                            x: decimalHour,
+                            y: cumulativeVolume // Cumulative volume in m³
+                        });
+                    });
+
+                    dailyInternalHourlyChartInstance = new Chart(ctxHourly, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Volumen Acumulado (m³)',
+                                data: scatterData,
+                                backgroundColor: '#06b6d4',
+                                borderColor: '#06b6d4',
+                                pointRadius: 5,
+                                pointHoverRadius: 7,
+                                showLine: true, // Connect points with line
+                                borderWidth: 2,
+                                tension: 0.1
+                            }]
                         },
-                        scales: {
-                            x: {
-                                type: 'linear',
-                                min: 8,
-                                max: 20,
-                                ticks: {
-                                    color: textColor,
-                                    font: { size: 10, weight: '500' },
-                                    stepSize: 1,
-                                    callback: function (value) {
-                                        return `${Math.floor(value)}:00`;
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                    titleColor: isLight ? '#1e293b' : '#ffffff',
+                                    bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    cornerRadius: 12,
+                                    callbacks: {
+                                        title: function (context) {
+                                            const hour = Math.floor(context[0].parsed.x);
+                                            const minute = Math.round((context[0].parsed.x - hour) * 60);
+                                            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                                        },
+                                        label: function (context) {
+                                            return `Volumen acumulado: ${context.parsed.y.toFixed(1)} m³`;
+                                        }
                                     }
-                                },
-                                grid: { color: gridColor, drawBorder: false },
-                                title: {
-                                    display: true,
-                                    text: 'Hora del Día',
-                                    color: textColor,
-                                    font: { size: 11, weight: '600' }
                                 }
                             },
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    color: textColor,
-                                    font: { size: 10, weight: '500' },
-                                    callback: function (value) {
-                                        return value.toFixed(0) + ' m³';
+                            scales: {
+                                x: {
+                                    type: 'linear',
+                                    min: 8,
+                                    max: 20,
+                                    ticks: {
+                                        color: textColor,
+                                        font: { size: 10, weight: '500' },
+                                        stepSize: 1,
+                                        callback: function (value) {
+                                            return `${Math.floor(value)}:00`;
+                                        }
+                                    },
+                                    grid: { color: gridColor, drawBorder: false },
+                                    title: {
+                                        display: true,
+                                        text: 'Hora del Día',
+                                        color: textColor,
+                                        font: { size: 11, weight: '600' }
                                     }
                                 },
-                                grid: { color: gridColor, drawBorder: false },
-                                title: {
-                                    display: true,
-                                    text: 'Volumen Acumulado (m³)',
-                                    color: textColor,
-                                    font: { size: 11, weight: '600' }
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        color: textColor,
+                                        font: { size: 10, weight: '500' },
+                                        callback: function (value) {
+                                            return value.toFixed(0) + ' m³';
+                                        }
+                                    },
+                                    grid: { color: gridColor, drawBorder: false },
+                                    title: {
+                                        display: true,
+                                        text: 'Volumen Acumulado (m³)',
+                                        color: textColor,
+                                        font: { size: 11, weight: '600' }
+                                    }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             // 2. Materials Distribution Chart
             const ctxMaterials = document.getElementById('dailyInternalMaterialsChart')?.getContext('2d');
+            const emptyMaterials = document.getElementById('dailyInternalMaterialsChartEmpty');
+
             if (ctxMaterials) {
                 if (dailyInternalMaterialsChartInstance) dailyInternalMaterialsChartInstance.destroy();
 
@@ -2670,50 +2731,57 @@
                 const materials = Object.keys(materialData);
                 const volumes = Object.values(materialData);
 
-                dailyInternalMaterialsChartInstance = new Chart(ctxMaterials, {
-                    type: 'doughnut',
-                    data: {
-                        labels: materials,
-                        datasets: [{
-                            data: volumes,
-                            backgroundColor: materials.map(mat => getMaterialColor(mat)),
-                            borderWidth: 2,
-                            borderColor: isLight ? '#ffffff' : '#1e293b',
-                            hoverOffset: 15
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '70%',
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    color: textColor,
-                                    font: { size: 10, weight: '600' },
-                                    padding: 15,
-                                    usePointStyle: true,
-                                    pointStyle: 'circle'
-                                }
-                            },
-                            tooltip: {
-                                backgroundColor: isLight ? '#ffffff' : '#1e293b',
-                                titleColor: isLight ? '#1e293b' : '#ffffff',
-                                bodyColor: isLight ? '#64748b' : '#cbd5e1',
-                                borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
-                                borderWidth: 1,
-                                padding: 12,
-                                cornerRadius: 12,
-                                callbacks: {
-                                    label: function (context) {
-                                        return `${context.label}: ${context.parsed.toFixed(1)} m³`;
+                if (materials.length === 0 || internalTrips.length === 0) {
+                    if (emptyMaterials) emptyMaterials.classList.remove('hidden');
+                    dailyInternalMaterialsChartInstance = null;
+                } else {
+                    if (emptyMaterials) emptyMaterials.classList.add('hidden');
+
+                    dailyInternalMaterialsChartInstance = new Chart(ctxMaterials, {
+                        type: 'doughnut',
+                        data: {
+                            labels: materials,
+                            datasets: [{
+                                data: volumes,
+                                backgroundColor: materials.map(mat => getMaterialColor(mat)),
+                                borderWidth: 2,
+                                borderColor: isLight ? '#ffffff' : '#1e293b',
+                                hoverOffset: 15
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '70%',
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: textColor,
+                                        font: { size: 10, weight: '600' },
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: isLight ? '#ffffff' : '#1e293b',
+                                    titleColor: isLight ? '#1e293b' : '#ffffff',
+                                    bodyColor: isLight ? '#64748b' : '#cbd5e1',
+                                    borderColor: isLight ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    cornerRadius: 12,
+                                    callbacks: {
+                                        label: function (context) {
+                                            return `${context.label}: ${context.parsed.toFixed(1)} m³`;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
         };
 
