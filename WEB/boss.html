@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.10.2</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.11.0</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -694,15 +694,27 @@
                 </div>
 
                 <!-- Secondary KPIs -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border">
-                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Tiempo Operación</p>
-                        <p class="text-2xl font-black text-main" id="kpiOperatingTime">0h 0m</p>
+                <div class="glass-card rounded-2xl p-4 neon-shadow border border-border mb-4">
+                    <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Tiempo Operación</p>
+                    <p class="text-2xl font-black text-main" id="kpiOperatingTime">0h 0m</p>
+                </div>
+
+                <!-- Efficiency KPIs - 3 Cards -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="glass-card rounded-2xl p-3 neon-shadow border border-emerald-500/30">
+                        <p class="text-emerald-400 text-[9px] font-bold uppercase tracking-wider mb-1">Efic. Relleno</p>
+                        <p class="text-xl font-black text-main" id="kpiEfficiencyRelleno">0</p>
+                        <p class="text-[9px] text-text-muted">vueltas/h</p>
                     </div>
-                    <div class="glass-card rounded-2xl p-4 neon-shadow border border-border flex flex-col items-center">
-                        <p class="text-text-muted text-[10px] font-bold uppercase mb-1">Eficiencia</p>
-                        <p class="text-2xl font-black text-blue-400" id="kpiAvgPerHour">0 <span
-                                class="text-xs font-normal text-text-muted">vueltas/h</span></p>
+                    <div class="glass-card rounded-2xl p-3 neon-shadow border border-cyan-500/30">
+                        <p class="text-cyan-400 text-[9px] font-bold uppercase tracking-wider mb-1">Efic. Interno</p>
+                        <p class="text-xl font-black text-main" id="kpiEfficiencyInterno">0</p>
+                        <p class="text-[9px] text-text-muted">vueltas/h</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-3 neon-shadow border border-amber-500/30">
+                        <p class="text-amber-400 text-[9px] font-bold uppercase tracking-wider mb-1">Efic. Botadero</p>
+                        <p class="text-xl font-black text-main" id="kpiEfficiencyBotadero">0</p>
+                        <p class="text-[9px] text-text-muted">vueltas/h</p>
                     </div>
                 </div>
             </section>
@@ -3561,7 +3573,6 @@
                 if (activeView === 'inicio') {
                     const kpis = bossDashboardService.calculateKPIs(data.movements);
                     document.getElementById('kpiOperatingTime').textContent = kpis.operatingTime;
-                    document.getElementById('kpiAvgPerHour').innerHTML = `${kpis.avgPerHour} <span class="text-xs font-normal text-slate-400">vueltas/hora</span>`;
 
                     // Filter internal trips from regular counters
                     const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
@@ -3580,6 +3591,20 @@
                     document.getElementById('kpiRellenoVolume').textContent = rellenoVolume.toFixed(1);
                     document.getElementById('kpiInternoVolume').textContent = internoVolume.toFixed(1);
                     document.getElementById('kpiBotaderoVolume').textContent = botaderoVolume.toFixed(1);
+
+                    // Calculate efficiency by type (trips per hour)
+                    const calculateEfficiencyByType = (movements) => {
+                        if (movements.length === 0) return 0;
+                        const timestamps = movements.map(m => new Date(m.timestamp).getTime());
+                        const min = Math.min(...timestamps);
+                        const max = Math.max(...timestamps);
+                        const hours = Math.max(1, (max - min) / (1000 * 60 * 60));
+                        return (movements.length / hours).toFixed(1);
+                    };
+
+                    document.getElementById('kpiEfficiencyRelleno').textContent = calculateEfficiencyByType(rellenoMovements);
+                    document.getElementById('kpiEfficiencyInterno').textContent = calculateEfficiencyByType(internalMovements);
+                    document.getElementById('kpiEfficiencyBotadero').textContent = calculateEfficiencyByType(botaderoMovements);
 
                     renderHourlyActivity(data.movements);
 
@@ -3708,23 +3733,86 @@
                 return;
             }
 
-            const hourlyData = bossDashboardService.groupMovementsByHour(movements);
-            const maxVolume = Math.max(...Object.values(hourlyData), 1);
-            const hours = Object.keys(hourlyData).sort((a, b) => a - b);
+            // Separate movements by type
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+            const rellenoMovements = movements.filter(m => !isInternalTrip(m) && m.tipo === 'incoming');
+            const botaderoMovements = movements.filter(m => !isInternalTrip(m) && m.tipo === 'outgoing');
+            const internoMovements = movements.filter(m => isInternalTrip(m));
+
+            // Group by hour for each type
+            const groupByHour = (movs) => {
+                const hourlyData = {};
+                movs.forEach(m => {
+                    const hour = new Date(m.timestamp).getHours();
+                    const volume = parseFloat(m.capacidad) || 0;
+                    hourlyData[hour] = (hourlyData[hour] || 0) + volume;
+                });
+                return hourlyData;
+            };
+
+            const rellenoByHour = groupByHour(rellenoMovements);
+            const botaderoByHour = groupByHour(botaderoMovements);
+            const internoByHour = groupByHour(internoMovements);
+
+            // Get all hours that have activity
+            const allHours = new Set([
+                ...Object.keys(rellenoByHour),
+                ...Object.keys(botaderoByHour),
+                ...Object.keys(internoByHour)
+            ]);
+            const hours = Array.from(allHours).sort((a, b) => a - b);
+
+            // Find max volume for scaling
+            const maxVolume = Math.max(
+                ...Object.values(rellenoByHour),
+                ...Object.values(botaderoByHour),
+                ...Object.values(internoByHour),
+                1
+            );
 
             const html = hours.map(hour => {
-                const volume = hourlyData[hour];
-                const percentage = (volume / maxVolume) * 100;
+                const rellenoVol = rellenoByHour[hour] || 0;
+                const botaderoVol = botaderoByHour[hour] || 0;
+                const internoVol = internoByHour[hour] || 0;
+
+                const rellenoPct = (rellenoVol / maxVolume) * 100;
+                const botaderoPct = (botaderoVol / maxVolume) * 100;
+                const internoPct = (internoVol / maxVolume) * 100;
+
                 const displayHour = parseInt(hour) % 12 || 12;
                 const period = parseInt(hour) >= 12 ? 'PM' : 'AM';
 
                 return `
-                    <div class="flex items-center gap-3 fade-in">
-                        <span class="text-[10px] text-slate-400 w-12">${displayHour} ${period}</span>
-                        <div class="flex-1 h-6 bg-white/5 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-primary to-purple-600 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                    <div class="fade-in space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-400 w-12">${displayHour} ${period}</span>
+                            <div class="flex-1 text-[9px] text-text-muted">
+                                ${rellenoVol > 0 ? `<span class="text-emerald-400">R: ${rellenoVol.toFixed(1)}</span>` : ''}
+                                ${internoVol > 0 ? `<span class="text-cyan-400 ml-2">I: ${internoVol.toFixed(1)}</span>` : ''}
+                                ${botaderoVol > 0 ? `<span class="text-amber-400 ml-2">B: ${botaderoVol.toFixed(1)}</span>` : ''}
+                            </div>
                         </div>
-                        <span class="text-[10px] text-white font-semibold w-14 text-right">${volume.toFixed(1)} m³</span>
+                        ${rellenoVol > 0 ? `
+                        <div class="flex items-center gap-2">
+                            <span class="text-[8px] text-emerald-400 w-12 text-right">Relleno</span>
+                            <div class="flex-1 h-4 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-full transition-all duration-500" style="width: ${rellenoPct}%"></div>
+                            </div>
+                        </div>` : ''}
+                        ${internoVol > 0 ? `
+                        <div class="flex items-center gap-2">
+                            <span class="text-[8px] text-cyan-400 w-12 text-right">Interno</span>
+                            <div class="flex-1 h-4 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full transition-all duration-500" style="width: ${internoPct}%"></div>
+                            </div>
+                        </div>` : ''}
+                        ${botaderoVol > 0 ? `
+                        <div class="flex items-center gap-2">
+                            <span class="text-[8px] text-amber-400 w-12 text-right">Botadero</span>
+                            <div class="flex-1 h-4 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-500" style="width: ${botaderoPct}%"></div>
+                            </div>
+                        </div>` : ''}
                     </div>
                 `;
             }).join('');
