@@ -570,7 +570,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <p class="text-slate-400 text-xs font-bold tracking-widest uppercase mb-1">
-                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.12.1</span>
+                            Resumen Ejecutivo <span class="ml-2 text-[10px] opacity-50">v3.12.2</span>
                         </p>
                         <h1 class="text-4xl font-black text-main tracking-tight">Consolidado de Obras</h1>
                     </div>
@@ -710,7 +710,7 @@
                             </div>
                             <div class="flex items-center gap-1">
                                 <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                                <span class="text-[8px] text-slate-500">EXCAV.</span>
+                                <span class="text-[8px] text-slate-500">BOTADERO</span>
                             </div>
                         </div>
                     </div>
@@ -874,7 +874,7 @@
                             </div>
                             <div class="flex items-center gap-1">
                                 <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div>
-                                <span class="text-[8px] text-slate-500">EXCAV.</span>
+                                <span class="text-[8px] text-slate-500">BOTADERO</span>
                             </div>
                         </div>
                     </div>
@@ -915,7 +915,7 @@
                         <div class="mt-3 space-y-2" id="dashFillBreakdown"></div>
                     </div>
                     <div class="glass-card rounded-2xl p-4 border-l-4 border-l-warning neon-shadow border-border">
-                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider">Volumen Excavación</p>
+                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider">Volumen a Botadero</p>
                         <p class="text-2xl font-black text-main mt-1" id="dashExcavationVolume">-0 <span
                                 class="text-sm font-normal text-text-muted">m³</span></p>
                         <div class="mt-3 space-y-2" id="dashExcavationBreakdown"></div>
@@ -1060,7 +1060,7 @@
                                         data-value="incoming">Relleno</button>
                                     <button onclick="setObrasFilter('outgoing', true)"
                                         class="flex-1 py-1 px-2 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all text-text-muted hover:text-main"
-                                        data-value="outgoing">Excavación</button>
+                                        data-value="outgoing">Botadero</button>
                                     <input type="hidden" id="dailyObrasVolumeType" value="all">
                                 </div>
                             </div>
@@ -1153,7 +1153,7 @@
                                 </div>
                                 <div class="flex items-center gap-1">
                                     <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div><span
-                                        class="text-[8px] text-slate-500">EXCAV.</span>
+                                        class="text-[8px] text-slate-500">BOTADERO</span>
                                 </div>
                             </div>
                         </div>
@@ -1208,7 +1208,7 @@
                                     data-value="incoming">Relleno</button>
                                 <button onclick="setObrasFilter('outgoing', false)"
                                     class="flex-1 py-1 px-3 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-text-muted hover:text-main"
-                                    data-value="outgoing">Excavación</button>
+                                    data-value="outgoing">Botadero</button>
                                 <input type="hidden" id="obrasVolumeType" value="all">
                             </div>
                         </div>
@@ -2093,7 +2093,7 @@
                             pointBackgroundColor: '#10b981',
                             borderWidth: 3
                         }, {
-                            label: 'Excavación (m³)',
+                            label: 'A Botadero (m³)',
                             data: weeklyData.outgoing,
                             borderColor: '#f59e0b',
                             backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -2890,7 +2890,7 @@
                             </div>
                             <div>
                                 <p class="text-main text-sm font-black uppercase tracking-tight">${mat.nombre}</p>
-                                <p class="text-text-muted text-[9px] font-bold uppercase tracking-widest">${mat.tipo === 'incoming' ? 'Relleno (Entrada)' : 'Excavación (Salida)'}</p>
+                                <p class="text-text-muted text-[9px] font-bold uppercase tracking-widest">${mat.tipo === 'incoming' ? 'Relleno (Entrada)' : 'A Botadero (Salida)'}</p>
                             </div>
                         </div>
                         <button onclick="deleteMaterialFn('${mat.id}')" class="p-2 text-danger/50 hover:text-danger hover:bg-danger/10 rounded-lg transition-all">
@@ -3360,7 +3360,7 @@
                         pointRadius: 4,
                         pointBackgroundColor: '#10b981'
                     }, {
-                        label: 'Excavación (m³)',
+                        label: 'A Botadero (m³)',
                         data: chartOut,
                         borderColor: '#f59e0b',
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -3515,7 +3515,7 @@
                         pointRadius: 3,
                         pointBackgroundColor: '#06b6d4'
                     }, {
-                        label: 'Excavación (m³)',
+                        label: 'A Botadero (m³)',
                         data: chartOut,
                         borderColor: '#f59e0b',
                         backgroundColor: 'rgba(245, 158, 11, 0.1)',
@@ -4149,7 +4149,7 @@
                                 <div class="flex justify-between text-[9px] font-bold uppercase tracking-wider">
                                     <span class="text-warning flex items-center gap-1">
                                         <span class="material-symbols-outlined text-[12px]">north_east</span>
-                                        Excavación (${truck.outgoingCount})
+                                        A Botadero (${truck.outgoingCount})
                                     </span>
                                     <span class="text-text-muted">${excavPct.toFixed(0)}%</span>
                                 </div>
