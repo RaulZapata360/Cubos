@@ -158,6 +158,8 @@ class LocationsManager {
 
             if (error) throw error;
 
+            console.log('🏢 Obra location data:', data);
+
             const container = document.getElementById('adminObraLocation');
 
             container.innerHTML = `
