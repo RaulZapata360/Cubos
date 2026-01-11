@@ -730,6 +730,52 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Locations Management Section -->
+                    <div class="glass-card p-5 rounded-2xl border border-border">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">location_on</span>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-main leading-tight">Gestión de Ubicaciones</h3>
+                                <p class="text-[10px] font-bold text-text-muted uppercase">Configura direcciones para
+                                    Google Maps</p>
+                            </div>
+                        </div>
+
+                        <!-- Origins (Áridos) -->
+                        <div class="mb-6">
+                            <h4
+                                class="text-xs font-black text-success uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">south_east</span>
+                                Áridos / Orígenes
+                            </h4>
+                            <div id="adminOriginsList" class="space-y-2">
+                                <div class="text-center py-6">
+                                    <span
+                                        class="material-symbols-outlined text-2xl text-slate-700 animate-spin">sync</span>
+                                    <p class="text-xs text-slate-500 mt-2">Cargando orígenes...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Destinations (Botaderos) -->
+                        <div>
+                            <h4
+                                class="text-xs font-black text-warning uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">north_east</span>
+                                Botaderos / Destinos
+                            </h4>
+                            <div id="adminDestinosList" class="space-y-2">
+                                <div class="text-center py-6">
+                                    <span
+                                        class="material-symbols-outlined text-2xl text-slate-700 animate-spin">sync</span>
+                                    <p class="text-xs text-slate-500 mt-2">Cargando destinos...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </div>
             <!-- End Tab: Administración -->
@@ -1420,6 +1466,97 @@
         </div>
     </div>
 
+    <!-- Modal for Editing Location -->
+    <div id="editLocationModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeEditLocationModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-2xl max-h-[90vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 class="text-xl font-black text-main flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">location_on</span>
+                            <span id="editLocationTitle">Editar Ubicación</span>
+                        </h3>
+                        <p class="text-xs text-text-muted mt-1" id="editLocationSubtitle">Configura la dirección para
+                            Google Maps</p>
+                    </div>
+                    <button onclick="closeEditLocationModal()"
+                        class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <!-- Content -->
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Address Input -->
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Dirección
+                        </label>
+                        <input type="text" id="locationAddress"
+                            placeholder="Ej: Av. Américo Vespucio 1501, Quilicura, Santiago, Chile"
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-main placeholder-text-muted focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all">
+                        <p class="text-xs text-text-muted mt-2">
+                            💡 Escribe la dirección completa o haz clic en el mapa para seleccionar la ubicación
+                        </p>
+                    </div>
+
+                    <!-- Google Maps Container -->
+                    <div>
+                        <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                            Ubicación en el Mapa
+                        </label>
+                        <div id="locationMap"
+                            class="w-full h-80 rounded-xl overflow-hidden border border-white/10 bg-slate-900">
+                            <div class="flex items-center justify-center h-full">
+                                <div class="text-center">
+                                    <span
+                                        class="material-symbols-outlined text-4xl text-text-muted opacity-30">map</span>
+                                    <p class="text-xs text-text-muted mt-2">Cargando mapa...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-text-muted mt-2">
+                            📍 Haz clic en el mapa para seleccionar la ubicación exacta
+                        </p>
+                    </div>
+
+                    <!-- Coordinates Display (Read-only) -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                                Latitud
+                            </label>
+                            <input type="text" id="locationLatitude" readonly
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-text-muted cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-text-muted uppercase tracking-wider mb-2 block">
+                                Longitud
+                            </label>
+                            <input type="text" id="locationLongitude" readonly
+                                class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-text-muted cursor-not-allowed">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-white/10 shrink-0 flex gap-3">
+                    <button onclick="closeEditLocationModal()"
+                        class="flex-1 py-3 bg-white/5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/10 transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="saveLocation()"
+                        class="flex-1 py-3 bg-primary hover:bg-primary-dark rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-primary/20">
+                        Guardar Ubicación
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Manual Trip Addition Modal -->
     <div id="manualTripModal" class="fixed inset-0 z-[70] hidden">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeManualTripModal()"></div>
@@ -1778,6 +1915,7 @@
         import { supabaseClient } from './supabase-client.js';
         import { authService } from './auth-service.js';
         import { obrasService } from './obras-service.js';
+        import { locationsManager } from './locations-manager.js';
 
         let currentObraId = null;
         let trucks = [];
@@ -2773,6 +2911,19 @@
                     </div>
                 `;
             }
+
+            // Load locations (origenes and destinos)
+            await locationsManager.loadOrigenes();
+            await locationsManager.loadDestinos();
+        };
+
+        // Global functions for location modal
+        window.closeEditLocationModal = function () {
+            locationsManager.closeEditLocation();
+        };
+
+        window.saveLocation = async function () {
+            await locationsManager.saveLocation();
         };
 
         window.editTruckMaster = function (id) {
