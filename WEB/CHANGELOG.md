@@ -1,5 +1,98 @@
 # Changelog - Sistema de Conteo de Camiones
 
+## [v3.10.0] - 2026-01-11
+
+### ✨ Nueva Funcionalidad: Gestión de Ubicaciones con Google Maps
+
+- **NUEVO**: Sección "Gestión de Ubicaciones" en pestaña Administración
+  - Permite configurar direcciones para Google Maps API
+  - Tres tipos de ubicaciones manejables:
+    - 🏢 **Ubicación de la Obra** (punto central)
+    - 🟢 **Áridos / Orígenes** (canteras, proveedores)
+    - 🟠 **Botaderos / Destinos** (puntos de descarga)
+
+- **Editor de Ubicación con Mapa Interactivo**:
+  - Modal con Google Maps integrado
+  - Dos formas de configurar ubicación:
+    1. Escribir dirección completa → El mapa se centra automáticamente
+    2. Hacer clic en el mapa → La dirección se obtiene automáticamente
+  - Marcador arrastrable para ajuste fino
+  - Geocoding y Reverse Geocoding automático
+  - Coordenadas (latitud/longitud) en tiempo real
+  - Diseño moderno con tema oscuro
+
+- **Integración con Rutas** (preparación para feature de rutas):
+  - Las ubicaciones configuradas se usarán para calcular:
+    - Distancias reales entre puntos
+    - Tiempos de viaje estimados
+    - Estado del tráfico en tiempo real
+    - Consumo de combustible estimado
+
+### 🗄️ Cambios en Base de Datos
+
+- **Agregadas columnas a tabla `obras`**:
+  - `direccion` (TEXT) - Dirección completa
+  - `latitud` (DECIMAL) - Coordenada GPS
+  - `longitud` (DECIMAL) - Coordenada GPS
+
+- **Agregadas columnas a tablas `origenes` y `destinos`**:
+  - `direccion` (TEXT)
+  - `latitud` (DECIMAL)
+  - `longitud` (DECIMAL)
+
+- **Nueva tabla `datos_rutas`**:
+  - Caché de datos de Google Maps Distance Matrix API
+  - Optimiza uso de API (30 minutos de caché)
+  - Políticas RLS configuradas
+
+### 🔧 Mejoras Técnicas
+
+- **Nuevo módulo**: `locations-manager.js`
+  - Maneja toda la lógica de ubicaciones
+  - Integración completa con Google Maps JavaScript API
+  - Geocoding bidireccional (dirección ↔ coordenadas)
+  - Guardado automático en Supabase
+
+- **Configuración Multi-Entorno**:
+  - Detección automática de entorno (desarrollo/producción)
+  - BD de desarrollo para preview deployments
+  - BD de producción para main branch
+  - Logs claros indicando qué BD se está usando
+
+### 🐛 Fixes
+
+- **CORREGIDO**: `currentObraId` ahora es globalmente accesible
+  - Solucionado error "No obra selected" en locations-manager
+  - Sincronización correcta entre variable local y `window.currentObraId`
+
+- **CORREGIDO**: Google Maps API cargada en `index.html`
+  - Solucionado error "google is not defined"
+  - Mapa ahora se carga correctamente en el editor de ubicaciones
+
+### 📁 Archivos Nuevos/Modificados
+
+- **Nuevos**:
+  - `WEB/locations-manager.js` - Gestor de ubicaciones
+  - `WEB/supabase/migrations/add_routes_and_fuel_tracking.sql` - Migración principal
+  - `WEB/supabase/migrations/add_obra_location_fields.sql` - Migración de obra
+  - `WEB/GOOGLE_MAPS_GUIDE.md` - Guía de configuración
+
+- **Modificados**:
+  - `WEB/index.html` - Agregada sección de ubicaciones + Google Maps API
+  - `WEB/boss.html` - Preparado para visualización de rutas
+  - `WEB/supabase-config.js` - Multi-entorno (dev/prod)
+  - `WEB/routes-service.js` - Servicio de rutas (nuevo)
+
+### 📝 Notas de Migración
+
+Para usar esta funcionalidad, ejecuta en Supabase:
+```sql
+-- Ejecutar add_routes_and_fuel_tracking.sql
+-- Ejecutar add_obra_location_fields.sql
+```
+
+---
+
 ## [v3.9.6] - 2026-01-09
 
 ### 🐛 Fix: Menú de Navegación Inferior en iOS Safari
