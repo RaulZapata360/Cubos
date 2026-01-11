@@ -377,18 +377,24 @@ class LocationsManager {
 
             if (error) throw error;
 
+            // Show success message first
+            alert('✅ Ubicación guardada correctamente');
+
             // Close modal
             this.closeEditLocation();
 
-            // Reload lists
+            // Reload lists after a small delay to ensure modal is closed
             console.log('🔄 Reloading location lists...');
-            await this.loadObraLocation();
-            await this.loadOrigenes();
-            await this.loadDestinos();
-            console.log('✅ Location lists reloaded');
-
-            // Show success message
-            alert('✅ Ubicación guardada correctamente');
+            setTimeout(async () => {
+                try {
+                    await this.loadObraLocation();
+                    await this.loadOrigenes();
+                    await this.loadDestinos();
+                    console.log('✅ Location lists reloaded');
+                } catch (reloadError) {
+                    console.error('❌ Error reloading lists:', reloadError);
+                }
+            }, 300);
 
         } catch (error) {
             console.error('❌ Error saving location:', error);
