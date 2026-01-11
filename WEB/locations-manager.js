@@ -18,10 +18,16 @@ class LocationsManager {
      */
     async loadOrigenes() {
         try {
+            const obraId = window.currentObraId;
+            if (!obraId) {
+                console.warn('No obra selected');
+                return;
+            }
+
             const { data, error } = await supabaseClient
                 .from('origenes')
                 .select('*')
-                .eq('obra_id', window.currentObraId)
+                .eq('obra_id', obraId)
                 .is('deleted_at', null)
                 .order('nombre');
 
@@ -75,10 +81,16 @@ class LocationsManager {
      */
     async loadDestinos() {
         try {
+            const obraId = window.currentObraId;
+            if (!obraId) {
+                console.warn('No obra selected');
+                return;
+            }
+
             const { data, error } = await supabaseClient
                 .from('destinos')
                 .select('*')
-                .eq('obra_id', window.currentObraId)
+                .eq('obra_id', obraId)
                 .is('deleted_at', null)
                 .order('nombre');
 
