@@ -284,12 +284,15 @@ class LocationsManager {
             this.reverseGeocode(lat, lng);
         });
 
-        // Listen for address input
+        // Listen for address input (Enter key)
         const addressInput = document.getElementById('locationAddress');
-        addressInput.addEventListener('blur', () => {
-            const address = addressInput.value.trim();
-            if (address) {
-                this.geocodeAddress(address);
+        addressInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const address = addressInput.value.trim();
+                if (address) {
+                    this.geocodeAddress(address);
+                }
             }
         });
     }
@@ -306,15 +309,23 @@ class LocationsManager {
      * Geocode address to coordinates
      */
     geocodeAddress(address) {
-        this.geocoder.geocode({ address: address }, (results, status) => {
+        // Auto-append ", Chile" if not present and address is short (likely just city/comuna)
+        let searchAddress = address;
+        if (!address.toLowerCase().includes('chile') && address.split(',').length < 2) {
+            searchAddress = `${address}, Chile`;
+        }
+
+        this.geocoder.geocode({ address: searchAddress }, (results, status) => {
             if (status === 'OK') {
                 const location = results[0].geometry.location;
                 this.map.setCenter(location);
-                this.map.setZoom(15);
+                this.map.setZoom(13); // Zoom 13 for cities/comunas
                 this.marker.setPosition(location);
                 this.updateCoordinates(location.lat(), location.lng());
+                // Update address field with formatted address
+                document.getElementById('locationAddress').value = results[0].formatted_address;
             } else {
-                alert('No se pudo encontrar la dirección. Por favor, verifica e intenta nuevamente.');
+                alert(`No se pudo encontrar "${searchAddress}". Intenta con una dirección más específica (ej: "Chiguayante, Concepción, Chile" o "Av. O'Higgins 123, Santiago").`);
             }
         });
     }
