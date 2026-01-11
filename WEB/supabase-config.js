@@ -8,3 +8,21 @@ export const supabaseConfig = {
 };
 
 // NOTA: La seguridad se maneja con Row Level Security (RLS) en Supabase
+
+// ============================================
+// GOOGLE MAPS CONFIGURATION
+// ============================================
+export const mapsConfig = {
+  // TODO: Replace with your Google Maps API Key
+  // Get it from: https://console.cloud.google.com/
+  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY_HERE',
+
+  // Cache duration in minutes (default: 30 minutes)
+  cacheDurationMinutes: 30,
+
+  // Default fuel efficiency in km/L (used when truck doesn't have specific value)
+  defaultFuelEfficiency: 3.5,
+
+  // Enable/disable maps features (useful for development without API key)
+  enabled: false // Set to true once you have an API key
+};
