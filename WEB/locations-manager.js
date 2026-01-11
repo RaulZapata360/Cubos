@@ -249,12 +249,8 @@ class LocationsManager {
             zoom: lat && lng ? 15 : 11,
             mapTypeControl: true,
             streetViewControl: false,
-            fullscreenControl: false,
-            styles: [
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] }
-            ]
+            fullscreenControl: false
+            // Removed dark styles - using default light theme
         });
 
         // Create marker
@@ -332,12 +328,16 @@ class LocationsManager {
 
     /**
      * Reverse geocode coordinates to address
+     * (Optional - fails silently if Geocoding API is not enabled)
      */
     reverseGeocode(lat, lng) {
+        if (!this.geocoder) return; // Skip if geocoder not available
+
         this.geocoder.geocode({ location: { lat, lng } }, (results, status) => {
             if (status === 'OK' && results[0]) {
                 document.getElementById('locationAddress').value = results[0].formatted_address;
             }
+            // Silently fail if geocoding API is not enabled
         });
     }
 
@@ -349,13 +349,9 @@ class LocationsManager {
         const lat = document.getElementById('locationLatitude').value;
         const lng = document.getElementById('locationLongitude').value;
 
-        if (!address) {
-            alert('Por favor, ingresa una dirección');
-            return;
-        }
-
+        // Coordinates are required, address is optional
         if (!lat || !lng) {
-            alert('Por favor, selecciona una ubicación en el mapa');
+            alert('Por favor, selecciona una ubicación en el mapa haciendo clic en él');
             return;
         }
 
