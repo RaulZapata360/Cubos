@@ -79,7 +79,7 @@ CREATE POLICY "Users can view route data for their obra"
 ON datos_rutas FOR SELECT
 USING (
   obra_id IN (
-    SELECT obra_id FROM usuarios_obras WHERE usuario_id = auth.uid()
+    SELECT obra_id FROM usuario_obra WHERE usuario_id = auth.uid()
   )
 );
 
@@ -88,7 +88,7 @@ CREATE POLICY "Users can insert route data for their obra"
 ON datos_rutas FOR INSERT
 WITH CHECK (
   obra_id IN (
-    SELECT obra_id FROM usuarios_obras WHERE usuario_id = auth.uid()
+    SELECT obra_id FROM usuario_obra WHERE usuario_id = auth.uid()
   )
 );
 
@@ -97,7 +97,7 @@ CREATE POLICY "Users can update route data for their obra"
 ON datos_rutas FOR UPDATE
 USING (
   obra_id IN (
-    SELECT obra_id FROM usuarios_obras WHERE usuario_id = auth.uid()
+    SELECT obra_id FROM usuario_obra WHERE usuario_id = auth.uid()
   )
 );
 
@@ -106,7 +106,7 @@ CREATE POLICY "Users can delete route data for their obra"
 ON datos_rutas FOR DELETE
 USING (
   obra_id IN (
-    SELECT obra_id FROM usuarios_obras WHERE usuario_id = auth.uid()
+    SELECT obra_id FROM usuario_obra WHERE usuario_id = auth.uid()
   )
 );
 
