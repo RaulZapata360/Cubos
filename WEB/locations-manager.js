@@ -159,6 +159,12 @@ class LocationsManager {
             if (error) throw error;
 
             console.log('🏢 Obra location data:', data);
+            console.log('📍 Direccion field:', {
+                value: data.direccion,
+                type: typeof data.direccion,
+                exists: !!data.direccion,
+                truthyCheck: data.direccion ? 'YES' : 'NO'
+            });
 
             const container = document.getElementById('adminObraLocation');
 
