@@ -1934,6 +1934,7 @@
         import { locationsManager } from './locations-manager.js';
 
         let currentObraId = null;
+        window.currentObraId = null; // Make it globally accessible for locations-manager
         let trucks = [];
         let adminTrucks = []; // Added to support editing trucks NOT in today's roster
         let movements = [];
@@ -2708,6 +2709,7 @@
                 }
 
                 currentObraId = obrasService.getSelectedObraId();
+                window.currentObraId = currentObraId; // Sync with global
                 if (!currentObraId) {
                     window.location.href = 'site-selector.html';
                     return;
