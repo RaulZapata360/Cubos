@@ -812,14 +812,14 @@
 
             <!-- Day Navigation for Obras -->
             <section class="px-4 mb-4">
-                <div id="dayDisplayObrasContainer"
+                <div id="dayDisplayMovimientosContainer"
                     class="glass-card rounded-2xl p-2 flex items-center justify-between neon-shadow border border-border overflow-hidden">
                     <button onclick="changeGlobalDay(-1)"
                         class="p-2 hover:bg-white/10 rounded-xl transition-all text-text-muted shrink-0">
                         <span class="material-symbols-outlined text-[20px]">chevron_left</span>
                     </button>
 
-                    <div class="date-scroll-viewport date-viewport-obras">
+                    <div class="date-scroll-viewport date-viewport-movimientos">
                         <!-- Dates will be injected by JavaScript -->
                     </div>
 
@@ -3838,11 +3838,11 @@
                 let activeOffset = currentGlobalDayOffset;
                 let activeView = 'inicio';
 
-                const viewObras = document.getElementById('view-obras');
+                const viewMovimientos = document.getElementById('view-movimientos');
                 const viewReportes = document.getElementById('view-reportes');
 
-                if (viewObras.classList.contains('active')) {
-                    activeView = 'obras';
+                if (viewMovimientos.classList.contains('active')) {
+                    activeView = 'movimientos';
                 } else if (viewReportes.classList.contains('active')) {
                     const isDiario = document.getElementById('report-content-diario').classList.contains('active');
                     if (isDiario) {
