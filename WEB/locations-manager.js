@@ -140,6 +140,58 @@ class LocationsManager {
     }
 
     /**
+     * Load and render obra location in admin panel
+     */
+    async loadObraLocation() {
+        try {
+            const obraId = window.currentObraId;
+            if (!obraId) {
+                console.warn('No obra selected');
+                return;
+            }
+
+            const { data, error } = await supabaseClient
+                .from('obras')
+                .select('*')
+                .eq('id', obraId)
+                .single();
+
+            if (error) throw error;
+
+            const container = document.getElementById('adminObraLocation');
+
+            container.innerHTML = `
+                <div class="flex items-center justify-between p-4 bg-primary/10 rounded-xl border border-primary/30">
+                    <div class="flex-1">
+                        <p class="text-sm font-bold text-main">${data.nombre}</p>
+                        ${data.direccion ? `
+                            <p class="text-xs text-text-muted mt-1 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[12px]">location_on</span>
+                                ${data.direccion}
+                            </p>
+                        ` : `
+                            <p class="text-xs text-warning mt-1">⚠️ Sin dirección configurada</p>
+                        `}
+                    </div>
+                    <button onclick="window.locationsManager.openEditLocation('${data.id}', 'obra', '${data.nombre.replace(/'/g, "\\'")}')"
+                        class="ml-3 px-3 py-2 bg-primary/20 text-primary border border-primary/30 rounded-lg text-xs font-bold hover:bg-primary/30 transition-all flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">edit_location</span>
+                        Editar
+                    </button>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error('Error loading obra location:', error);
+            document.getElementById('adminObraLocation').innerHTML = `
+                <div class="text-center py-6 bg-danger/10 rounded-xl border border-danger/30">
+                    <p class="text-xs text-danger">Error al cargar ubicación de la obra</p>
+                </div>
+            `;
+        }
+    }
+
+    /**
      * Open edit location modal
      */
     async openEditLocation(id, type, nombre) {
@@ -147,11 +199,15 @@ class LocationsManager {
 
         // Update modal title
         document.getElementById('editLocationTitle').textContent = `Editar Ubicación: ${nombre}`;
-        document.getElementById('editLocationSubtitle').textContent =
-            type === 'origen' ? 'Origen / Árido' : 'Destino / Botadero';
+        const subtitles = {
+            'origen': 'Origen / Árido',
+            'destino': 'Destino / Botadero',
+            'obra': 'Ubicación de la Obra'
+        };
+        document.getElementById('editLocationSubtitle').textContent = subtitles[type] || 'Ubicación';
 
         // Load current location data
-        const table = type === 'origen' ? 'origenes' : 'destinos';
+        const table = type === 'obra' ? 'obras' : (type === 'origen' ? 'origenes' : 'destinos');
         const { data, error } = await supabaseClient
             .from(table)
             .select('*')
@@ -293,7 +349,8 @@ class LocationsManager {
         }
 
         try {
-            const table = this.currentLocation.type === 'origen' ? 'origenes' : 'destinos';
+            const table = this.currentLocation.type === 'obra' ? 'obras' :
+                (this.currentLocation.type === 'origen' ? 'origenes' : 'destinos');
 
             const { error } = await supabaseClient
                 .from(table)
@@ -310,6 +367,7 @@ class LocationsManager {
             this.closeEditLocation();
 
             // Reload lists
+            await this.loadObraLocation();
             await this.loadOrigenes();
             await this.loadDestinos();
 

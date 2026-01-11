@@ -744,6 +744,22 @@
                             </div>
                         </div>
 
+                        <!-- Obra Location -->
+                        <div class="mb-6 pb-6 border-b border-white/10">
+                            <h4
+                                class="text-xs font-black text-primary uppercase tracking-wider mb-3 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-sm">home_work</span>
+                                Ubicación de la Obra
+                            </h4>
+                            <div id="adminObraLocation">
+                                <div class="text-center py-6">
+                                    <span
+                                        class="material-symbols-outlined text-2xl text-slate-700 animate-spin">sync</span>
+                                    <p class="text-xs text-slate-500 mt-2">Cargando ubicación...</p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Origins (Áridos) -->
                         <div class="mb-6">
                             <h4
@@ -2912,7 +2928,8 @@
                 `;
             }
 
-            // Load locations (origenes and destinos)
+            // Load locations (obra, origenes and destinos)
+            await locationsManager.loadObraLocation();
             await locationsManager.loadOrigenes();
             await locationsManager.loadDestinos();
         };
