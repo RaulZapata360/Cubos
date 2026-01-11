@@ -33,6 +33,8 @@ class LocationsManager {
 
             if (error) throw error;
 
+            console.log('🟢 Origenes data:', data);
+
             const container = document.getElementById('adminOriginsList');
 
             if (!data || data.length === 0) {
@@ -95,6 +97,8 @@ class LocationsManager {
                 .order('nombre');
 
             if (error) throw error;
+
+            console.log('🟠 Destinos data:', data);
 
             const container = document.getElementById('adminDestinosList');
 
