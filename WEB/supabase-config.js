@@ -15,7 +15,7 @@ export const supabaseConfig = {
 export const mapsConfig = {
   // TODO: Replace with your Google Maps API Key
   // Get it from: https://console.cloud.google.com/
-  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY_HERE',
+  apiKey: 'AIzaSyDefMPR_TwrfEXkfgtIwOMrWO0KAHx13jc',
 
   // Cache duration in minutes (default: 30 minutes)
   cacheDurationMinutes: 30,
@@ -24,5 +24,5 @@ export const mapsConfig = {
   defaultFuelEfficiency: 3.5,
 
   // Enable/disable maps features (useful for development without API key)
-  enabled: false // Set to true once you have an API key
+  enabled: true // Maps features enabled
 };
