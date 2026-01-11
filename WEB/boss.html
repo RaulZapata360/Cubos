@@ -953,6 +953,46 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Rutas Activas Section -->
+            <section class="px-4 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Rutas Activas
+                        <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                    </h3>
+                    <button onclick="window.loadRutasActivas && window.loadRutasActivas(true)"
+                        class="p-2 bg-item hover:bg-white/10 rounded-xl transition-all group border border-border"
+                        title="Actualizar Tráfico">
+                        <span
+                            class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all text-[18px]">refresh</span>
+                    </button>
+                </div>
+
+                <div id="rutasActivasContainer" class="space-y-3 mb-4">
+                    <!-- Rutas will be rendered here by JavaScript -->
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <span class="material-symbols-outlined text-5xl text-text-muted opacity-30 mb-3">route</span>
+                        <p class="text-text-muted text-xs">Cargando rutas activas...</p>
+                    </div>
+                </div>
+
+                <!-- Estadísticas de Combustible -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-warning">
+                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Combustible Hoy
+                        </p>
+                        <p class="text-xl font-black text-main" id="combustibleTotalHoy">0 <span
+                                class="text-xs font-normal text-text-muted">L</span></p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-primary">
+                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Distancia Total
+                        </p>
+                        <p class="text-xl font-black text-main" id="distanciaTotalHoy">0 <span
+                                class="text-xs font-normal text-text-muted">km</span></p>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- Tab: Reportes -->
@@ -1284,52 +1324,6 @@
             </header>
         </div>
 
-        <!-- Tab: Rutas -->
-        <div id="view-rutas" class="tab-content">
-            <header class="p-4 pt-6">
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-3xl font-black tracking-tight text-main">Rutas Activas</h1>
-                    <button onclick="window.loadRutasActivas && window.loadRutasActivas(true)"
-                        class="p-3 bg-item hover:bg-white/10 rounded-2xl transition-all group border border-border"
-                        title="Actualizar Tráfico">
-                        <span
-                            class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all">refresh</span>
-                    </button>
-                </div>
-            </header>
-
-            <!-- Rutas Container -->
-            <section class="px-4 mb-6">
-                <div id="rutasActivasContainer" class="space-y-4">
-                    <!-- Rutas will be rendered here by JavaScript -->
-                    <div class="glass-card rounded-2xl p-6 text-center">
-                        <span class="material-symbols-outlined text-6xl text-text-muted opacity-30 mb-4">route</span>
-                        <p class="text-text-muted text-sm">Cargando rutas activas...</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Estadísticas de Combustible -->
-            <section class="px-4 mb-6">
-                <h3 class="text-[10px] font-bold text-slate-400 mb-3 uppercase tracking-widest flex items-center gap-2">
-                    Consumo de Combustible Estimado
-                    <span class="h-px flex-1 bg-white/10 ml-2"></span>
-                </h3>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="glass-card rounded-2xl p-4 border-l-4 border-l-warning">
-                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">Total Hoy</p>
-                        <p class="text-2xl font-black text-main" id="combustibleTotalHoy">0 <span
-                                class="text-sm font-normal text-text-muted">L</span></p>
-                    </div>
-                    <div class="glass-card rounded-2xl p-4 border-l-4 border-l-primary">
-                        <p class="text-text-muted text-[10px] font-bold uppercase tracking-wider mb-1">Distancia Total
-                        </p>
-                        <p class="text-2xl font-black text-main" id="distanciaTotalHoy">0 <span
-                                class="text-sm font-normal text-text-muted">km</span></p>
-                    </div>
-                </div>
-            </section>
-        </div>
 
         <!-- Tab: Ajustes -->
         <div id="view-ajustes" class="tab-content">
@@ -1427,9 +1421,10 @@
             </button>
         </div>
 
-        <button onclick="switchTab('rutas')" class="nav-item flex flex-col items-center gap-1 flex-1" id="nav-rutas">
-            <span class="material-symbols-outlined text-[24px]">route</span>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Rutas</span>
+        <button onclick="switchTab('reportes')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-reportes">
+            <span class="material-symbols-outlined text-[24px]">bar_chart</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Reportes</span>
         </button>
         <button onclick="switchTab('ajustes')" class="nav-item flex flex-col items-center gap-1 flex-1"
             id="nav-ajustes">
@@ -1530,8 +1525,6 @@
             if (tabId === 'movimientos') {
                 window.updateGlobalDayDisplay();
                 window.loadDashboard(false);
-            }
-            if (tabId === 'rutas') {
                 window.loadRutasActivas && window.loadRutasActivas();
             }
             if (tabId === 'reportes') {
@@ -3925,7 +3918,8 @@
                     renderMovementHistory(data.movements);
                 }
 
-                else if (activeView === 'obras') {
+                else if (activeView === 'movimientos') {
+                    window.loadRutasActivas && window.loadRutasActivas(forceRefresh);
                     const fillVolume = bossDashboardService.calculateVolume(data.movements, 'incoming');
                     const excavationVolume = bossDashboardService.calculateVolume(data.movements, 'outgoing');
 
@@ -4358,13 +4352,20 @@
                 const locationInfo = locClean ? `${locClean} • ${obraName}` : obraName;
 
                 return `
-                    <div class="glass-card rounded-2xl p-4 mb-3 border-l-4 border-l-${typeColor}-500 neon-shadow fade-in border border-border group hover:bg-white/5 transition-all">
+                    <div class="glass-card rounded-2xl p-4 mb-3 border-l-4 border-l-${typeColor}-500 neon-shadow fade-in border border-border group hover:bg-white/5 transition-all relative">
+                        <!-- Delete Button -->
+                        <button onclick="deleteMovementConfirm('${movement.id}')" 
+                                class="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-danger/20 transition-all opacity-0 group-hover:opacity-100"
+                                title="Eliminar viaje">
+                            <span class="material-symbols-outlined text-danger text-[16px]">delete</span>
+                        </button>
+                        
                         <div class="flex justify-between items-start mb-2">
                             <div class="flex items-center gap-2">
                                 <span class="material-symbols-outlined text-${typeColor}-500 text-[18px]">${icon}</span>
                                 <span class="text-main text-xs font-black uppercase tracking-wider">${truckName}</span>
                             </div>
-                            <span class="text-text-muted text-[10px] font-bold tabular-nums">${timeStr}</span>
+                            <span class="text-text-muted text-[10px] font-bold tabular-nums mr-8">${timeStr}</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -4385,6 +4386,28 @@
                 `;
             }).join('');
         }
+
+        // Delete movement with confirmation
+        window.deleteMovementConfirm = async function (movementId) {
+            const confirmed = confirm('¿Estás seguro de que deseas eliminar este viaje?\n\nEsta acción no se puede deshacer.');
+
+            if (!confirmed) return;
+
+            try {
+                const result = await bossDashboardService.deleteMovement(movementId);
+
+                if (result.success) {
+                    alert('✅ Viaje eliminado exitosamente');
+                    // Reload dashboard to reflect changes
+                    await window.loadDashboard(true);
+                } else {
+                    throw new Error(result.error || 'Error desconocido');
+                }
+            } catch (error) {
+                console.error('Error al eliminar viaje:', error);
+                alert('❌ Error al eliminar el viaje: ' + error.message);
+            }
+        };
 
         // Apply role-based permissions
         function applyPermissions() {
@@ -4467,11 +4490,22 @@
                 const { rutasService } = await import('./routes-service.js');
                 const { mapsConfig } = await import('./supabase-config.js');
 
+                // Get currently selected Obra ID
+                const obraFilter = document.getElementById('headerObraFilter');
+                const obraId = obraFilter ? obraFilter.value : null;
+
                 // Initialize service
-                rutasService.init(mapsConfig.apiKey, currentObraId);
+                rutasService.init(mapsConfig.apiKey, obraId);
 
                 // Get active routes for selected date
-                const fecha = getSelectedDate();
+                // Helper to get formatted date from offset
+                const getTargetDate = () => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + currentGlobalDayOffset);
+                    return d.toISOString().split('T')[0];
+                };
+
+                const fecha = getTargetDate();
                 const rutasActivas = await rutasService.obtenerRutasActivas(fecha);
 
                 // Render routes

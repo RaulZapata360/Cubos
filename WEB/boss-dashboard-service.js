@@ -86,6 +86,7 @@ class BossDashboardService {
                     camiones (nombre, patente, capacidad)
                 `)
                 .eq('fecha', dateStr)
+                .is('deleted_at', null) // Excluir movimientos eliminados
                 .order('timestamp', { ascending: false });
 
             if (error) throw error;
@@ -168,7 +169,8 @@ class BossDashboardService {
                 .from('movimientos')
                 .select('capacidad')
                 .gte('fecha', dateStr)
-                .lt('fecha', todayStr); // Exclude today
+                .lt('fecha', todayStr) // Exclude today
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -438,7 +440,8 @@ class BossDashboardService {
                 .from('movimientos')
                 .select('fecha, tipo, capacidad, destino, origen')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -489,7 +492,8 @@ class BossDashboardService {
                 .from('movimientos')
                 .select('material, capacidad, destino, origen')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -526,7 +530,8 @@ class BossDashboardService {
                 .select('destino, capacidad, material, origen')
                 .eq('tipo', 'outgoing')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -584,9 +589,10 @@ class BossDashboardService {
 
             // Fetch works and movements to get names
             let query = supabaseClient.from('movimientos')
-                .select('obra_id, capacidad, material, tipo')
+                .select('obra_id, capacidad, material, tipo, destino, origen')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (tipo) query = query.eq('tipo', tipo);
 
@@ -652,7 +658,8 @@ class BossDashboardService {
                 .select('origen, ubicacion, capacidad, material')
                 .eq('tipo', 'incoming')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -729,7 +736,8 @@ class BossDashboardService {
                 .from('movimientos')
                 .select('*, camiones(nombre, patente)')
                 .gte('fecha', range.start)
-                .lte('fecha', range.end);
+                .lte('fecha', range.end)
+                .is('deleted_at', null);
 
             if (obraId) query = query.eq('obra_id', obraId);
 
@@ -785,6 +793,32 @@ class BossDashboardService {
                 byMaterial: {},
                 byDay: { labels: [], data: [] }
             };
+        }
+    }
+
+    // Eliminar movimiento (soft delete)
+    async deleteMovement(movementId) {
+        try {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+
+            if (!user) {
+                throw new Error('Usuario no autenticado');
+            }
+
+            const { error } = await supabaseClient
+                .from('movimientos')
+                .update({
+                    deleted_at: new Date().toISOString(),
+                    deleted_by: user.id
+                })
+                .eq('id', movementId);
+
+            if (error) throw error;
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error deleting movement:', error);
+            return { success: false, error: error.message };
         }
     }
 }

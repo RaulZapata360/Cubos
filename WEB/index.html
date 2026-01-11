@@ -3167,6 +3167,7 @@
                     .eq('obra_id', currentObraId)
                     .gte('fecha', startDate)
                     .lte('fecha', endDate)
+                    .is('deleted_at', null)
                     .order('timestamp', { ascending: false });
 
                 if (error) throw error;
@@ -3523,8 +3524,15 @@
                 const typeLabel = isIncoming ? 'Relleno' : 'Excavación';
 
                 return `
-                    <div class="glass-card p-3 rounded-xl border-l-4 ${borderColor} flex items-center justify-between group hover:bg-white/5 transition-all">
-                        <div class="flex items-center gap-3">
+                    <div class="glass-card p-3 rounded-xl border-l-4 ${borderColor} flex items-center justify-between group hover:bg-white/5 transition-all relative">
+                        <!-- Delete Button -->
+                        <button onclick="deleteMovementConfirm('${mov.id}')" 
+                                class="absolute top-2 right-2 p-1.5 rounded-lg hover:bg-danger/20 transition-all opacity-0 group-hover:opacity-100 z-10"
+                                title="Eliminar viaje">
+                            <span class="material-symbols-outlined text-danger text-[14px]">delete</span>
+                        </button>
+                        
+                        <div class="flex items-center gap-3 flex-1 pr-8">
                             <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
                                 <span class="material-symbols-outlined ${iconColor}">${icon}</span>
                             </div>
@@ -3570,6 +3578,45 @@
             document.getElementById('movementIncomingCount').textContent = regularMovements.filter(m => m.tipo === 'incoming').length;
             document.getElementById('movementOutgoingCount').textContent = regularMovements.filter(m => m.tipo === 'outgoing').length;
         }
+
+        window.deleteMovementConfirm = async function (movementId) {
+            const confirmed = confirm('¿Estás seguro de que deseas eliminar este viaje?\n\nEsta acción no se puede deshacer.');
+
+            if (!confirmed) return;
+
+            try {
+                const { data: { user } } = await supabaseClient.auth.getUser();
+
+                if (!user) {
+                    throw new Error('Usuario no autenticado');
+                }
+
+                // Soft delete: update deleted_at and deleted_by
+                const { error } = await supabaseClient
+                    .from('movimientos')
+                    .update({
+                        deleted_at: new Date().toISOString(),
+                        deleted_by: user.id
+                    })
+                    .eq('id', movementId);
+
+                if (error) throw error;
+
+                // Success notification (using alert for simplicity, consistent with other parts)
+                alert('✅ Viaje eliminado exitosamente');
+
+                // Reload movements to refresh the UI
+                if (window.loadMovements) {
+                    await window.loadMovements(true);
+                } else {
+                    // Fallback
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error al eliminar viaje:', error);
+                alert('❌ Error al eliminar el viaje: ' + error.message);
+            }
+        };
 
         function renderInternalTrips() {
             const container = document.getElementById('internalTripsContainer');
@@ -4583,7 +4630,8 @@
                     .select('*')
                     .eq('obra_id', currentObraId)
                     .neq('fecha', today)
-                    .gte('fecha', limitDateStr);
+                    .gte('fecha', limitDateStr)
+                    .is('deleted_at', null);
 
                 if (movError) throw movError;
 
