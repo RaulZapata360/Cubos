@@ -795,10 +795,10 @@
             </section>
         </div>
 
-        <!-- Tab: Obras -->
-        <div id="view-obras" class="tab-content">
+        <!-- Tab: Movimientos -->
+        <div id="view-movimientos" class="tab-content">
             <header class="p-4 pt-6">
-                <h1 class="text-xl font-bold tracking-tight text-white mb-4">Gestión de Obra</h1>
+                <h1 class="text-xl font-bold tracking-tight text-white mb-4">Gestión de Movimientos</h1>
             </header>
 
             <!-- Refresh Button -->
@@ -1367,9 +1367,10 @@
             <span class="material-symbols-outlined text-[24px]">grid_view</span>
             <span class="text-[9px] font-bold uppercase tracking-wider">Inicio</span>
         </button>
-        <button onclick="switchTab('obras')" class="nav-item flex flex-col items-center gap-1 flex-1" id="nav-obras">
-            <span class="material-symbols-outlined text-[24px]">apartment</span>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Obras</span>
+        <button onclick="switchTab('movimientos')" class="nav-item flex flex-col items-center gap-1 flex-1"
+            id="nav-movimientos">
+            <span class="material-symbols-outlined text-[24px]">local_shipping</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Movimientos</span>
         </button>
 
         <div class="relative -top-6">
@@ -1379,10 +1380,9 @@
             </button>
         </div>
 
-        <button onclick="switchTab('reportes')" class="nav-item flex flex-col items-center gap-1 flex-1"
-            id="nav-reportes">
-            <span class="material-symbols-outlined text-[24px]">bar_chart</span>
-            <span class="text-[9px] font-bold uppercase tracking-wider">Reportes</span>
+        <button onclick="switchTab('rutas')" class="nav-item flex flex-col items-center gap-1 flex-1" id="nav-rutas">
+            <span class="material-symbols-outlined text-[24px]">route</span>
+            <span class="text-[9px] font-bold uppercase tracking-wider">Rutas</span>
         </button>
         <button onclick="switchTab('ajustes')" class="nav-item flex flex-col items-center gap-1 flex-1"
             id="nav-ajustes">
@@ -1480,9 +1480,12 @@
                 window.updateGlobalDayDisplay();
                 window.loadDashboard(false);
             }
-            if (tabId === 'obras') {
+            if (tabId === 'movimientos') {
                 window.updateGlobalDayDisplay();
                 window.loadDashboard(false);
+            }
+            if (tabId === 'rutas') {
+                window.loadRutasActivas && window.loadRutasActivas();
             }
             if (tabId === 'reportes') {
                 window.updateGlobalDayDisplay();
