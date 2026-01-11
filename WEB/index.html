@@ -2928,10 +2928,12 @@
                 `;
             }
 
-            // Load locations (obra, origenes and destinos)
-            await locationsManager.loadObraLocation();
-            await locationsManager.loadOrigenes();
-            await locationsManager.loadDestinos();
+            // Load locations (obra, origenes and destinos) only if obra is selected
+            if (currentObraId) {
+                await locationsManager.loadObraLocation();
+                await locationsManager.loadOrigenes();
+                await locationsManager.loadDestinos();
+            }
         };
 
         // Global functions for location modal
