@@ -1,11 +1,35 @@
 // ============================================
-// SUPABASE CONFIGURATION - PROYECTO ACTIVO
+// SUPABASE CONFIGURATION - MULTI-ENVIRONMENT
 // ============================================
 
-export const supabaseConfig = {
+// Detect if we're in a preview/development environment
+const isPreview = window.location.hostname.includes('git-feature') ||
+  window.location.hostname.includes('localhost') ||
+  window.location.hostname.includes('127.0.0.1');
+
+// Production Supabase (main branch)
+const PROD_CONFIG = {
   url: 'https://rvnxnwotpieemwhbpoit.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2bnhud290cGllZW13aGJwb2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NDg5MTcsImV4cCI6MjA4MjQyNDkxN30.PkYOjzHcS_Tx8e40YkhcQDHrsf5cvHZ0H7jjQH63mwk'
 };
+
+// Development Supabase (preview deployments)
+const DEV_CONFIG = {
+  url: 'https://nevsvknqnzrkjngfbnxs.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldnN2a25xbnpya2puZ2ZibnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NTY3NjcsImV4cCI6MjA4MzEzMjc2N30.4YZ6o-mC0P2UIixKBwKjm9Vmr5gqH_EiYmPq5ovGdL0'
+};
+
+// Select configuration based on environment
+const config = isPreview ? DEV_CONFIG : PROD_CONFIG;
+
+export const supabaseConfig = {
+  url: config.url,
+  anonKey: config.anonKey
+};
+
+// Log which environment we're using (helpful for debugging)
+console.log(`🔧 Supabase Environment: ${isPreview ? '🧪 DEVELOPMENT' : '🚀 PRODUCTION'}`);
+console.log(`📍 URL: ${config.url}`);
 
 // NOTA: La seguridad se maneja con Row Level Security (RLS) en Supabase
 
@@ -13,8 +37,7 @@ export const supabaseConfig = {
 // GOOGLE MAPS CONFIGURATION
 // ============================================
 export const mapsConfig = {
-  // TODO: Replace with your Google Maps API Key
-  // Get it from: https://console.cloud.google.com/
+  // Google Maps API Key
   apiKey: 'AIzaSyDefMPR_TwrfEXkfgtIwOMrWO0KAHx13jc',
 
   // Cache duration in minutes (default: 30 minutes)
