@@ -359,14 +359,19 @@ class LocationsManager {
             const table = this.currentLocation.type === 'obra' ? 'obras' :
                 (this.currentLocation.type === 'origen' ? 'origenes' : 'destinos');
 
+            // Use coordinates as address if no address provided
+            const finalAddress = address || `Lat: ${parseFloat(lat).toFixed(6)}, Lng: ${parseFloat(lng).toFixed(6)}`;
+
             const { error } = await supabaseClient
                 .from(table)
                 .update({
-                    direccion: address,
+                    direccion: finalAddress,
                     latitud: parseFloat(lat),
                     longitud: parseFloat(lng)
                 })
                 .eq('id', this.currentLocation.id);
+
+            console.log('📍 Location save result:', { error, table, id: this.currentLocation.id, finalAddress, lat, lng });
 
             if (error) throw error;
 
@@ -374,15 +379,17 @@ class LocationsManager {
             this.closeEditLocation();
 
             // Reload lists
+            console.log('🔄 Reloading location lists...');
             await this.loadObraLocation();
             await this.loadOrigenes();
             await this.loadDestinos();
+            console.log('✅ Location lists reloaded');
 
             // Show success message
             alert('✅ Ubicación guardada correctamente');
 
         } catch (error) {
-            console.error('Error saving location:', error);
+            console.error('❌ Error saving location:', error);
             alert('❌ Error al guardar la ubicación');
         }
     }
