@@ -4494,6 +4494,21 @@
                 const obraFilter = document.getElementById('headerObraFilter');
                 const obraId = obraFilter ? obraFilter.value : null;
 
+                // Validate that an obra is selected
+                if (!obraId || obraId === '') {
+                    const container = document.getElementById('rutasActivasContainer');
+                    container.innerHTML = `
+                        <div class="glass-card rounded-2xl p-8 text-center">
+                            <span class="material-symbols-outlined text-6xl text-text-muted opacity-30 mb-4">domain</span>
+                            <p class="text-text-muted text-sm font-bold mb-2">Selecciona una obra</p>
+                            <p class="text-text-muted text-xs">Para ver las rutas, primero selecciona una obra en el filtro superior</p>
+                        </div>
+                    `;
+                    document.getElementById('combustibleTotalHoy').innerHTML = '0 <span class="text-sm font-normal text-text-muted">L</span>';
+                    document.getElementById('distanciaTotalHoy').innerHTML = '0 <span class="text-sm font-normal text-text-muted">km</span>';
+                    return;
+                }
+
                 // Initialize service
                 rutasService.init(mapsConfig.apiKey, obraId);
 
