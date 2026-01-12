@@ -302,7 +302,7 @@ class RoutesService {
                         destino: obra.nombre,
                         tipo: 'incoming',
                         distancia_km: routeData.distancia_km,
-                        tiempo_estimado_minutos: routeData.tiempo_estimado_minutos,
+                        tiempo_estimado_minutos: routeData.tiempo_minutos, // Map from API response
                         tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
                         count: 0, // No trips yet
                         num_camiones: 0,
@@ -327,7 +327,7 @@ class RoutesService {
                         destino: destino.nombre,
                         tipo: 'outgoing',
                         distancia_km: routeData.distancia_km,
-                        tiempo_estimado_minutos: routeData.tiempo_estimado_minutos,
+                        tiempo_estimado_minutos: routeData.tiempo_minutos, // Map from API response
                         tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
                         count: 0, // No trips yet
                         num_camiones: 0,
