@@ -184,14 +184,20 @@ class RoutesService {
 
     /**
      * Get cached route data from database
+     * Supports routes with obras by checking type fields
      */
-    async getCachedRouteData(origenId, destinoId) {
-        const { data, error } = await supabaseClient
+    async getCachedRouteData(origenId, destinoId, origenTipo = null, destinoTipo = null) {
+        let query = supabaseClient
             .from('datos_rutas')
             .select('*')
             .eq('origen_id', origenId)
-            .eq('destino_id', destinoId)
-            .single();
+            .eq('destino_id', destinoId);
+
+        // Add type filters if provided
+        if (origenTipo) query = query.eq('origen_tipo', origenTipo);
+        if (destinoTipo) query = query.eq('destino_tipo', destinoTipo);
+
+        const { data, error } = await query.single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
             console.error('Error fetching cached route:', error);
@@ -212,25 +218,58 @@ class RoutesService {
 
     /**
      * Save route data to cache
+     * Automatically detects if locations are obras or origenes/destinos
      */
     async saveToCache(origenId, destinoId, routeData) {
+        // Detect location types by checking which table they belong to
+        const origenTipo = await this.detectLocationType(origenId);
+        const destinoTipo = await this.detectLocationType(destinoId);
+
         const { error } = await supabaseClient
             .from('datos_rutas')
             .upsert({
                 obra_id: this.currentObraId,
                 origen_id: origenId,
                 destino_id: destinoId,
+                origen_tipo: origenTipo,
+                destino_tipo: destinoTipo,
                 distancia_km: routeData.distancia_km,
                 tiempo_estimado_minutos: routeData.tiempo_minutos,
                 tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
                 consultado_at: new Date().toISOString()
             }, {
-                onConflict: 'origen_id,destino_id'
+                onConflict: 'origen_id,destino_id,origen_tipo,destino_tipo'
             });
 
         if (error) {
             console.error('Error saving to cache:', error);
         }
+    }
+
+    /**
+     * Detect if a location ID belongs to obra, origen, or destino
+     */
+    async detectLocationType(locationId) {
+        // Try obra first (most common for predefined routes)
+        const obraCheck = await supabaseClient
+            .from('obras')
+            .select('id')
+            .eq('id', locationId)
+            .single();
+
+        if (!obraCheck.error) return 'obra';
+
+        // Try origenes
+        const origenCheck = await supabaseClient
+            .from('origenes')
+            .select('id')
+            .eq('id', locationId)
+            .single();
+
+        if (!origenCheck.error) return 'origen';
+
+        // Must be destino
+        return 'destino';
     }
 
     /**

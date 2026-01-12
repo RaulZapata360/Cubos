@@ -842,6 +842,46 @@
                 </div>
             </section>
 
+            <!-- Rutas Activas Section - MOVED TO TOP -->
+            <section class="px-4 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                        Rutas Activas
+                        <span class="h-px flex-1 bg-white/10 ml-2"></span>
+                    </h3>
+                    <button onclick="window.loadRutasActivas && window.loadRutasActivas(true)"
+                        class="p-2 bg-item hover:bg-white/10 rounded-xl transition-all group border border-border"
+                        title="Actualizar Tráfico">
+                        <span
+                            class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all text-[18px]">refresh</span>
+                    </button>
+                </div>
+
+                <div id="rutasActivasContainer" class="space-y-3 mb-4">
+                    <!-- Rutas will be rendered here by JavaScript -->
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <span class="material-symbols-outlined text-5xl text-text-muted opacity-30 mb-3">route</span>
+                        <p class="text-text-muted text-xs">Cargando rutas activas...</p>
+                    </div>
+                </div>
+
+                <!-- Estadísticas de Combustible -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-warning">
+                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Combustible Hoy
+                        </p>
+                        <p class="text-xl font-black text-main" id="combustibleTotalHoy">0 <span
+                                class="text-xs font-normal text-text-muted">L</span></p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-primary">
+                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Distancia Total
+                        </p>
+                        <p class="text-xl font-black text-main" id="distanciaTotalHoy">0 <span
+                                class="text-xs font-normal text-text-muted">km</span></p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Internal Trips Volume Chart - MOVED TO TOP -->
             <section class="px-4 mb-6">
                 <div class="glass-card rounded-2xl p-4 relative overflow-hidden">
@@ -954,45 +994,6 @@
                 </div>
             </section>
 
-            <!-- Rutas Activas Section -->
-            <section class="px-4 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                        Rutas Activas
-                        <span class="h-px flex-1 bg-white/10 ml-2"></span>
-                    </h3>
-                    <button onclick="window.loadRutasActivas && window.loadRutasActivas(true)"
-                        class="p-2 bg-item hover:bg-white/10 rounded-xl transition-all group border border-border"
-                        title="Actualizar Tráfico">
-                        <span
-                            class="material-symbols-outlined text-text-muted group-hover:text-primary transition-all text-[18px]">refresh</span>
-                    </button>
-                </div>
-
-                <div id="rutasActivasContainer" class="space-y-3 mb-4">
-                    <!-- Rutas will be rendered here by JavaScript -->
-                    <div class="glass-card rounded-2xl p-6 text-center">
-                        <span class="material-symbols-outlined text-5xl text-text-muted opacity-30 mb-3">route</span>
-                        <p class="text-text-muted text-xs">Cargando rutas activas...</p>
-                    </div>
-                </div>
-
-                <!-- Estadísticas de Combustible -->
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-warning">
-                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Combustible Hoy
-                        </p>
-                        <p class="text-xl font-black text-main" id="combustibleTotalHoy">0 <span
-                                class="text-xs font-normal text-text-muted">L</span></p>
-                    </div>
-                    <div class="glass-card rounded-2xl p-3 border-l-4 border-l-primary">
-                        <p class="text-text-muted text-[9px] font-bold uppercase tracking-wider mb-1">Distancia Total
-                        </p>
-                        <p class="text-xl font-black text-main" id="distanciaTotalHoy">0 <span
-                                class="text-xs font-normal text-text-muted">km</span></p>
-                    </div>
-                </div>
-            </section>
         </div>
 
         <!-- Tab: Reportes -->
