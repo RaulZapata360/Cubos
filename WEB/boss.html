@@ -4508,15 +4508,22 @@
                 const fecha = getTargetDate();
                 const rutasActivas = await rutasService.obtenerRutasActivas(fecha);
 
+                // If no active routes, get predefined routes
+                let routes = rutasActivas;
+                if (!rutasActivas || rutasActivas.length === 0) {
+                    console.log('No active routes, loading predefined routes...');
+                    routes = await rutasService.obtenerRutasPredeterminadas();
+                }
+
                 // Render routes
                 const container = document.getElementById('rutasActivasContainer');
 
-                if (!rutasActivas || rutasActivas.length === 0) {
+                if (!routes || routes.length === 0) {
                     container.innerHTML = `
                         <div class="glass-card rounded-2xl p-8 text-center">
-                            <span class="material-symbols-outlined text-6xl text-text-muted opacity-30 mb-4">route</span>
-                            <p class="text-text-muted text-sm">No hay rutas activas para esta fecha</p>
-                            <p class="text-text-muted text-xs mt-2">Las rutas aparecerán cuando haya movimientos con origen y destino configurados</p>
+                            <span class="material-symbols-outlined text-6xl text-text-muted opacity-30 mb-4">location_off</span>
+                            <p class="text-text-muted text-sm font-bold mb-2">No hay ubicaciones configuradas</p>
+                            <p class="text-text-muted text-xs">Configura las ubicaciones de la obra, orígenes y destinos en el panel de administración</p>
                         </div>
                     `;
                     document.getElementById('combustibleTotalHoy').innerHTML = '0 <span class="text-sm font-normal text-text-muted">L</span>';
@@ -4529,12 +4536,17 @@
                 let totalCombustible = 0;
                 let totalDistancia = 0;
 
-                for (const ruta of rutasActivas) {
+                for (const ruta of routes) {
                     // Get traffic status
                     const trafficStatus = rutasService.getTrafficStatus(
                         ruta.tiempo_estimado_minutos,
                         ruta.tiempo_con_trafico_minutos || ruta.tiempo_estimado_minutos
                     );
+
+                    // Show badge for predefined routes (no trips yet)
+                    const predefinedBadge = ruta.isPredefined ?
+                        `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-400">Predeterminada</span>` :
+                        '';
 
                     html += `
                         <div class="glass-card rounded-2xl p-4 border border-border hover:border-primary/30 transition-all">
@@ -4544,11 +4556,13 @@
                                         <h3 class="text-lg font-black text-main uppercase tracking-tight">
                                             ${ruta.origen} → ${ruta.destino}
                                         </h3>
+                                        ${predefinedBadge}
                                         <span class="px-2 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider ${trafficStatus.color === 'green' ? 'bg-emerald-500/20 text-emerald-400' : trafficStatus.color === 'yellow' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}">
                                             ${trafficStatus.emoji} ${trafficStatus.label}
-                                        </h3>
+                                        </span>
                                     </div>
                                     <div class="flex items-center gap-4 text-xs text-text-muted">
+                                        ${!ruta.isPredefined ? `
                                         <span class="flex items-center gap-1">
                                             <span class="material-symbols-outlined text-[14px]">local_shipping</span>
                                             ${ruta.num_camiones} ${ruta.num_camiones === 1 ? 'camión' : 'camiones'}
@@ -4557,6 +4571,9 @@
                                             <span class="material-symbols-outlined text-[14px]">repeat</span>
                                             ${ruta.count} ${ruta.count === 1 ? 'viaje' : 'viajes'}
                                         </span>
+                                        ` : `
+                                        <span class="text-text-muted/50">Sin viajes registrados hoy</span>
+                                        `}
                                     </div>
                                 </div>
                             </div>
@@ -4580,8 +4597,8 @@
                         </div>
                     `;
 
-                    // Accumulate totals
-                    if (ruta.distancia_km) {
+                    // Accumulate totals (only for actual trips, not predefined)
+                    if (ruta.distancia_km && !ruta.isPredefined) {
                         totalDistancia += ruta.distancia_km * ruta.count;
                     }
                 }

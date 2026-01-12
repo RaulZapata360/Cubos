@@ -139,20 +139,47 @@ class RoutesService {
 
     /**
      * Get addresses for origin and destination from database
+     * Supports origenes, destinos, and obras tables
      */
     async getAddresses(origenId, destinoId) {
-        const [origenResult, destinoResult] = await Promise.all([
-            supabaseClient.from('origenes').select('nombre, direccion, latitud, longitud').eq('id', origenId).single(),
-            supabaseClient.from('destinos').select('nombre, direccion, latitud, longitud').eq('id', destinoId).single()
+        // Helper function to get location from any table
+        const getLocation = async (id) => {
+            // Try origenes first
+            let result = await supabaseClient
+                .from('origenes')
+                .select('nombre, direccion, latitud, longitud')
+                .eq('id', id)
+                .single();
+
+            if (!result.error) return result.data;
+
+            // Try destinos
+            result = await supabaseClient
+                .from('destinos')
+                .select('nombre, direccion, latitud, longitud')
+                .eq('id', id)
+                .single();
+
+            if (!result.error) return result.data;
+
+            // Try obras
+            result = await supabaseClient
+                .from('obras')
+                .select('nombre, direccion, latitud, longitud')
+                .eq('id', id)
+                .single();
+
+            if (!result.error) return result.data;
+
+            throw new Error(`Location not found: ${id}`);
+        };
+
+        const [origen, destino] = await Promise.all([
+            getLocation(origenId),
+            getLocation(destinoId)
         ]);
 
-        if (origenResult.error) throw origenResult.error;
-        if (destinoResult.error) throw destinoResult.error;
-
-        return {
-            origen: origenResult.data,
-            destino: destinoResult.data
-        };
+        return { origen, destino };
     }
 
     /**
@@ -218,6 +245,105 @@ class RoutesService {
             rendimientoKmPorLitro = this.defaultFuelEfficiency;
         }
         return parseFloat((distanciaKm / rendimientoKmPorLitro).toFixed(2));
+    }
+
+    /**
+     * Get predefined routes based on configured locations
+     * Returns all possible routes: origenes->obra and obra->destinos
+     */
+    async obtenerRutasPredeterminadas() {
+        try {
+            // Get obra location
+            const { data: obra, error: obraError } = await supabaseClient
+                .from('obras')
+                .select('id, nombre, direccion, latitud, longitud')
+                .eq('id', this.currentObraId)
+                .single();
+
+            if (obraError) throw obraError;
+
+            // Verify obra has location configured
+            if (!obra.direccion || !obra.latitud || !obra.longitud) {
+                console.warn('Obra location not configured');
+                return [];
+            }
+
+            // Get all origenes (canteras/áridos)
+            const { data: origenes, error: origenesError } = await supabaseClient
+                .from('origenes')
+                .select('id, nombre, direccion, latitud, longitud')
+                .eq('obra_id', this.currentObraId)
+                .is('deleted_at', null);
+
+            if (origenesError) throw origenesError;
+
+            // Get all destinos (botaderos)
+            const { data: destinos, error: destinosError } = await supabaseClient
+                .from('destinos')
+                .select('id, nombre, direccion, latitud, longitud')
+                .eq('obra_id', this.currentObraId)
+                .is('deleted_at', null);
+
+            if (destinosError) throw destinosError;
+
+            const routes = [];
+
+            // Create routes: Origenes -> Obra (for incoming trips)
+            for (const origen of origenes) {
+                if (!origen.direccion || !origen.latitud || !origen.longitud) {
+                    console.warn(`Origin ${origen.nombre} has no location configured`);
+                    continue;
+                }
+
+                try {
+                    const routeData = await this.obtenerDatosRuta(origen.id, obra.id);
+                    routes.push({
+                        origen: origen.nombre,
+                        destino: obra.nombre,
+                        tipo: 'incoming',
+                        distancia_km: routeData.distancia_km,
+                        tiempo_estimado_minutos: routeData.tiempo_estimado_minutos,
+                        tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
+                        count: 0, // No trips yet
+                        num_camiones: 0,
+                        isPredefined: true
+                    });
+                } catch (error) {
+                    console.error(`Error getting route ${origen.nombre} -> ${obra.nombre}:`, error);
+                }
+            }
+
+            // Create routes: Obra -> Destinos (for outgoing trips)
+            for (const destino of destinos) {
+                if (!destino.direccion || !destino.latitud || !destino.longitud) {
+                    console.warn(`Destination ${destino.nombre} has no location configured`);
+                    continue;
+                }
+
+                try {
+                    const routeData = await this.obtenerDatosRuta(obra.id, destino.id);
+                    routes.push({
+                        origen: obra.nombre,
+                        destino: destino.nombre,
+                        tipo: 'outgoing',
+                        distancia_km: routeData.distancia_km,
+                        tiempo_estimado_minutos: routeData.tiempo_estimado_minutos,
+                        tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
+                        count: 0, // No trips yet
+                        num_camiones: 0,
+                        isPredefined: true
+                    });
+                } catch (error) {
+                    console.error(`Error getting route ${obra.nombre} -> ${destino.nombre}:`, error);
+                }
+            }
+
+            return routes;
+
+        } catch (error) {
+            console.error('Error getting predefined routes:', error);
+            return [];
+        }
     }
 
     /**
