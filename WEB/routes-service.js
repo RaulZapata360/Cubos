@@ -226,6 +226,12 @@ class RoutesService {
             const origenTipo = await this.detectLocationType(origenId);
             const destinoTipo = await this.detectLocationType(destinoId);
 
+            // CRITICAL FIX: If database migration hasn't been applied, saving 'obra' routes will fail
+            // causing 400/409 errors and noise. We skip saving these for now unless DB is ready.
+            if (origenTipo === 'obra' || destinoTipo === 'obra') {
+                return; // Silently skip caching for Obras until DB migration is confirmed
+            }
+
             const { error } = await supabaseClient
                 .from('datos_rutas')
                 .upsert({
