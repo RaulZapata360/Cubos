@@ -335,14 +335,31 @@ class RoutesService {
                 }
 
                 try {
-                    const routeData = await this.obtenerDatosRuta(origen.id, obra.id);
+                    // Leg 1: Origen -> Obra (Ida/Carga)
+                    const routeDataIda = await this.obtenerDatosRuta(origen.id, obra.id);
+
+                    // Leg 2: Obra -> Origen (Vuelta/Regreso)
+                    const routeDataVuelta = await this.obtenerDatosRuta(obra.id, origen.id);
+
                     routes.push({
                         origen: origen.nombre,
                         destino: obra.nombre,
                         tipo: 'incoming',
-                        distancia_km: routeData.distancia_km,
-                        tiempo_estimado_minutos: routeData.tiempo_minutos, // Map from API response
-                        tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
+                        // One Way Data (Ida)
+                        distancia_km: routeDataIda.distancia_km,
+                        tiempo_estimado_minutos: routeDataIda.tiempo_minutos,
+                        tiempo_con_trafico_minutos: routeDataIda.tiempo_con_trafico_minutos,
+
+                        // Return Leg Data (Vuelta)
+                        distancia_regreso_km: routeDataVuelta.distancia_km,
+                        tiempo_regreso_minutos: routeDataVuelta.tiempo_minutos,
+                        tiempo_regreso_con_trafico_minutos: routeDataVuelta.tiempo_con_trafico_minutos,
+
+                        // Round Trip Totals (Total)
+                        distancia_total_km: (parseFloat(routeDataIda.distancia_km) + parseFloat(routeDataVuelta.distancia_km)).toFixed(1),
+                        tiempo_total_minutos: routeDataIda.tiempo_minutos + routeDataVuelta.tiempo_minutos,
+                        tiempo_total_con_trafico_minutos: routeDataIda.tiempo_con_trafico_minutos + routeDataVuelta.tiempo_con_trafico_minutos,
+
                         count: 0, // No trips yet
                         num_camiones: 0,
                         isPredefined: true
@@ -360,14 +377,31 @@ class RoutesService {
                 }
 
                 try {
-                    const routeData = await this.obtenerDatosRuta(obra.id, destino.id);
+                    // Leg 1: Obra -> Destino (Ida/Descarga)
+                    const routeDataIda = await this.obtenerDatosRuta(obra.id, destino.id);
+
+                    // Leg 2: Destino -> Obra (Vuelta/Regreso)
+                    const routeDataVuelta = await this.obtenerDatosRuta(destino.id, obra.id);
+
                     routes.push({
                         origen: obra.nombre,
                         destino: destino.nombre,
                         tipo: 'outgoing',
-                        distancia_km: routeData.distancia_km,
-                        tiempo_estimado_minutos: routeData.tiempo_minutos, // Map from API response
-                        tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
+                        // One Way Data (Ida)
+                        distancia_km: routeDataIda.distancia_km,
+                        tiempo_estimado_minutos: routeDataIda.tiempo_minutos,
+                        tiempo_con_trafico_minutos: routeDataIda.tiempo_con_trafico_minutos,
+
+                        // Return Leg Data (Vuelta)
+                        distancia_regreso_km: routeDataVuelta.distancia_km,
+                        tiempo_regreso_minutos: routeDataVuelta.tiempo_minutos,
+                        tiempo_regreso_con_trafico_minutos: routeDataVuelta.tiempo_con_trafico_minutos,
+
+                        // Round Trip Totals (Total)
+                        distancia_total_km: (parseFloat(routeDataIda.distancia_km) + parseFloat(routeDataVuelta.distancia_km)).toFixed(1),
+                        tiempo_total_minutos: routeDataIda.tiempo_minutos + routeDataVuelta.tiempo_minutos,
+                        tiempo_total_con_trafico_minutos: routeDataIda.tiempo_con_trafico_minutos + routeDataVuelta.tiempo_con_trafico_minutos,
+
                         count: 0, // No trips yet
                         num_camiones: 0,
                         isPredefined: true
