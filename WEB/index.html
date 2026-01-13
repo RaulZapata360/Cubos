@@ -297,7 +297,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.0</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.1</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -2788,7 +2788,9 @@
                     loadMovements()
                 ]);
                 updateDateTime();
-                setInterval(updateDateTime, 60000);
+                if (!window.updateInterval) {
+                    window.updateInterval = setInterval(updateDateTime, 60000);
+                }
 
                 console.log('✅ Counter dashboard fully initialized');
             } catch (err) {
@@ -3518,8 +3520,11 @@
             const targetDate = getTargetDate();
             const dateStr = formatDateYYYYMMDD(targetDate);
 
+            // Filter movements for the ONLY selected today
+            const dailyMovements = (movements || []).filter(m => m.fecha === dateStr);
+
             container.innerHTML = trucks.map(truck => {
-                const truckDayMovs = (movements || []).filter(m => m.camion_id === truck.id);
+                const truckDayMovs = dailyMovements.filter(m => m.camion_id === truck.id);
                 // Filter out internal trips from counters
                 const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
                 const regularMovs = truckDayMovs.filter(m => !isInternalTrip(m));
@@ -3736,17 +3741,21 @@
             const container = document.getElementById('movementLog');
             if (!container) return;
 
-            if (movements.length === 0) {
+            const targetDate = getTargetDate();
+            const dateStr = formatDateYYYYMMDD(targetDate);
+            const dailyMovements = movements.filter(m => m.fecha === dateStr);
+
+            if (dailyMovements.length === 0) {
                 container.innerHTML = `
                    <div class="text-center py-10 text-text-muted">
                         <span class="material-symbols-outlined text-4xl mb-2 opacity-50">history</span>
-                        <p class="text-sm">No hay movimientos registrados</p>
+                        <p class="text-sm">No hay movimientos registrados hoy</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = movements.map(mov => {
+            container.innerHTML = dailyMovements.map(mov => {
                 const isIncoming = mov.tipo === 'incoming';
                 const borderColor = isIncoming ? 'border-l-success' : 'border-l-warning';
                 const icon = isIncoming ? 'south_east' : 'north_east';
@@ -4063,9 +4072,13 @@
         };
 
         function updateSummary() {
-            // Exclude internal trips from regular stats
+            const targetDate = getTargetDate();
+            const dateStr = formatDateYYYYMMDD(targetDate);
+
+            // Exclude internal trips AND filter by current date
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
-            const regularMovements = movements.filter(m => !isInternalTrip(m));
+            const dailyMovements = (movements || []).filter(m => m.fecha === dateStr);
+            const regularMovements = dailyMovements.filter(m => !isInternalTrip(m));
 
             const incMovs = regularMovements.filter(m => m.tipo === 'incoming');
             const outMovs = regularMovements.filter(m => m.tipo === 'outgoing');
@@ -4090,9 +4103,13 @@
 
         // Render Analytics Tab
         function renderAnalytics() {
+            const targetDate = getTargetDate();
+            const dateStr = formatDateYYYYMMDD(targetDate);
+            const dailyMovements = (movements || []).filter(m => m.fecha === dateStr);
+
             // Exclude internal trips from regular stats
             const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
-            const regularMovements = movements.filter(m => !isInternalTrip(m));
+            const regularMovements = dailyMovements.filter(m => !isInternalTrip(m));
             const regularMovements2 = regularMovements; // Alias for compatibility
 
             const incMovs = regularMovements.filter(m => m.tipo === 'incoming');
@@ -4112,12 +4129,12 @@
             const perfContainer = document.getElementById('truckPerformance');
             const isInternalTrip2 = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
 
-            if (movements.length === 0) {
+            if (dailyMovements.length === 0) {
                 perfContainer.innerHTML = '<p class="text-center text-text-muted text-xs py-4">Registra vueltas para ver estadísticas</p>';
             } else {
                 // Group movements by truck (including internal trips)
                 const statsMap = {};
-                movements.forEach(m => {
+                dailyMovements.forEach(m => {
                     const truckId = m.camion_id;
                     if (!statsMap[truckId]) {
                         const truckInfo = m.camiones || m.camion || {};
