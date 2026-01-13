@@ -2405,6 +2405,7 @@
 
                 // Repopulate list
                 await renderManualMaterialList();
+                await loadMaterials(true); // Update global materials list too
 
                 closeAddMaterialModal();
                 alert('✅ Material agregado exitosamente');
@@ -2463,6 +2464,13 @@
 
                 // Repopulate list
                 await renderManualLocationList();
+
+                // Update global registry too
+                if (tableName === 'destinos') {
+                    await loadDestinos(true);
+                } else {
+                    await loadOrigenes(true);
+                }
 
                 closeAddLocationModal();
                 alert(`✅ ${newLocationContext === 'origen' ? 'Origen' : 'Destino'} agregado exitosamente`);
@@ -3106,9 +3114,9 @@
 
         let isInternalTripFlow = false;
 
-        window.openInternalTripSelector = function () {
+        window.openInternalTripSelector = async function () {
             isInternalTripFlow = true;
-            openTruckSelector('outgoing');
+            await openTruckSelector('outgoing');
         };
 
         function switchTab(tabId) {
@@ -4021,7 +4029,7 @@
             renderInternalTrips();
         }
 
-        window.openTruckSelector = function (tipo) {
+        window.openTruckSelector = async function (tipo) {
             console.log('Opening Truck Selector for:', tipo, 'Internal:', isInternalTripFlow);
             pendingTripMode = isInternalTripFlow ? 'internal' : tipo;
             const modal = document.getElementById('truckSelectorModal');
@@ -4039,6 +4047,17 @@
             // SHOW MODAL - FIX
             modal.classList.remove('hidden');
             modal.classList.add('active');
+
+            // Show loading state in the selector list while we refresh
+            list.innerHTML = `
+                <div class="col-span-1 py-12 flex flex-col items-center justify-center gap-3">
+                    <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                    <p class="text-xs text-text-muted font-bold uppercase tracking-widest">Sincronizando Nómina...</p>
+                </div>
+            `;
+
+            // Force refresh trucks to ensure we have the absolute latest roster
+            await loadTrucks(true);
 
             // Strict Mission Selector: Show only trucks matching the mode OR registered as mixed
             const filteredTrucks = trucks.filter(truck => {
@@ -4277,7 +4296,7 @@
                     }]);
                     if (error) throw error;
 
-                    await loadMaterials();
+                    await loadMaterials(true); // Force cache refresh after adding new material
 
                     // Trigger the next step in the flow instead of registering immediately
                     if (tipo === 'outgoing') {
