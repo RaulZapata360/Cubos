@@ -221,28 +221,37 @@ class RoutesService {
      * Automatically detects if locations are obras or origenes/destinos
      */
     async saveToCache(origenId, destinoId, routeData) {
-        // Detect location types by checking which table they belong to
-        const origenTipo = await this.detectLocationType(origenId);
-        const destinoTipo = await this.detectLocationType(destinoId);
+        try {
+            // Detect location types by checking which table they belong to
+            const origenTipo = await this.detectLocationType(origenId);
+            const destinoTipo = await this.detectLocationType(destinoId);
 
-        const { error } = await supabaseClient
-            .from('datos_rutas')
-            .upsert({
-                obra_id: this.currentObraId,
-                origen_id: origenId,
-                destino_id: destinoId,
-                origen_tipo: origenTipo,
-                destino_tipo: destinoTipo,
-                distancia_km: routeData.distancia_km,
-                tiempo_estimado_minutos: routeData.tiempo_minutos,
-                tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
-                consultado_at: new Date().toISOString()
-            }, {
-                onConflict: 'origen_id,destino_id,origen_tipo,destino_tipo'
-            });
+            const { error } = await supabaseClient
+                .from('datos_rutas')
+                .upsert({
+                    obra_id: this.currentObraId,
+                    origen_id: origenId,
+                    destino_id: destinoId,
+                    origen_tipo: origenTipo,
+                    destino_tipo: destinoTipo,
+                    distancia_km: routeData.distancia_km,
+                    tiempo_estimado_minutos: routeData.tiempo_minutos,
+                    tiempo_con_trafico_minutos: routeData.tiempo_con_trafico_minutos,
+                    consultado_at: new Date().toISOString()
+                }, {
+                    onConflict: 'origen_id,destino_id,origen_tipo,destino_tipo'
+                });
 
-        if (error) {
-            console.error('Error saving to cache:', error);
+            if (error) {
+                // Ignore schema errors (migración pendiente) to avoid spamming console
+                if (error.code === 'PGRST204' || error.code === '42703' || error.code === '406') {
+                    // console.warn('Cache schema update pending (skipping save):', error.message);
+                    return;
+                }
+                console.warn('Error saving to cache:', error.message);
+            }
+        } catch (e) {
+            console.warn('Silent cache save error:', e.message);
         }
     }
 

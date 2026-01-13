@@ -2977,6 +2977,14 @@
         window.handleHeaderObraFilterChangeFn = function () {
             const select = document.getElementById('headerObraFilter');
             window.selectedObraId = select.value || null;
+
+            // Persist to localStorage
+            if (window.selectedObraId) {
+                localStorage.setItem('selectedObraId', window.selectedObraId);
+            } else {
+                localStorage.removeItem('selectedObraId');
+            }
+
             // Sync other filters
             const filterObras = document.getElementById('obrasTabFilter');
             const filterReport = document.getElementById('reportObraFilter');
@@ -2988,6 +2996,14 @@
         window.handleObrasTabFilterChange = function () {
             const select = document.getElementById('obrasTabFilter');
             window.selectedObraId = select.value || null;
+
+            // Persist to localStorage
+            if (window.selectedObraId) {
+                localStorage.setItem('selectedObraId', window.selectedObraId);
+            } else {
+                localStorage.removeItem('selectedObraId');
+            }
+
             // Sync other filters
             const filterHeader = document.getElementById('headerObraFilter');
             const filterObras = document.getElementById('obrasTabFilter');
@@ -3004,6 +3020,14 @@
         window.handleReportObraFilterChange = function () {
             const select = document.getElementById('reportObraFilter');
             window.selectedObraId = select.value || null;
+
+            // Persist to localStorage
+            if (window.selectedObraId) {
+                localStorage.setItem('selectedObraId', window.selectedObraId);
+            } else {
+                localStorage.removeItem('selectedObraId');
+            }
+
             // Sync other filters
             const filterHeader = document.getElementById('headerObraFilter');
             const filterObras = document.getElementById('obrasTabFilter');
@@ -3267,6 +3291,28 @@
                     });
 
                     console.log(`Populated ${allObras.length} obras in filters`);
+
+                    // AUTO-SELECT LOGIC
+                    if (select) {
+                        const savedObraId = localStorage.getItem('selectedObraId');
+                        let obraToSelect = null;
+
+                        // Priority 1: Saved Obra
+                        if (savedObraId && allObras.some(o => o.id === savedObraId)) {
+                            obraToSelect = savedObraId;
+                        }
+                        // Priority 2: Only one obra available
+                        else if (allObras.length === 1) {
+                            obraToSelect = allObras[0].id;
+                        }
+
+                        if (obraToSelect) {
+                            select.value = obraToSelect;
+                            console.log(`🔄 Auto-selecting obra: ${obraToSelect}`);
+                            // Trigger change handler manually since setting value programmatically doesn't trigger it
+                            handleHeaderObraFilterChange();
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error in loadObras:', error);
