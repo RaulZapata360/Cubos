@@ -27,9 +27,11 @@ class RoutesService {
      * Uses cache if available and fresh, otherwise queries Google Maps API
      * @param {string} origenId - UUID of origen
      * @param {string} destinoId - UUID of destino
+     * @param {Object} [origenObj] - Optional full origin object with address
+     * @param {Object} [destinoObj] - Optional full destination object with address
      * @returns {Promise<Object>} Route data with distance, time, and traffic time
      */
-    async obtenerDatosRuta(origenId, destinoId) {
+    async obtenerDatosRuta(origenId, destinoId, origenObj = null, destinoObj = null) {
         try {
             // Check cache first
             // SKIP CACHE FOR OBRAS TEMPORARILY: avoids 406 errors on read
@@ -52,7 +54,7 @@ class RoutesService {
 
             // Cache miss or expired - fetch from Google Maps
             console.log('🌐 Fetching fresh route data from Google Maps API');
-            const freshData = await this.fetchFromGoogleMaps(origenId, destinoId);
+            const freshData = await this.fetchFromGoogleMaps(origenId, destinoId, origenObj, destinoObj);
 
             // Save to cache
             await this.saveToCache(origenId, destinoId, freshData);
@@ -89,13 +91,21 @@ class RoutesService {
     /**
      * Fetch route data from Google Maps Distance Matrix API
      */
-    async fetchFromGoogleMaps(origenId, destinoId) {
+    async fetchFromGoogleMaps(origenId, destinoId, origenObj = null, destinoObj = null) {
         if (!this.apiKey) {
             throw new Error('Google Maps API key not configured');
         }
 
         // Get origin and destination addresses
-        const { origen, destino } = await this.getAddresses(origenId, destinoId);
+        // Use provided objects if available to skip DB lookup and avoid 406 errors
+        let origen = origenObj;
+        let destino = destinoObj;
+
+        if (!origen || !destino) {
+            const addresses = await this.getAddresses(origenId, destinoId);
+            origen = addresses.origen;
+            destino = addresses.destino;
+        }
 
         if (!origen.direccion || !destino.direccion) {
             throw new Error('Origin or destination address not configured');
@@ -372,10 +382,11 @@ class RoutesService {
 
                 try {
                     // Leg 1: Origen -> Obra (Ida/Carga)
-                    const routeDataIda = await this.obtenerDatosRuta(origen.id, obra.id);
+                    // Pass full objects to avoid DB lookup
+                    const routeDataIda = await this.obtenerDatosRuta(origen.id, obra.id, origen, obra);
 
                     // Leg 2: Obra -> Origen (Vuelta/Regreso)
-                    const routeDataVuelta = await this.obtenerDatosRuta(obra.id, origen.id);
+                    const routeDataVuelta = await this.obtenerDatosRuta(obra.id, origen.id, obra, origen);
 
                     routes.push({
                         origen: origen.nombre,
@@ -414,10 +425,10 @@ class RoutesService {
 
                 try {
                     // Leg 1: Obra -> Destino (Ida/Descarga)
-                    const routeDataIda = await this.obtenerDatosRuta(obra.id, destino.id);
+                    const routeDataIda = await this.obtenerDatosRuta(obra.id, destino.id, obra, destino);
 
                     // Leg 2: Destino -> Obra (Vuelta/Regreso)
-                    const routeDataVuelta = await this.obtenerDatosRuta(destino.id, obra.id);
+                    const routeDataVuelta = await this.obtenerDatosRuta(destino.id, obra.id, destino, obra);
 
                     routes.push({
                         origen: obra.nombre,
