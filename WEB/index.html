@@ -4404,11 +4404,13 @@
             await loadMaterials();
 
             // Filter materials by type (incoming/outgoing)
+            // Internal trips use outgoing materials (excavation/movement within site)
             console.log('--- Filtering Materials ---');
             console.log('Current materials array size:', materials.length);
             console.log('Target type:', tipo);
 
-            const filteredMaterials = materials.filter(m => m.tipo === tipo);
+            const materialType = tipo === 'internal' ? 'outgoing' : tipo;
+            const filteredMaterials = materials.filter(m => m.tipo === materialType);
             console.log('Filtered materials count:', filteredMaterials.length);
 
             // NEW: Add Memory Shortcut (Plan Shortcut)
