@@ -4403,14 +4403,12 @@
             // Ensure materials are loaded before filtering
             await loadMaterials();
 
-            // Filter materials by type (incoming/outgoing)
-            // Internal trips use outgoing materials (excavation/movement within site)
+            // Filter materials by type (incoming/outgoing/internal)
             console.log('--- Filtering Materials ---');
             console.log('Current materials array size:', materials.length);
             console.log('Target type:', tipo);
 
-            const materialType = tipo === 'internal' ? 'outgoing' : tipo;
-            const filteredMaterials = materials.filter(m => m.tipo === materialType);
+            const filteredMaterials = materials.filter(m => m.tipo === tipo);
             console.log('Filtered materials count:', filteredMaterials.length);
 
             // NEW: Add Memory Shortcut (Plan Shortcut)
@@ -4533,12 +4531,10 @@
                 }
 
                 try {
-                    // Map trip type to material type (internal trips use outgoing materials)
-                    const materialType = tipo === 'internal' ? 'outgoing' : tipo;
                     const { error } = await supabaseClient.from('materiales').insert([{
                         obra_id: currentObraId,
                         nombre: materialName,
-                        tipo: materialType
+                        tipo: tipo
                     }]);
                     if (error) throw error;
 
