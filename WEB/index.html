@@ -4540,6 +4540,9 @@
                     // Trigger the next step in the flow instead of registering immediately
                     if (tipo === 'outgoing') {
                         openDestinoSelector(camionId, tipo, capacidad, materialName, loc);
+                    } else if (tipo === 'internal' || isInternalTripFlow) {
+                        // Internal trip: Direct register
+                        registerAndClose(camionId, tipo, capacidad, materialName);
                     } else {
                         openOrigenSelector(camionId, tipo, capacidad, materialName, loc);
                     }
