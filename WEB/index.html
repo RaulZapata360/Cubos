@@ -4533,10 +4533,12 @@
                 }
 
                 try {
+                    // Map trip type to material type (internal trips use outgoing materials)
+                    const materialType = tipo === 'internal' ? 'outgoing' : tipo;
                     const { error } = await supabaseClient.from('materiales').insert([{
                         obra_id: currentObraId,
                         nombre: materialName,
-                        tipo: tipo
+                        tipo: materialType
                     }]);
                     if (error) throw error;
 
