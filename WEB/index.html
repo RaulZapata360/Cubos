@@ -4400,6 +4400,9 @@
             list.classList.remove('hidden');
             list.style.display = ''; // Clear any inline styles from toggleNewMaterialForm
 
+            // Ensure materials are loaded before filtering
+            await loadMaterials();
+
             // Filter materials by type (incoming/outgoing)
             console.log('--- Filtering Materials ---');
             console.log('Current materials array size:', materials.length);
