@@ -4527,6 +4527,9 @@
             console.log('📆 Fechas únicas:', [...new Set(weekMovements.map(m => m.fecha))].sort());
 
             if (weekMovements.length === 0) {
+                console.error('❌ No se encontraron movimientos para la semana');
+                console.log('Fecha objetivo:', targetDate);
+                console.log('Rango buscado:', startDateStr, '-', endDateStr);
                 alert('No hay movimientos en esta semana para generar el reporte.');
                 return;
             }
