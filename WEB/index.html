@@ -4456,6 +4456,10 @@
             const endDateStr = formatDateYYYYMMDD(endDate);
             const weekMovements = movements.filter(m => m.fecha >= startDateStr && m.fecha <= endDateStr);
 
+            console.log('📅 Rango semanal:', startDateStr, 'al', endDateStr);
+            console.log('📊 Movimientos encontrados:', weekMovements.length);
+            console.log('📆 Fechas únicas:', [...new Set(weekMovements.map(m => m.fecha))].sort());
+
             if (weekMovements.length === 0) {
                 alert('No hay movimientos en esta semana para generar el reporte.');
                 return;
