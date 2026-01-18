@@ -4430,15 +4430,9 @@
             doc.save(`Informe_Diario_${d}-${m}-${y}.pdf`);
         };
 
-        // ============================================
         // WEEKLY PDF REPORT GENERATION
         // ============================================
-        window.generateWeeklyReport = () => {
-            if (!movements || movements.length === 0) {
-                alert('No hay movimientos registrados para generar el reporte semanal.');
-                return;
-            }
-
+        window.generateWeeklyReport = async () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
@@ -4451,13 +4445,47 @@
             const formatDateDisplay = (date) => date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
             const weekRangeDisplay = `${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`;
 
-            // Filter movements for the week
             const startDateStr = formatDateYYYYMMDD(startDate);
             const endDateStr = formatDateYYYYMMDD(endDate);
-            const weekMovements = movements.filter(m => m.fecha >= startDateStr && m.fecha <= endDateStr);
+
+            // Fetch archived movements from historial_diario
+            let archivedMovements = [];
+            try {
+                const session = await authService.checkSession();
+                const obraId = session.user?.user_metadata?.obra_id;
+
+                const { data: archived, error } = await supabaseClient
+                    .from('historial_diario')
+                    .select('*')
+                    .eq('obra_id', obraId)
+                    .gte('fecha', startDateStr)
+                    .lte('fecha', endDateStr);
+
+                if (!error && archived) {
+                    // Parse JSON data from historial_diario
+                    archivedMovements = archived.flatMap(day => {
+                        try {
+                            const dayData = typeof day.data === 'string' ? JSON.parse(day.data) : day.data;
+                            return dayData.movements || [];
+                        } catch (e) {
+                            console.warn('Error parsing archived data for', day.fecha, e);
+                            return [];
+                        }
+                    });
+                    console.log('📦 Movimientos archivados encontrados:', archivedMovements.length);
+                }
+            } catch (error) {
+                console.warn('Error fetching archived movements:', error);
+            }
+
+            // Combine current movements with archived movements
+            const currentWeekMovements = (movements || []).filter(m => m.fecha >= startDateStr && m.fecha <= endDateStr);
+            const weekMovements = [...currentWeekMovements, ...archivedMovements];
 
             console.log('📅 Rango semanal:', startDateStr, 'al', endDateStr);
-            console.log('📊 Movimientos encontrados:', weekMovements.length);
+            console.log('📊 Movimientos actuales:', currentWeekMovements.length);
+            console.log('📦 Movimientos archivados:', archivedMovements.length);
+            console.log('📊 Total movimientos:', weekMovements.length);
             console.log('📆 Fechas únicas:', [...new Set(weekMovements.map(m => m.fecha))].sort());
 
             if (weekMovements.length === 0) {
