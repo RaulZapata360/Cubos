@@ -1690,13 +1690,13 @@
                 <div class="p-4 border-t border-white/10 shrink-0">
                     <div class="flex gap-2 mb-3">
                         <input id="flashPatente" type="text" placeholder="Patente (ej: ABC123)"
-                            class="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
+                            class="flex-1 min-w-0 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
                             onkeypress="if(event.key==='Enter') document.getElementById('flashCubos').focus()" />
                         <input id="flashCubos" type="number" step="0.1" placeholder="Cubos"
-                            class="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
+                            class="w-20 sm:w-24 px-2 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
                             onkeypress="if(event.key==='Enter') addTruckToFlashBatch()" />
                         <button onclick="addTruckToFlashBatch()"
-                            class="px-4 py-2 bg-primary rounded-lg text-white font-bold hover:scale-105 transition-all">
+                            class="px-3 sm:px-4 py-2 bg-primary rounded-lg text-white text-lg font-bold hover:scale-105 transition-all flex-shrink-0">
                             ➕
                         </button>
                     </div>
@@ -4837,7 +4837,17 @@
             } else if (frequentTrucks.length === 0) {
                 list.innerHTML = '<p class="text-center text-text-muted py-4">No hay camiones recientes de relleno</p>';
             } else {
-                list.innerHTML = frequentTrucks.map(truck => `
+                // Filter out duplicates by keeping only unique truck names
+                const uniqueTrucks = [];
+                const seenNames = new Set();
+                for (const truck of frequentTrucks) {
+                    if (!seenNames.has(truck.nombre)) {
+                        seenNames.add(truck.nombre);
+                        uniqueTrucks.push(truck);
+                    }
+                }
+
+                list.innerHTML = uniqueTrucks.map(truck => `
                     <button onclick="addFrequentToFlash('${truck.id}', '${truck.nombre}', '${truck.patente}', ${truck.capacidad})" 
                         class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent rounded-xl transition-all text-left">
                         <h4 class="font-bold text-white">${truck.nombre}</h4>
@@ -4913,6 +4923,10 @@
                     insertedTrucks = data;
                 }
 
+                // Get current user ID
+                const session = await authService.checkSession();
+                const userId = session.user?.id || null;
+
                 // Prepare movements
                 const movements = flashBatch.trucks.map(t => {
                     const truckId = t.isNew
@@ -4922,12 +4936,15 @@
                     return {
                         obra_id: currentObraId,
                         camion_id: truckId,
-                        material_id: flashBatch.material.id,
-                        origen_id: flashBatch.origin.id,
+                        usuario_id: userId,
                         tipo: 'incoming',
+                        capacidad: t.capacidad,
+                        material: flashBatch.material.nombre,
+                        origen: flashBatch.origin.nombre,
+                        destino: null,
+                        ubicacion: null,
                         fecha: dateStr,
-                        timestamp: timestamp,
-                        metros_cubicos: t.capacidad
+                        timestamp: timestamp
                     };
                 });
 
