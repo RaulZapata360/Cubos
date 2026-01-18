@@ -275,6 +275,44 @@
 <body
     class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display overflow-x-hidden antialiased selection:bg-primary selection:text-white">
 
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-black/90 backdrop-blur-lg z-[200] flex items-center justify-center hidden">
+        <div class="bg-surface border border-border rounded-3xl p-8 max-w-sm mx-4 text-center">
+            <!-- Spinner -->
+            <div class="w-16 h-16 border-4 border-border border-t-primary rounded-full animate-spin mx-auto mb-6"></div>
+
+            <!-- Title -->
+            <h3 class="text-xl font-bold text-white mb-2">Cargando Datos</h3>
+            <p class="text-sm text-text-muted mb-6">Preparando el contador...</p>
+
+            <!-- Progress Items -->
+            <div class="space-y-3 text-left">
+                <div id="loadingTrucks" class="flex items-center gap-3 text-sm">
+                    <span class="loading-icon text-lg">⏳</span>
+                    <span class="text-text-muted">Camiones</span>
+                </div>
+                <div id="loadingMaterials" class="flex items-center gap-3 text-sm">
+                    <span class="loading-icon text-lg">⏳</span>
+                    <span class="text-text-muted">Materiales</span>
+                </div>
+                <div id="loadingOrigenes" class="flex items-center gap-3 text-sm">
+                    <span class="loading-icon text-lg">⏳</span>
+                    <span class="text-text-muted">Orígenes</span>
+                </div>
+                <div id="loadingDestinos" class="flex items-center gap-3 text-sm">
+                    <span class="loading-icon text-lg">⏳</span>
+                    <span class="text-text-muted">Destinos</span>
+                </div>
+                <div id="loadingMovements" class="flex items-center gap-3 text-sm">
+                    <span class="loading-icon text-lg">⏳</span>
+                    <span class="text-text-muted">Movimientos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Ambient Background Glows -->
     <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
         <div
@@ -297,7 +335,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.10.3</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.11.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -2758,8 +2796,89 @@
             container.innerHTML = html;
         }
 
+        // ============================================
+        // LOADING STATE MANAGEMENT
+        // ============================================
+        const loadingState = {
+            trucks: false,
+            materials: false,
+            origenes: false,
+            destinos: false,
+            movements: false
+        };
+
+        function updateLoadingItem(item, status) {
+            const element = document.getElementById(`loading${item.charAt(0).toUpperCase() + item.slice(1)}`);
+            if (!element) return;
+
+            const icon = element.querySelector('.loading-icon');
+            const text = element.querySelector('span:last-child');
+
+            if (status === 'done') {
+                icon.textContent = '✅';
+                text.classList.remove('text-text-muted');
+                text.classList.add('text-success');
+            } else if (status === 'error') {
+                icon.textContent = '❌';
+                text.classList.remove('text-text-muted');
+                text.classList.add('text-danger');
+            } else {
+                icon.textContent = '⏳';
+            }
+        }
+
+        function isDataReady() {
+            return loadingState.trucks &&
+                loadingState.materials &&
+                loadingState.origenes &&
+                loadingState.destinos &&
+                loadingState.movements;
+        }
+
+        function updateCounterButtons(enabled) {
+            const selectors = [
+                '[onclick*="openTruckSelector(\'incoming\')"]',
+                '[onclick*="openTruckSelector(\'outgoing\')"]',
+                '[onclick*="openInternalTripSelector"]'
+            ];
+
+            selectors.forEach(selector => {
+                const btn = document.querySelector(selector);
+                if (btn) {
+                    btn.disabled = !enabled;
+                    btn.style.opacity = enabled ? '1' : '0.5';
+                    btn.style.cursor = enabled ? 'pointer' : 'not-allowed';
+                    btn.style.pointerEvents = enabled ? 'auto' : 'none';
+                }
+            });
+        }
+
+        function checkIfReady() {
+            if (isDataReady()) {
+                // Hide loading overlay
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.classList.add('hidden');
+                }
+                // Enable counter buttons
+                updateCounterButtons(true);
+                console.log('✅ All data loaded, counter ready');
+            }
+        }
+
+        function showLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+            }
+            updateCounterButtons(false);
+        }
+
         async function init() {
             try {
+                // Show loading overlay and disable counter buttons
+                showLoadingOverlay();
+
                 const session = await authService.checkSession();
                 if (!session.authenticated) {
                     window.location.href = 'login.html';
@@ -3163,6 +3282,8 @@
 
         async function loadTrucks(forceRefresh = false) {
             try {
+                updateLoadingItem('trucks', 'loading');
+
                 const targetDate = getTargetDate();
                 const dateStr = formatDateYYYYMMDD(targetDate);
                 const cacheKey = `trucks_${dateStr}`;
@@ -3176,7 +3297,12 @@
                         renderTruckList();
                         updateSummary();
                         // If not expired, we're done. If expired, we continue to fetch in background.
-                        if (!cached.expired) return;
+                        if (!cached.expired) {
+                            loadingState.trucks = true;
+                            updateLoadingItem('trucks', 'done');
+                            checkIfReady();
+                            return;
+                        }
                     } else {
                         // Show Skeletons ONLY if no cache exists
                         renderSkeletons('truckList', 3, 'card');
@@ -3201,8 +3327,13 @@
                     renderTruckList();
                     updateSummary();
                 }
+
+                loadingState.trucks = true;
+                updateLoadingItem('trucks', 'done');
+                checkIfReady();
             } catch (error) {
                 console.error('Error loading trucks:', error);
+                updateLoadingItem('trucks', 'error');
             }
         }
 
@@ -3357,6 +3488,8 @@
 
         async function loadMovements(forceRefresh = false) {
             try {
+                updateLoadingItem('movements', 'loading');
+
                 const targetDate = getTargetDate();
                 const selectedDateStr = formatDateYYYYMMDD(targetDate);
                 const cacheKey = `movements_${selectedDateStr}`;
@@ -3370,7 +3503,12 @@
                         renderMovementLog();
                         renderAnalytics();
                         updateSummary();
-                        if (!cached.expired) return;
+                        if (!cached.expired) {
+                            loadingState.movements = true;
+                            updateLoadingItem('movements', 'done');
+                            checkIfReady();
+                            return;
+                        }
                     } else {
                         // Show Skeletons ONLY if no cache exists
                         renderSkeletons('movementLog', 5, 'list');
@@ -3419,19 +3557,31 @@
                     updateSummary();
                     renderTruckList();
                 }
+
+                loadingState.movements = true;
+                updateLoadingItem('movements', 'done');
+                checkIfReady();
             } catch (error) {
                 console.error('Error loading movements:', error);
+                updateLoadingItem('movements', 'error');
             }
         }
 
         async function loadMaterials(forceRefresh = false) {
             try {
+                updateLoadingItem('materials', 'loading');
+
                 const cacheKey = 'materials';
                 if (!forceRefresh) {
                     const cached = DataCache.get(cacheKey);
                     if (cached && cached.data) {
                         materials = cached.data;
-                        if (!cached.expired) return;
+                        if (!cached.expired) {
+                            loadingState.materials = true;
+                            updateLoadingItem('materials', 'done');
+                            checkIfReady();
+                            return;
+                        }
                     }
                 }
 
@@ -3445,19 +3595,31 @@
                 const freshData = data || [];
                 materials = freshData;
                 DataCache.set(cacheKey, freshData, 120); // 2 hours cache
+
+                loadingState.materials = true;
+                updateLoadingItem('materials', 'done');
+                checkIfReady();
             } catch (error) {
                 console.error('Error loading materials:', error);
+                updateLoadingItem('materials', 'error');
             }
         }
 
         async function loadDestinos(forceRefresh = false) {
             try {
+                updateLoadingItem('destinos', 'loading');
+
                 const cacheKey = 'destinos';
                 if (!forceRefresh) {
                     const cached = DataCache.get(cacheKey);
                     if (cached && cached.data) {
                         destinos = cached.data;
-                        if (!cached.expired) return;
+                        if (!cached.expired) {
+                            loadingState.destinos = true;
+                            updateLoadingItem('destinos', 'done');
+                            checkIfReady();
+                            return;
+                        }
                     }
                 }
 
@@ -3471,19 +3633,31 @@
                 const freshData = data || [];
                 destinos = freshData;
                 DataCache.set(cacheKey, freshData, 240); // 4 hours cache
+
+                loadingState.destinos = true;
+                updateLoadingItem('destinos', 'done');
+                checkIfReady();
             } catch (error) {
                 console.error('Error loading destinos:', error);
+                updateLoadingItem('destinos', 'error');
             }
         }
 
         async function loadOrigenes(forceRefresh = false) {
             try {
+                updateLoadingItem('origenes', 'loading');
+
                 const cacheKey = 'origenes';
                 if (!forceRefresh) {
                     const cached = DataCache.get(cacheKey);
                     if (cached && cached.data) {
                         origenes = cached.data;
-                        if (!cached.expired) return;
+                        if (!cached.expired) {
+                            loadingState.origenes = true;
+                            updateLoadingItem('origenes', 'done');
+                            checkIfReady();
+                            return;
+                        }
                     }
                 }
 
@@ -3497,8 +3671,13 @@
                 const freshData = data || [];
                 origenes = freshData;
                 DataCache.set(cacheKey, freshData, 240); // 4 hours cache
+
+                loadingState.origenes = true;
+                updateLoadingItem('origenes', 'done');
+                checkIfReady();
             } catch (error) {
                 console.error('Error loading origenes:', error);
+                updateLoadingItem('origenes', 'error');
             }
         }
 
