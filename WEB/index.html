@@ -335,7 +335,7 @@
                         <!-- Formato: v3.X.Y donde Y se incrementa con cada cambio -->
                         <!-- Ubicaciones: index.html (línea ~255) y boss.html (línea ~476) -->
                         <span
-                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.11.0</span>
+                            class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/70 font-mono">v3.12.0</span>
                     </div>
                     <h1 class="text-2xl font-black text-main tracking-tight">Panel de Control</h1>
 
@@ -970,17 +970,27 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="p-4 border-t border-white/10 shrink-0 flex gap-3">
-                    <button onclick="openFrequentTrucksModal()"
-                        class="flex-1 py-3 px-2 bg-accent/10 border border-accent/20 rounded-xl text-accent text-xs font-bold hover:bg-accent/20 transition-all flex items-center justify-center gap-1">
-                        <span class="material-symbols-outlined text-sm">bolt</span>
-                        RECIENTES
+                <div class="p-4 border-t border-white/10 shrink-0 flex flex-col gap-3">
+                    <!-- Flash Add Button (Only for incoming trips) -->
+                    <button id="flashAddBtn" onclick="openFlashAddMode()" style="display: none;"
+                        class="w-full py-3 px-4 bg-gradient-to-r from-accent to-accent/80 rounded-xl text-white text-sm font-bold shadow-lg shadow-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">bolt</span>
+                        ⚡ AGREGADO RÁPIDO
                     </button>
-                    <button onclick="openAddTruckModal()"
-                        class="flex-[1.5] py-3 px-2 bg-primary rounded-xl text-white text-xs font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1">
-                        <span class="material-symbols-outlined text-sm">add_circle</span>
-                        AGREGAR NUEVO
-                    </button>
+
+                    <!-- Regular buttons -->
+                    <div class="flex gap-3">
+                        <button onclick="openFrequentTrucksModal()"
+                            class="flex-1 py-3 px-2 bg-accent/10 border border-accent/20 rounded-xl text-accent text-xs font-bold hover:bg-accent/20 transition-all flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-sm">bolt</span>
+                            RECIENTES
+                        </button>
+                        <button onclick="openAddTruckModal()"
+                            class="flex-[1.5] py-3 px-2 bg-primary rounded-xl text-white text-xs font-bold shadow-lg shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-1">
+                            <span class="material-symbols-outlined text-sm">add_circle</span>
+                            AGREGAR NUEVO
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1565,6 +1575,169 @@
             <div class="add-material-form">
                 <input type="text" id="newMaterialName" placeholder="Nombre del material (ej: Arena, Ripio...)" />
                 <button class="btn-primary" id="addMaterialBtn">Agregar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- FLASH ADD MODALS (Batch Registration) -->
+    <!-- ============================================ -->
+
+    <!-- Flash Add: Step 1 - Origin Selector -->
+    <div id="flashOriginModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="cancelFlashMode()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[80vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-black text-accent">⚡ Agregado Rápido</h3>
+                        <p class="text-xs text-text-muted">Paso 1/3: Selecciona el origen</p>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="cancelFlashMode()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="flashOriginList" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Add: Step 2 - Material Selector -->
+    <div id="flashMaterialModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="cancelFlashMode()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[80vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-black text-accent">⚡ Agregado Rápido</h3>
+                        <p class="text-xs text-text-muted">Paso 2/3: Selecciona el material</p>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="cancelFlashMode()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="flashMaterialList" class="space-y-2"></div>
+                </div>
+                <div class="p-4 border-t border-white/10">
+                    <button onclick="backToFlashOrigin()"
+                        class="w-full py-2 px-4 bg-white/5 rounded-xl text-white text-sm hover:bg-white/10 transition-all">
+                        ← Atrás
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Add: Step 3 - Truck Builder -->
+    <div id="flashTruckBuilderModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-2xl max-h-[90vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <!-- Header -->
+                <div class="p-4 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 class="text-lg font-black text-accent">⚡ Agregado Rápido</h3>
+                        <p class="text-xs text-text-muted">Paso 3/3: Agrega los camiones</p>
+                    </div>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="cancelFlashMode()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+
+                <!-- Summary Bar -->
+                <div class="p-4 bg-gradient-to-r from-accent/10 to-primary/10 border-b border-white/10 shrink-0">
+                    <div class="grid grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <p class="text-xs text-text-muted">Origen</p>
+                            <p class="text-sm font-bold text-white" id="flashSummaryOrigin">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-text-muted">Material</p>
+                            <p class="text-sm font-bold text-white" id="flashSummaryMaterial">-</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-accent">local_shipping</span>
+                            <span id="flashTruckCount">0</span> camiones
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">straighten</span>
+                            <span id="flashTotalCubos">0</span> m³
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Truck List -->
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="flashTruckList" class="space-y-2"></div>
+                    <div id="flashEmptyState" class="text-center py-8 text-text-muted">
+                        <span class="material-symbols-outlined text-4xl mb-2">add_circle</span>
+                        <p>Agrega camiones usando el formulario abajo</p>
+                    </div>
+                </div>
+
+                <!-- Add Truck Form -->
+                <div class="p-4 border-t border-white/10 shrink-0">
+                    <div class="flex gap-2 mb-3">
+                        <input id="flashPatente" type="text" placeholder="Patente (ej: ABC123)"
+                            class="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
+                            onkeypress="if(event.key==='Enter') document.getElementById('flashCubos').focus()" />
+                        <input id="flashCubos" type="number" step="0.1" placeholder="Cubos"
+                            class="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-text-muted focus:border-accent focus:outline-none"
+                            onkeypress="if(event.key==='Enter') addTruckToFlashBatch()" />
+                        <button onclick="addTruckToFlashBatch()"
+                            class="px-4 py-2 bg-primary rounded-lg text-white font-bold hover:scale-105 transition-all">
+                            ➕
+                        </button>
+                    </div>
+                    <button onclick="openFlashRecientes()"
+                        class="w-full py-2 px-4 bg-accent/10 border border-accent/20 rounded-lg text-accent text-sm font-bold hover:bg-accent/20 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">bolt</span>
+                        Agregar desde Recientes
+                    </button>
+                </div>
+
+                <!-- Actions -->
+                <div class="p-4 border-t border-white/10 flex gap-3 shrink-0">
+                    <button onclick="cancelFlashMode()"
+                        class="flex-1 py-3 px-4 bg-white/5 rounded-xl text-white font-bold hover:bg-white/10 transition-all">
+                        Cancelar
+                    </button>
+                    <button onclick="saveFlashBatch()" id="flashSaveBtn"
+                        class="flex-[2] py-3 px-4 bg-gradient-to-r from-accent to-primary rounded-xl text-white font-bold shadow-lg hover:scale-105 transition-all">
+                        💾 GUARDAR TODO (<span id="flashSaveCount">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Add: Recientes Modal -->
+    <div id="flashRecientesModal" class="fixed inset-0 z-[90] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeFlashRecientes()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-md max-h-[80vh] flex flex-col neon-shadow animate-in fade-in zoom-in duration-300">
+                <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                    <h3 class="text-lg font-black text-accent">⚡ Camiones Recientes</h3>
+                    <button class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10"
+                        onclick="closeFlashRecientes()">
+                        <span class="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4">
+                    <div id="flashRecientesList" class="space-y-2"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -4447,6 +4620,365 @@
             renderInternalTrips();
         }
 
+        // ============================================
+        // FLASH ADD (Batch Registration) SYSTEM
+        // ============================================
+        let flashBatch = {
+            origin: null,
+            material: null,
+            trucks: [],
+            counter: 1
+        };
+
+        function openFlashAddMode() {
+            // Reset flash batch state
+            flashBatch = {
+                origin: null,
+                material: null,
+                trucks: [],
+                counter: 1
+            };
+
+            closeAllModals();
+            openFlashOriginSelector();
+        }
+
+        function cancelFlashMode() {
+            flashBatch = {
+                origin: null,
+                material: null,
+                trucks: [],
+                counter: 1
+            };
+            closeAllModals();
+        }
+
+        // Step 1: Origin Selection
+        function openFlashOriginSelector() {
+            const modal = document.getElementById('flashOriginModal');
+            const list = document.getElementById('flashOriginList');
+
+            if (origenes.length === 0) {
+                list.innerHTML = '<p class="text-center text-text-muted py-4">No hay orígenes configurados</p>';
+            } else {
+                list.innerHTML = origenes.map(o => `
+                    <button onclick="selectFlashOrigin('${o.id}')" 
+                        class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent rounded-xl transition-all text-left">
+                        <h4 class="font-bold text-white">${o.nombre}</h4>
+                        ${o.direccion ? `<p class="text-xs text-text-muted mt-1">${o.direccion}</p>` : ''}
+                    </button>
+                `).join('');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function selectFlashOrigin(originId) {
+            flashBatch.origin = origenes.find(o => o.id === originId);
+            closeAllModals();
+            openFlashMaterialSelector();
+        }
+
+        function backToFlashOrigin() {
+            closeAllModals();
+            openFlashOriginSelector();
+        }
+
+        // Step 2: Material Selection
+        function openFlashMaterialSelector() {
+            const modal = document.getElementById('flashMaterialModal');
+            const list = document.getElementById('flashMaterialList');
+
+            const incomingMaterials = materials.filter(m => m.tipo === 'incoming');
+
+            if (incomingMaterials.length === 0) {
+                list.innerHTML = '<p class="text-center text-text-muted py-4">No hay materiales de relleno configurados</p>';
+            } else {
+                list.innerHTML = incomingMaterials.map(m => `
+                    <button onclick="selectFlashMaterial('${m.id}')" 
+                        class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary rounded-xl transition-all text-left">
+                        <h4 class="font-bold text-white">${m.nombre}</h4>
+                    </button>
+                `).join('');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function selectFlashMaterial(materialId) {
+            flashBatch.material = materials.find(m => m.id === materialId);
+            closeAllModals();
+            openFlashTruckBuilder();
+        }
+
+        // Step 3: Truck Builder
+        function openFlashTruckBuilder() {
+            const modal = document.getElementById('flashTruckBuilderModal');
+            renderFlashSummary();
+            renderFlashTruckList();
+            modal.classList.remove('hidden');
+
+            // Focus on patente input
+            setTimeout(() => {
+                document.getElementById('flashPatente').focus();
+            }, 300);
+        }
+
+        function renderFlashSummary() {
+            document.getElementById('flashSummaryOrigin').textContent = flashBatch.origin?.nombre || '-';
+            document.getElementById('flashSummaryMaterial').textContent = flashBatch.material?.nombre || '-';
+
+            const totalCubos = flashBatch.trucks.reduce((sum, t) => sum + t.capacidad, 0);
+            document.getElementById('flashTruckCount').textContent = flashBatch.trucks.length;
+            document.getElementById('flashTotalCubos').textContent = totalCubos.toFixed(1);
+            document.getElementById('flashSaveCount').textContent = flashBatch.trucks.length;
+        }
+
+        function renderFlashTruckList() {
+            const list = document.getElementById('flashTruckList');
+            const emptyState = document.getElementById('flashEmptyState');
+
+            if (flashBatch.trucks.length === 0) {
+                list.innerHTML = '';
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                list.innerHTML = flashBatch.trucks.map((truck, index) => `
+                    <div class="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
+                        <div class="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-sm">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-white">${truck.nombre}</p>
+                            <p class="text-xs text-text-muted">${truck.patente}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-primary">${truck.capacidad} m³</p>
+                        </div>
+                        <button onclick="removeFlashTruck('${truck.tempId}')" 
+                            class="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition-all">
+                            <span class="material-symbols-outlined text-sm text-red-400">delete</span>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function addTruckToFlashBatch() {
+            const patenteInput = document.getElementById('flashPatente');
+            const cubosInput = document.getElementById('flashCubos');
+
+            const patente = patenteInput.value.trim().toUpperCase();
+            const cubos = parseFloat(cubosInput.value);
+
+            // Validation
+            if (!patente) {
+                alert('Ingresa la patente del camión');
+                patenteInput.focus();
+                return;
+            }
+            if (!cubos || cubos <= 0) {
+                alert('Ingresa los metros cúbicos');
+                cubosInput.focus();
+                return;
+            }
+
+            // Generate auto name
+            const nombre = `${flashBatch.origin.nombre}_${String(flashBatch.counter).padStart(2, '0')}`;
+
+            // Add to batch
+            flashBatch.trucks.push({
+                tempId: crypto.randomUUID(),
+                patente: patente,
+                capacidad: cubos,
+                nombre: nombre,
+                isNew: true
+            });
+
+            flashBatch.counter++;
+
+            // Clear inputs
+            patenteInput.value = '';
+            cubosInput.value = '';
+
+            // Re-render
+            renderFlashSummary();
+            renderFlashTruckList();
+
+            // Focus back to patente
+            patenteInput.focus();
+
+            // Haptic feedback
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        function removeFlashTruck(tempId) {
+            flashBatch.trucks = flashBatch.trucks.filter(t => t.tempId !== tempId);
+            renderFlashSummary();
+            renderFlashTruckList();
+        }
+
+        // Flash Recientes
+        async function openFlashRecientes() {
+            const modal = document.getElementById('flashRecientesModal');
+            const list = document.getElementById('flashRecientesList');
+
+            // Get frequent trucks
+            const { data: frequentTrucks, error } = await supabaseClient
+                .from('camiones')
+                .select('*')
+                .eq('obra_id', currentObraId)
+                .eq('tipo_registrado', 'incoming')
+                .order('nombre');
+
+            if (error) {
+                console.error('Error loading frequent trucks:', error);
+                list.innerHTML = '<p class="text-center text-red-400 py-4">Error al cargar camiones</p>';
+            } else if (frequentTrucks.length === 0) {
+                list.innerHTML = '<p class="text-center text-text-muted py-4">No hay camiones recientes de relleno</p>';
+            } else {
+                list.innerHTML = frequentTrucks.map(truck => `
+                    <button onclick="addFrequentToFlash('${truck.id}', '${truck.nombre}', '${truck.patente}', ${truck.capacidad})" 
+                        class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-accent rounded-xl transition-all text-left">
+                        <h4 class="font-bold text-white">${truck.nombre}</h4>
+                        <p class="text-xs text-text-muted mt-1">${truck.patente} • ${truck.capacidad} m³</p>
+                    </button>
+                `).join('');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function addFrequentToFlash(truckId, nombre, patente, capacidad) {
+            flashBatch.trucks.push({
+                tempId: crypto.randomUUID(),
+                truckId: truckId,
+                patente: patente,
+                capacidad: capacidad,
+                nombre: nombre,
+                isNew: false
+            });
+
+            closeFlashRecientes();
+            renderFlashSummary();
+            renderFlashTruckList();
+
+            // Haptic feedback
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+
+        function closeFlashRecientes() {
+            document.getElementById('flashRecientesModal').classList.add('hidden');
+        }
+
+        // Save Flash Batch
+        async function saveFlashBatch() {
+            if (flashBatch.trucks.length === 0) {
+                alert('Agrega al menos un camión a la lista');
+                return;
+            }
+
+            const btn = document.getElementById('flashSaveBtn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Guardando...';
+
+            try {
+                const dateStr = formatDateYYYYMMDD(getTargetDate());
+                const timestamp = new Date().toISOString();
+
+                // Prepare new trucks to insert
+                const trucksToInsert = flashBatch.trucks
+                    .filter(t => t.isNew)
+                    .map(t => ({
+                        obra_id: currentObraId,
+                        nombre: t.nombre,
+                        patente: t.patente,
+                        capacidad: t.capacidad,
+                        tipo_registrado: 'incoming',
+                        nomina_fecha: dateStr,
+                        contador_entrante: 1,
+                        contador_saliente: 0
+                    }));
+
+                // Insert new trucks
+                let insertedTrucks = [];
+                if (trucksToInsert.length > 0) {
+                    const { data, error } = await supabaseClient
+                        .from('camiones')
+                        .insert(trucksToInsert)
+                        .select();
+
+                    if (error) throw error;
+                    insertedTrucks = data;
+                }
+
+                // Prepare movements
+                const movements = flashBatch.trucks.map(t => {
+                    const truckId = t.isNew
+                        ? insertedTrucks.find(it => it.patente === t.patente).id
+                        : t.truckId;
+
+                    return {
+                        obra_id: currentObraId,
+                        camion_id: truckId,
+                        material_id: flashBatch.material.id,
+                        origen_id: flashBatch.origin.id,
+                        destino_id: null,
+                        tipo: 'incoming',
+                        fecha: dateStr,
+                        timestamp: timestamp,
+                        metros_cubicos: t.capacidad
+                    };
+                });
+
+                // Insert movements
+                const { error: movError } = await supabaseClient
+                    .from('movimientos')
+                    .insert(movements);
+
+                if (movError) throw movError;
+
+                // Update existing trucks counter
+                const existingTrucks = flashBatch.trucks.filter(t => !t.isNew);
+                for (const truck of existingTrucks) {
+                    const { data: currentTruck } = await supabaseClient
+                        .from('camiones')
+                        .select('contador_entrante')
+                        .eq('id', truck.truckId)
+                        .single();
+
+                    await supabaseClient
+                        .from('camiones')
+                        .update({ contador_entrante: (currentTruck.contador_entrante || 0) + 1 })
+                        .eq('id', truck.truckId);
+                }
+
+                // Invalidate caches
+                DataCache.remove(`trucks_${dateStr}`);
+                DataCache.remove(`movements_${dateStr}`);
+
+                // Refresh data
+                await Promise.all([
+                    loadTrucks(true),
+                    loadMovements(true)
+                ]);
+
+                // Success feedback
+                alert(`✅ ${flashBatch.trucks.length} camiones registrados correctamente`);
+                if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
+
+                closeAllModals();
+
+            } catch (error) {
+                console.error('Error saving flash batch:', error);
+                alert('Error al guardar. Intenta nuevamente: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
         window.openTruckSelector = async function (tipo) {
             console.log('Opening Truck Selector for:', tipo, 'Internal:', isInternalTripFlow);
             pendingTripMode = isInternalTripFlow ? 'internal' : tipo;
@@ -4465,6 +4997,12 @@
             // SHOW MODAL - FIX
             modal.classList.remove('hidden');
             modal.classList.add('active');
+
+            // Show/hide Flash Add button (only for incoming trips)
+            const flashAddBtn = document.getElementById('flashAddBtn');
+            if (flashAddBtn) {
+                flashAddBtn.style.display = (tipo === 'incoming' && !isInternalTripFlow) ? 'flex' : 'none';
+            }
 
             // Show loading state in the selector list while we refresh
             list.innerHTML = `
