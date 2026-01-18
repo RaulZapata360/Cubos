@@ -4717,14 +4717,22 @@
                 doc.setLineWidth(0.4);
                 doc.line(14, yPos + 1.2, 18, yPos + 1.2);
 
-                // Group by truck for this day
-                const dayTruckStats = {};
+                yPos += 4;
+
+                // Group by activity type for this day
+                const dayActivityStats = {
+                    'Relleno': {},
+                    'Excavación': {},
+                    'Viaje Interno': {}
+                };
+
                 dayMovements.forEach(m => {
+                    const activity = getActivityLabel(m);
                     const truckName = m.camiones?.nombre || 'Desconocido';
                     const plate = m.camiones?.patente || '-';
 
-                    if (!dayTruckStats[truckName]) {
-                        dayTruckStats[truckName] = {
+                    if (!dayActivityStats[activity][truckName]) {
+                        dayActivityStats[activity][truckName] = {
                             nombre: truckName,
                             patente: plate,
                             vueltas: 0,
@@ -4732,39 +4740,61 @@
                         };
                     }
 
-                    dayTruckStats[truckName].vueltas += 1;
-                    dayTruckStats[truckName].totalM3 += parseFloat(m.capacidad || 0);
+                    dayActivityStats[activity][truckName].vueltas += 1;
+                    dayActivityStats[activity][truckName].totalM3 += parseFloat(m.capacidad || 0);
                 });
 
-                const dayTrucksSorted = Object.values(dayTruckStats).sort((a, b) => b.totalM3 - a.totalM3);
+                // Render each activity type for this day
+                ['Relleno', 'Excavación', 'Viaje Interno'].forEach(activityName => {
+                    const trucks = Object.values(dayActivityStats[activityName]);
 
-                doc.autoTable({
-                    startY: yPos + 4,
-                    head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
-                    body: dayTrucksSorted.map(t => [
-                        t.nombre,
-                        t.patente,
-                        t.vueltas,
-                        `${t.totalM3.toFixed(1)} m³`
-                    ]),
-                    theme: 'plain',
-                    headStyles: commonHeadStyles,
-                    styles: commonStyles,
-                    columnStyles: {
-                        0: { halign: 'left' },
-                        1: { halign: 'left' },
-                        2: { halign: 'center' },
-                        3: { halign: 'right' }
-                    },
-                    didParseCell: (data) => {
-                        if (data.section === 'head' || data.section === 'body') {
-                            if (data.column.index === 2) data.cell.styles.halign = 'center';
-                            if (data.column.index === 3) data.cell.styles.halign = 'right';
-                        }
-                    },
-                    margin: { left: 14, right: 14 }
+                    if (trucks.length === 0) return; // Skip if no movements
+
+                    const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+
+                    if (yPos > 240) {
+                        doc.addPage();
+                        applyPageStyle();
+                        yPos = 25;
+                    }
+
+                    // Activity subtitle
+                    doc.setFontSize(7.5);
+                    doc.setTextColor(130, 130, 130);
+                    doc.setFont("times", "italic");
+                    doc.text(activityName, 16, yPos);
+                    yPos += 2;
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
+                        body: sortedTrucks.map(t => [
+                            t.nombre,
+                            t.patente,
+                            t.vueltas,
+                            `${t.totalM3.toFixed(1)} m³`
+                        ]),
+                        theme: 'plain',
+                        headStyles: commonHeadStyles,
+                        styles: commonStyles,
+                        columnStyles: {
+                            0: { halign: 'left' },
+                            1: { halign: 'left' },
+                            2: { halign: 'center' },
+                            3: { halign: 'right' }
+                        },
+                        didParseCell: (data) => {
+                            if (data.section === 'head' || data.section === 'body') {
+                                if (data.column.index === 2) data.cell.styles.halign = 'center';
+                                if (data.column.index === 3) data.cell.styles.halign = 'right';
+                            }
+                        },
+                        margin: { left: 14, right: 14 }
+                    });
+                    yPos = doc.lastAutoTable.finalY + 6;
                 });
-                yPos = doc.lastAutoTable.finalY + 12;
+
+                yPos += 6; // Extra space between days
             });
 
             // FOOTER
