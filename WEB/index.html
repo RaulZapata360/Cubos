@@ -4630,7 +4630,7 @@
             counter: 1
         };
 
-        function openFlashAddMode() {
+        window.openFlashAddMode = function () {
             // Reset flash batch state
             flashBatch = {
                 origin: null,
@@ -4641,9 +4641,9 @@
 
             closeAllModals();
             openFlashOriginSelector();
-        }
+        };
 
-        function cancelFlashMode() {
+        window.cancelFlashMode = function () {
             flashBatch = {
                 origin: null,
                 material: null,
@@ -4673,13 +4673,13 @@
             modal.classList.remove('hidden');
         }
 
-        function selectFlashOrigin(originId) {
+        window.selectFlashOrigin = function (originId) {
             flashBatch.origin = origenes.find(o => o.id === originId);
             closeAllModals();
             openFlashMaterialSelector();
         }
 
-        function backToFlashOrigin() {
+        window.backToFlashOrigin = function () {
             closeAllModals();
             openFlashOriginSelector();
         }
@@ -4705,7 +4705,7 @@
             modal.classList.remove('hidden');
         }
 
-        function selectFlashMaterial(materialId) {
+        window.selectFlashMaterial = function (materialId) {
             flashBatch.material = materials.find(m => m.id === materialId);
             closeAllModals();
             openFlashTruckBuilder();
@@ -4764,7 +4764,7 @@
             }
         }
 
-        function addTruckToFlashBatch() {
+        window.addTruckToFlashBatch = function () {
             const patenteInput = document.getElementById('flashPatente');
             const cubosInput = document.getElementById('flashCubos');
 
@@ -4812,14 +4812,14 @@
             if (navigator.vibrate) navigator.vibrate(10);
         }
 
-        function removeFlashTruck(tempId) {
+        window.removeFlashTruck = function (tempId) {
             flashBatch.trucks = flashBatch.trucks.filter(t => t.tempId !== tempId);
             renderFlashSummary();
             renderFlashTruckList();
         }
 
         // Flash Recientes
-        async function openFlashRecientes() {
+        window.openFlashRecientes = async function () {
             const modal = document.getElementById('flashRecientesModal');
             const list = document.getElementById('flashRecientesList');
 
@@ -4849,7 +4849,7 @@
             modal.classList.remove('hidden');
         }
 
-        function addFrequentToFlash(truckId, nombre, patente, capacidad) {
+        window.addFrequentToFlash = function (truckId, nombre, patente, capacidad) {
             flashBatch.trucks.push({
                 tempId: crypto.randomUUID(),
                 truckId: truckId,
@@ -4867,12 +4867,12 @@
             if (navigator.vibrate) navigator.vibrate(10);
         }
 
-        function closeFlashRecientes() {
+        window.closeFlashRecientes = function () {
             document.getElementById('flashRecientesModal').classList.add('hidden');
         }
 
         // Save Flash Batch
-        async function saveFlashBatch() {
+        window.saveFlashBatch = async function () {
             if (flashBatch.trucks.length === 0) {
                 alert('Agrega al menos un camión a la lista');
                 return;
