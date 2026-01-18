@@ -4482,8 +4482,42 @@
                 console.warn('Error fetching archived movements:', error);
             }
 
+            // Fetch current week movements from Supabase (not just cached day)
+            let currentWeekMovements = [];
+            try {
+                const session = await authService.checkSession();
+                const obraId = session.user?.app_metadata?.obra_id;
+
+                if (obraId) {
+                    const { data: weekData, error: weekError } = await supabaseClient
+                        .from('movimientos')
+                        .select(`
+                            *,
+                            camiones:camion_id (
+                                nombre,
+                                patente,
+                                capacidad
+                            )
+                        `)
+                        .eq('obra_id', obraId)
+                        .gte('fecha', startDateStr)
+                        .lte('fecha', endDateStr)
+                        .is('deleted_at', null);
+
+                    if (!weekError && weekData) {
+                        currentWeekMovements = weekData;
+                        console.log('📊 Movimientos actuales de la semana:', currentWeekMovements.length);
+                    } else if (weekError) {
+                        console.error('Error fetching week movements:', weekError);
+                    }
+                } else {
+                    console.warn('⚠️ No obra_id found for current movements');
+                }
+            } catch (error) {
+                console.error('Error fetching current week movements:', error);
+            }
+
             // Combine current movements with archived movements
-            const currentWeekMovements = (movements || []).filter(m => m.fecha >= startDateStr && m.fecha <= endDateStr);
             const weekMovements = [...currentWeekMovements, ...archivedMovements];
 
             console.log('📅 Rango semanal:', startDateStr, 'al', endDateStr);
