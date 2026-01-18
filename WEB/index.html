@@ -4451,16 +4451,13 @@
             // Fetch archived movements from historial_diario
             let archivedMovements = [];
             try {
-                const session = await authService.checkSession();
-                const obraId = session.user?.app_metadata?.obra_id;
-
-                if (!obraId) {
-                    console.warn('⚠️ No obra_id found, skipping archived movements');
+                if (!currentObraId) {
+                    console.warn('⚠️ No currentObraId found, skipping archived movements');
                 } else {
                     const { data: archived, error } = await supabaseClient
                         .from('historial_diario')
                         .select('*')
-                        .eq('obra_id', obraId)
+                        .eq('obra_id', currentObraId)
                         .gte('fecha', startDateStr)
                         .lte('fecha', endDateStr);
 
@@ -4485,10 +4482,7 @@
             // Fetch current week movements from Supabase (not just cached day)
             let currentWeekMovements = [];
             try {
-                const session = await authService.checkSession();
-                const obraId = session.user?.app_metadata?.obra_id;
-
-                if (obraId) {
+                if (currentObraId) {
                     const { data: weekData, error: weekError } = await supabaseClient
                         .from('movimientos')
                         .select(`
@@ -4499,7 +4493,7 @@
                                 capacidad
                             )
                         `)
-                        .eq('obra_id', obraId)
+                        .eq('obra_id', currentObraId)
                         .gte('fecha', startDateStr)
                         .lte('fecha', endDateStr)
                         .is('deleted_at', null);
@@ -4511,7 +4505,7 @@
                         console.error('Error fetching week movements:', weekError);
                     }
                 } else {
-                    console.warn('⚠️ No obra_id found for current movements');
+                    console.warn('⚠️ No currentObraId found for current movements');
                 }
             } catch (error) {
                 console.error('Error fetching current week movements:', error);
