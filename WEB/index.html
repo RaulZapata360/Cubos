@@ -4218,7 +4218,7 @@
                 return;
             }
             const totalVolume = internalTrips.reduce((sum, m) => sum + parseFloat(m.capacidad || 0), 0);
-            const uniqueTrucks = new Set(internalTrips.map(m => m.camion_id)).size;
+            const uniqueTrucks = new Set(internalTrips.map(m => m.camion_id).filter(id => id !== null)).size;
             container.innerHTML = `
                 <div class="grid grid-cols-2 gap-2 mb-3">
                     <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-2 text-center">
@@ -4488,10 +4488,17 @@
                 const statsMap = {};
                 dailyMovements.forEach(m => {
                     const truckId = m.camion_id;
+
+                    // Skip movements without valid truck reference (orphaned movements)
+                    if (!truckId) {
+                        console.warn('Skipping movement without truck reference:', m.id);
+                        return;
+                    }
+
                     if (!statsMap[truckId]) {
                         const truckInfo = m.camiones || m.camion || {};
                         statsMap[truckId] = {
-                            name: truckInfo.nombre || `Camión ${truckId.substring(0, 4)}`,
+                            name: truckInfo.nombre || `Camión ${truckId.substring(0, 8)}`,
                             patente: truckInfo.patente || 'N/A',
                             trips: 0,
                             incomingCount: 0,
