@@ -4452,27 +4452,31 @@
             let archivedMovements = [];
             try {
                 const session = await authService.checkSession();
-                const obraId = session.user?.user_metadata?.obra_id;
+                const obraId = session.user?.app_metadata?.obra_id;
 
-                const { data: archived, error } = await supabaseClient
-                    .from('historial_diario')
-                    .select('*')
-                    .eq('obra_id', obraId)
-                    .gte('fecha', startDateStr)
-                    .lte('fecha', endDateStr);
+                if (!obraId) {
+                    console.warn('⚠️ No obra_id found, skipping archived movements');
+                } else {
+                    const { data: archived, error } = await supabaseClient
+                        .from('historial_diario')
+                        .select('*')
+                        .eq('obra_id', obraId)
+                        .gte('fecha', startDateStr)
+                        .lte('fecha', endDateStr);
 
-                if (!error && archived) {
-                    // Parse JSON data from historial_diario
-                    archivedMovements = archived.flatMap(day => {
-                        try {
-                            const dayData = typeof day.data === 'string' ? JSON.parse(day.data) : day.data;
-                            return dayData.movements || [];
-                        } catch (e) {
-                            console.warn('Error parsing archived data for', day.fecha, e);
-                            return [];
-                        }
-                    });
-                    console.log('📦 Movimientos archivados encontrados:', archivedMovements.length);
+                    if (!error && archived) {
+                        // Parse JSON data from historial_diario
+                        archivedMovements = archived.flatMap(day => {
+                            try {
+                                const dayData = typeof day.data === 'string' ? JSON.parse(day.data) : day.data;
+                                return dayData.movements || [];
+                            } catch (e) {
+                                console.warn('Error parsing archived data for', day.fecha, e);
+                                return [];
+                            }
+                        });
+                        console.log('📦 Movimientos archivados encontrados:', archivedMovements.length);
+                    }
                 }
             } catch (error) {
                 console.warn('Error fetching archived movements:', error);
