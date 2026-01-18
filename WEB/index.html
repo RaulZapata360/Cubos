@@ -2867,11 +2867,9 @@
             currentEditingTruckId = null;
             document.getElementById('truckForm').reset();
 
-            // HEREDAR MISION - FIX
-            if (pendingTripMode) {
-                const radio = document.querySelector(`input[name="truckType"][value="${pendingTripMode}"]`);
-                if (radio) radio.checked = true;
-            }
+            // Clear pending trip mode when opening from Admin
+            // Admin is for truck management, not trip registration
+            pendingTripMode = null;
 
             const modalTitle = document.querySelector('#truckModal h2');
             if (modalTitle) modalTitle.textContent = '➕ Registrar Nuevo Camión';
