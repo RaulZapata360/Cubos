@@ -1031,7 +1031,7 @@
                         class="hidden space-y-4 bg-black/20 p-5 rounded-2xl border border-white/10">
                         <div>
                             <label
-                                class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Nombre
+                                class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Descripción
                                 del Material</label>
                             <input type="text" id="customMaterialName" placeholder="Ej: Escombro Seleccionado..."
                                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-primary transition-all">
@@ -1502,96 +1502,151 @@
         </div>
     </div>
 
-    <!-- TRUCK FORM MODAL -->
+    <!-- TRUCK FORM MODAL - PREMIUM CARD DESIGN -->
     <div id="truckModal" class="fixed inset-0 z-[80] hidden">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" id="closeModal"></div>
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
         <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
-            <div class="glass-card w-full max-w-md neon-shadow animate-in fade-in zoom-in duration-300">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-black text-white">Registrar Camión</h2>
-                        <button onclick="closeAllModals()" class="text-slate-400 hover:text-white">
+            <div
+                class="glass-card w-full max-w-lg neon-shadow animate-in fade-in zoom-in duration-300 border border-border">
+                <div class="p-6 space-y-6">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-black text-main">Registrar Camión</h2>
+                        <button onclick="closeAllModals()" class="text-text-muted hover:text-main transition-colors">
                             <span class="material-symbols-outlined">close</span>
                         </button>
                     </div>
 
-                    <form id="truckForm" class="space-y-4">
+                    <form id="truckForm" class="space-y-6">
+                        <!-- Tipo de Vehículo -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Identificador</label>
-                            <input type="text" id="truckName" placeholder="Ej: Volvo A40, Interno 10..." required
-                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Patente</label>
-                            <input type="text" id="licensePlate" placeholder="Ej: AB1234" required
-                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none uppercase">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-1">Capacidad (m³)</label>
-                            <input type="number" id="capacity" placeholder="0.0" min="0" step="0.1" required
-                                class="w-full px-4 py-3 bg-black/20 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">Operación
-                                Habitual</label>
-                            <div class="grid grid-cols-2 gap-2">
+                            <label
+                                class="text-[10px] font-bold text-text-muted uppercase mb-3 block tracking-widest">Tipo
+                                de Vehículo</label>
+                            <div class="grid grid-cols-3 gap-3">
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="truckType" value="incoming" class="peer sr-only" checked>
+                                    <input type="radio" name="vehicleType" value="tolva" class="peer sr-only" checked>
                                     <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-success/20 peer-checked:border-success transition-all text-center h-full flex flex-col items-center justify-center">
-                                        <div class="text-xl mb-1">📥</div>
-                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">Relleno
-                                        </div>
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-checked:bg-primary/10 transition-all hover:border-primary/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-3xl">🚛</div>
+                                        <span
+                                            class="text-[10px] font-bold text-text-muted peer-checked:text-primary uppercase tracking-wider">Tolva</span>
                                     </div>
                                 </label>
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="truckType" value="outgoing" class="peer sr-only">
+                                    <input type="radio" name="vehicleType" value="articulado" class="peer sr-only">
                                     <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-warning/20 peer-checked:border-warning transition-all text-center h-full flex flex-col items-center justify-center">
-                                        <div class="text-xl mb-1">📤</div>
-                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">
-                                            Excavación</div>
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-checked:bg-primary/10 transition-all hover:border-primary/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-3xl">🚚</div>
+                                        <span
+                                            class="text-[10px] font-bold text-text-muted peer-checked:text-primary uppercase tracking-wider">Articulado</span>
                                     </div>
                                 </label>
                                 <label class="cursor-pointer">
-                                    <input type="radio" name="truckType" value="mixed" class="peer sr-only">
+                                    <input type="radio" name="vehicleType" value="corto" class="peer sr-only">
                                     <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-accent/20 peer-checked:border-accent transition-all text-center h-full flex flex-col items-center justify-center">
-                                        <div class="text-xl mb-1">🔄</div>
-                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">Mixto
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="cursor-pointer">
-                                    <input type="radio" name="truckType" value="internal" class="peer sr-only">
-                                    <div
-                                        class="p-3 bg-black/20 border border-white/10 rounded-xl peer-checked:bg-cyan-500/20 peer-checked:border-cyan-500 transition-all text-center h-full flex flex-col items-center justify-center">
-                                        <div class="text-xl mb-1">↔️</div>
-                                        <div class="text-[9px] font-bold text-white uppercase tracking-tighter">Interno
-                                        </div>
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-checked:bg-primary/10 transition-all hover:border-primary/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-3xl">🚙</div>
+                                        <span
+                                            class="text-[10px] font-bold text-text-muted peer-checked:text-primary uppercase tracking-wider">Corto</span>
                                     </div>
                                 </label>
                             </div>
                         </div>
 
-                        <div class="flex gap-3 pt-4">
-                            <button type="button" onclick="closeAllModals()"
-                                class="flex-1 py-3 bg-white/5 rounded-xl text-sm font-bold text-slate-300 hover:bg-white/10">
-                                Cancelar
-                            </button>
-                            <button type="submit"
-                                class="flex-1 py-3 bg-primary rounded-xl text-sm font-bold text-white hover:bg-primary-dark shadow-lg shadow-primary/20">
-                                Guardar Camión
-                            </button>
+                        <!-- Identificador / Nombre -->
+                        <div>
+                            <label
+                                class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Identificador
+                                / Nombre</label>
+                            <input type="text" id="truckName" placeholder="Ej: Interno 24" required
+                                class="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                         </div>
+
+                        <!-- Patente y Capacidad -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- Patente -->
+                            <div>
+                                <label
+                                    class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Patente</label>
+                                <input type="text" id="licensePlate" placeholder="ABCD-12" required
+                                    class="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-text-muted uppercase focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            </div>
+
+                            <!-- Capacidad -->
+                            <div>
+                                <label
+                                    class="text-[10px] font-bold text-text-muted uppercase mb-2 block tracking-widest">Capacidad
+                                    (M³)</label>
+                                <div
+                                    class="flex items-center gap-2 bg-black/40 border border-white/10 rounded-xl px-3 py-2">
+                                    <button type="button" onclick="adjustCapacity(-1)"
+                                        class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted hover:text-primary transition-all active:scale-95">
+                                        <span class="material-symbols-outlined text-lg">remove</span>
+                                    </button>
+                                    <input type="number" id="capacity" value="15" min="0" step="0.5" required
+                                        class="flex-1 bg-transparent text-center text-white text-lg font-bold outline-none">
+                                    <button type="button" onclick="adjustCapacity(1)"
+                                        class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-muted hover:text-primary transition-all active:scale-95">
+                                        <span class="material-symbols-outlined text-lg">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tipo de Operación -->
+                        <div>
+                            <label
+                                class="text-[10px] font-bold text-text-muted uppercase mb-3 block tracking-widest">Tipo
+                                de Operación</label>
+                            <div class="flex gap-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="truckType" value="incoming" class="peer sr-only" checked>
+                                    <div
+                                        class="glass-card p-3 rounded-xl border border-white/10 peer-checked:border-success peer-checked:bg-success/10 transition-all hover:border-success/50 active:scale-95 text-center">
+                                        <span
+                                            class="text-xs font-bold text-text-muted peer-checked:text-success uppercase tracking-wider">Relleno</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="truckType" value="mixed" class="peer sr-only">
+                                    <div
+                                        class="glass-card p-3 rounded-xl border border-white/10 peer-checked:border-accent peer-checked:bg-accent/10 transition-all hover:border-accent/50 active:scale-95 text-center">
+                                        <span
+                                            class="text-xs font-bold text-text-muted peer-checked:text-accent uppercase tracking-wider">Mixto</span>
+                                    </div>
+                                </label>
+                                <label class="flex-1 cursor-pointer">
+                                    <input type="radio" name="truckType" value="outgoing" class="peer sr-only">
+                                    <div
+                                        class="glass-card p-3 rounded-xl border border-white/10 peer-checked:border-warning peer-checked:bg-warning/10 transition-all hover:border-warning/50 active:scale-95 text-center">
+                                        <span
+                                            class="text-xs font-bold text-text-muted peer-checked:text-warning uppercase tracking-wider">Salida</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Guardar -->
+                        <button type="submit"
+                            class="w-full py-4 bg-gradient-to-r from-primary to-accent rounded-xl text-base font-bold text-white hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-primary/30 transition-all">
+                            GUARDAR EN NÓMINA
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <script>
+        // Adjust capacity with +/- buttons
+        window.adjustCapacity = function (delta) {
+            const input = document.getElementById('capacity');
+            const currentValue = parseFloat(input.value) || 0;
+            const newValue = Math.max(0, currentValue + delta);
+            input.value = newValue;
+        };
+    </script>
 
     <!-- Modal for Frequent Trucks -->
     <div id="frequentTrucksModal" class="fixed inset-0 z-[80] hidden">
