@@ -28,7 +28,7 @@ class GoalsService {
                 .single();
 
             if (error) throw error;
-            
+
             console.log('✅ Meta creada:', data);
             return data;
         } catch (error) {
@@ -50,7 +50,7 @@ class GoalsService {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            
+
             console.log(`📊 ${data?.length || 0} metas activas cargadas`);
             return data || [];
         } catch (error) {
@@ -73,7 +73,7 @@ class GoalsService {
                 .single();
 
             if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-            
+
             return data || null;
         } catch (error) {
             console.error('❌ Error loading goal by type:', error);
@@ -97,7 +97,7 @@ class GoalsService {
                 .single();
 
             if (error) throw error;
-            
+
             console.log('✅ Meta actualizada:', data);
             return data;
         } catch (error) {
@@ -124,7 +124,7 @@ class GoalsService {
                 .eq('id', goalId);
 
             if (error) throw error;
-            
+
             console.log('✅ Meta eliminada');
             return true;
         } catch (error) {
@@ -140,14 +140,14 @@ class GoalsService {
         if (!goal) return null;
 
         // Filtrar movimientos relevantes desde fecha_inicio
-        const relevantMovements = movements.filter(m => 
-            m.tipo === goal.tipo && 
+        const relevantMovements = movements.filter(m =>
+            m.tipo === goal.tipo &&
             m.fecha >= goal.fecha_inicio
         );
 
         // Calcular m³ acumulados
         const m3Acumulados = relevantMovements.reduce(
-            (sum, m) => sum + (parseFloat(m.capacidad) || 0), 
+            (sum, m) => sum + (parseFloat(m.capacidad) || 0),
             0
         );
 
@@ -174,5 +174,5 @@ class GoalsService {
 }
 
 // Inicializar servicio
-const goalsService = new GoalsService();
+window.goalsService = new GoalsService();
 console.log('✅ Goals service initialized');

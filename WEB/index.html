@@ -71,6 +71,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="avatar-icons.js"></script>
     <script src="DIAGNOSTICO.js"></script>
+    <script src="services/goals-service.js"></script>
+    <script src="services/goals-ui.js"></script>
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDefMPR_TwrfEXkfgtIwOMrWO0KAHx13jc&libraries=places"></script>
 
@@ -458,6 +460,8 @@
                                     <div class="text-[9px] text-white/60 mt-1">Acumulado hoy</div>
                                 </div>
                             </div>
+                            <!-- Goal Progress -->
+                            <div id="goalProgress-incoming"></div>
                             <!-- Material Breakdown -->
                             <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20"
                                 id="incomingMaterialBreakdown">
@@ -489,6 +493,8 @@
                                     <div class="text-[9px] text-white/70 uppercase">m³ acumulado</div>
                                 </div>
                             </div>
+                            <!-- Goal Progress -->
+                            <div id="goalProgress-internal"></div>
                             <!-- Material Breakdown -->
                             <div class="flex flex-col gap-1 pt-2 border-t border-white/20"
                                 id="internalMaterialBreakdown">
@@ -516,6 +522,8 @@
                                     <div class="text-[9px] text-white/70 uppercase">m³ acumulado</div>
                                 </div>
                             </div>
+                            <!-- Goal Progress -->
+                            <div id="goalProgress-outgoing"></div>
                             <!-- Material Breakdown -->
                             <div class="flex flex-col gap-1 pt-2 border-t border-white/20"
                                 id="outgoingMaterialBreakdown">
@@ -3351,7 +3359,8 @@
                     loadMaterials(),
                     loadDestinos(),
                     loadOrigenes(), // Added
-                    loadMovements()
+                    loadMovements(),
+                    loadGoals()
                 ]);
                 updateDateTime();
                 if (!window.updateInterval) {
