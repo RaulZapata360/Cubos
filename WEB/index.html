@@ -419,71 +419,70 @@
             <!-- Tab: Resumen -->
 
             <div class="tab-content active" id="tab-resumen">
-                <!-- Quick Action Buttons -->
-                <!-- Quick Action Buttons -->
-                <section class="grid grid-cols-2 gap-4 px-4 mb-6">
-                    <!-- Incoming Trucks -->
+                <!-- Quick Action Buttons - REDESIGNED WITH SOLID COLORS -->
+                <section class="px-4 mb-6 space-y-4">
+                    <!-- Incoming Trucks - FULL WIDTH GREEN CARD -->
                     <button id="incomingBtn" title="Presiona E"
-                        class="glass-card p-5 rounded-2xl border-l-4 border-l-success relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left neon-shadow">
+                        class="w-full p-5 rounded-2xl bg-success text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-lg shadow-success/30">
                         <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <span class="material-symbols-outlined text-6xl text-success">south_east</span>
+                            <span class="material-symbols-outlined text-6xl text-white">south_east</span>
                         </div>
                         <div class="relative z-10">
                             <div class="flex items-center gap-2 mb-3">
-                                <div class="w-8 h-8 rounded-lg bg-success/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-success text-lg">south_east</span>
+                                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-xl">south_east</span>
                                 </div>
-                                <span
-                                    class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Entrante</span>
+                                <div class="flex-1">
+                                    <div class="text-base font-black text-white uppercase tracking-wide">Entrada de
+                                        Material</div>
+                                    <div class="text-[10px] text-white/80">Material que ingresa a la obra</div>
+                                </div>
                             </div>
-                            <div class="text-4xl font-black text-main leading-none mb-1" id="incomingCount">0</div>
-                            <div class="text-[10px] text-text-muted">Seleccionar camión</div>
+                            <div class="text-4xl font-black text-white leading-none" id="incomingCount">0</div>
                         </div>
                     </button>
 
-                    <!-- Outgoing Trucks -->
-                    <button id="outgoingBtn" title="Presiona S"
-                        class="glass-card p-5 rounded-2xl border-l-4 border-l-warning relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left neon-shadow">
-                        <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <span class="material-symbols-outlined text-6xl text-warning">north_east</span>
-                        </div>
-                        <div class="relative z-10">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-warning text-lg">north_east</span>
+                    <!-- Internal Trips & Outgoing - GRID 2 COLUMNS -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Internal Trips - BLUE CARD -->
+                        <button onclick="openInternalTripSelector()"
+                            class="p-4 rounded-2xl bg-primary text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/30">
+                            <div class="flex flex-col items-center justify-center gap-2 mb-3">
+                                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-2xl">swap_horiz</span>
                                 </div>
-                                <span
-                                    class="text-[10px] font-bold text-text-muted uppercase tracking-wider">Saliente</span>
+                                <div class="text-xs font-black text-white uppercase tracking-wide text-center">Viaje
+                                    Interno</div>
+                                <div class="text-[9px] text-white/80 text-center">Movimiento local</div>
                             </div>
-                            <div class="text-4xl font-black text-main leading-none mb-1" id="outgoingCount">0</div>
-                            <div class="text-[10px] text-text-muted">Seleccionar camión</div>
-                        </div>
-                    </button>
-                </section>
+                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/20">
+                                <div class="text-center">
+                                    <div class="text-2xl font-black text-white leading-none mb-1"
+                                        id="internalTripsCount">0</div>
+                                    <div class="text-[8px] text-white/70 uppercase">Vueltas</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-black text-white leading-none mb-1"
+                                        id="internalTripsVolume">0</div>
+                                    <div class="text-[8px] text-white/70 uppercase">m³</div>
+                                </div>
+                            </div>
+                        </button>
 
-                <!-- Internal Trips Card -->
-                <section class="px-4 mb-6">
-                    <div onclick="openInternalTripSelector()"
-                        class="glass-card p-4 rounded-2xl border-l-4 border-l-cyan-400 neon-shadow border border-border cursor-pointer hover:bg-white/5 active:scale-[0.98] transition-all group">
-                        <div class="flex items-center gap-2 mb-3">
-                            <div class="w-8 h-8 rounded-lg bg-cyan-400/20 flex items-center justify-center">
-                                <span class="material-symbols-outlined text-cyan-400 text-lg">swap_horiz</span>
+                        <!-- Outgoing Trucks - RED CARD -->
+                        <button id="outgoingBtn" title="Presiona S"
+                            class="p-4 rounded-2xl bg-danger text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-danger/30">
+                            <div class="flex flex-col items-center justify-center gap-2 mb-3">
+                                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-white text-2xl">north_east</span>
+                                </div>
+                                <div class="text-xs font-black text-white uppercase tracking-wide text-center">Salida de
+                                    Material</div>
+                                <div class="text-[9px] text-white/80 text-center">Excavación / Escombro</div>
                             </div>
-                            <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Viajes
-                                Internos</span>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="text-center">
-                                <div class="text-3xl font-black text-cyan-400 leading-none mb-1"
-                                    id="internalTripsCount">0</div>
-                                <div class="text-[9px] text-text-muted uppercase">Vueltas</div>
+                            <div class="text-3xl font-black text-white leading-none text-center" id="outgoingCount">0
                             </div>
-                            <div class="text-center">
-                                <div class="text-3xl font-black text-cyan-400 leading-none mb-1"
-                                    id="internalTripsVolume">0</div>
-                                <div class="text-[9px] text-text-muted uppercase">m³</div>
-                            </div>
-                        </div>
+                        </button>
                     </div>
                 </section>
 
