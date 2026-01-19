@@ -71,38 +71,35 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase Function
+        // Init Supabase Client
         (function () {
-            // Detect if we're in a preview/development environment
             const isPreview = window.location.hostname.includes('git-feature') ||
                 window.location.hostname.includes('localhost') ||
                 window.location.hostname.includes('127.0.0.1');
 
-            // Production Supabase (main branch)
             const PROD_CONFIG = {
                 url: 'https://rvnxnwotpieemwhbpoit.supabase.co',
                 anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2bnhud290cGllZW13aGJwb2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NDg5MTcsImV4cCI6MjA4MjQyNDkxN30.PkYOjzHcS_Tx8e40YkhcQDHrsf5cvHZ0H7jjQH63mwk'
             };
 
-            // Development Supabase (preview deployments)
             const DEV_CONFIG = {
                 url: 'https://nevsvknqnzrkjngfbnxs.supabase.co',
                 anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldnN2a25xbnpya2puZ2ZibnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NTY3NjcsImV4cCI6MjA4MzEzMjc2N30.4YZ6o-mC0P2UIixKBwKjm9Vmr5gqH_EiYmPq5ovGdL0'
             };
 
-            // Select configuration based on environment
             const config = isPreview ? DEV_CONFIG : PROD_CONFIG;
 
-            console.log(`🔧 Supabase Environment: ${isPreview ? '🧪 DEVELOPMENT' : '🚀 PRODUCTION'}`);
-
-            // Create Global Client using the factory provided by the CDN
+            // Safer initialization
             if (window.supabase && typeof window.supabase.createClient === 'function') {
-                // The CDN exposes 'supabase' object with createClient method
-                // We re-assign window.supabase to be the ACTUAL client instance
-                window.supabase = window.supabase.createClient(config.url, config.anonKey);
-                console.log('✅ Supabase Client Initialized Globally');
+                try {
+                    const client = window.supabase.createClient(config.url, config.anonKey);
+                    window.supabase = client; // Overwrite with instance
+                    console.log('✅ Supabase initialized successfully');
+                } catch (e) {
+                    console.error('❌ Error creating Supabase client:', e);
+                }
             } else {
-                console.error('❌ Supabase SDK not loaded properly from CDN. Check internet connection or CDN URL.');
+                console.error('❌ Supabase SDK not found');
             }
         })();
     </script>
@@ -460,74 +457,7 @@
             <!-- Tab: Resumen -->
 
             <div class="tab-content active" id="tab-resumen">
-                <!-- ACTIVE MISSION CARD (DONUT CHART) -->
-                <!-- Hidden by default, shown via JS when active goal exists -->
-                <section id="activeMissionCard" class="px-4 mb-6 hidden animate-in fade-in zoom-in duration-500">
-                    <div
-                        class="glass-card rounded-2xl p-6 relative overflow-hidden border border-primary/20 bg-slate-900/40 backdrop-blur-[24px]">
-                        <!-- Header -->
-                        <div class="flex items-center justify-between mb-6">
-                            <div>
-                                <h3 class="text-xl font-black text-white uppercase tracking-tight leading-none"
-                                    id="missionTitle">SECTOR NORTE</h3>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
-                                    <span class="text-[10px] font-bold text-success uppercase tracking-widest">Misión
-                                        Activa</span>
-                                </div>
-                            </div>
-                            <button onclick="openGoalModal()"
-                                class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider transition-all">
-                                Nueva Meta
-                            </button>
-                        </div>
-
-                        <!-- Donut Chart Layout -->
-                        <div class="flex items-center justify-between gap-4">
-                            <!-- Left: Logrado -->
-                            <div class="text-left">
-                                <span
-                                    class="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Logrado</span>
-                                <div class="text-3xl font-black text-white leading-none" id="missionProgressM3">0</div>
-                                <span class="text-xs text-white/50 font-bold">m³</span>
-                                <div class="mt-2 text-[10px] font-bold text-success flex items-center gap-1"
-                                    id="missionPercentChange">
-                                    <span class="material-symbols-outlined text-sm">trending_up</span>
-                                    <span>En progreso</span>
-                                </div>
-                            </div>
-
-                            <!-- Center: Donut Chart -->
-                            <div class="relative w-32 h-32 flex items-center justify-center">
-                                <!-- Outer Glow -->
-                                <div class="absolute inset-0 rounded-full bg-primary/20 blur-xl"></div>
-                                <!-- Chart Container -->
-                                <div class="relative w-full h-full rounded-full"
-                                    style="background: conic-gradient(var(--primary) 0% 0%, rgba(255,255,255,0.05) 0% 100%);"
-                                    id="missionDonutChart">
-                                    <!-- Inner Circle (Cutout) -->
-                                    <div
-                                        class="absolute inset-2 bg-slate-900 rounded-full flex flex-col items-center justify-center border border-white/5 shadow-inner">
-                                        <div class="text-2xl font-black text-white" id="missionPercent">0%</div>
-                                        <div class="text-[8px] font-bold text-white/50 uppercase tracking-widest">Meta
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right: Restante -->
-                            <div class="text-right">
-                                <span
-                                    class="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Restante</span>
-                                <div class="text-3xl font-black text-white leading-none" id="missionRemainingM3">0</div>
-                                <span class="text-xs text-white/50 font-bold">m³</span>
-                                <div class="mt-2 text-[10px] font-bold text-warning" id="missionDeadlineText">
-                                    Plazo: -- días
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+                <!-- ACTIVE MISSION CARD MOVED BELOW -->
 
                 <!-- OPERACIONES DISPONIBLES - SECTION TITLE -->
                 <section class="px-4 mb-4">
@@ -679,6 +609,74 @@
                             </div>
                         </button>
 
+                    </div>
+                </section>
+
+                <!-- ACTIVE MISSION CARD (MOVED HERE) -->
+                <section id="activeMissionCard" class="px-4 mb-6 hidden animate-in fade-in zoom-in duration-500">
+                    <div
+                        class="glass-card rounded-2xl p-6 relative overflow-hidden border border-primary/20 bg-slate-900/40 backdrop-blur-[24px]">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-xl font-black text-white uppercase tracking-tight leading-none"
+                                    id="missionTitle">SECTOR NORTE</h3>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="w-2 h-2 rounded-full bg-success animate-pulse"></span>
+                                    <span class="text-[10px] font-bold text-success uppercase tracking-widest">Misión
+                                        Activa</span>
+                                </div>
+                            </div>
+                            <button onclick="openGoalModal()"
+                                class="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[10px] font-bold text-white uppercase tracking-wider transition-all">
+                                Nueva Meta
+                            </button>
+                        </div>
+
+                        <!-- Donut Chart Layout -->
+                        <div class="flex items-center justify-between gap-4">
+                            <!-- Left: Logrado -->
+                            <div class="text-left">
+                                <span
+                                    class="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Logrado</span>
+                                <div class="text-3xl font-black text-white leading-none" id="missionProgressM3">0</div>
+                                <span class="text-xs text-white/50 font-bold">m³</span>
+                                <div class="mt-2 text-[10px] font-bold text-success flex items-center gap-1"
+                                    id="missionPercentChange">
+                                    <span class="material-symbols-outlined text-sm">trending_up</span>
+                                    <span>En progreso</span>
+                                </div>
+                            </div>
+
+                            <!-- Center: Donut Chart -->
+                            <div class="relative w-32 h-32 flex items-center justify-center">
+                                <!-- Outer Glow -->
+                                <div class="absolute inset-0 rounded-full bg-primary/20 blur-xl"></div>
+                                <!-- Chart Container -->
+                                <div class="relative w-full h-full rounded-full"
+                                    style="background: conic-gradient(var(--primary) 0% 0%, rgba(255,255,255,0.05) 0% 100%);"
+                                    id="missionDonutChart">
+                                    <!-- Inner Circle (Cutout) -->
+                                    <div
+                                        class="absolute inset-2 bg-slate-900 rounded-full flex flex-col items-center justify-center border border-white/5 shadow-inner">
+                                        <div class="text-2xl font-black text-white" id="missionPercent">0%</div>
+                                        <div class="text-[8px] font-bold text-white/50 uppercase tracking-widest">Meta
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: Restante -->
+                            <div class="text-right">
+                                <span
+                                    class="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Restante</span>
+                                <div class="text-3xl font-black text-white leading-none" id="missionRemainingM3">0</div>
+                                <span class="text-xs text-white/50 font-bold">m³</span>
+                                <div class="mt-2 text-[10px] font-bold text-warning" id="missionDeadlineText">
+                                    Plazo: -- días
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
