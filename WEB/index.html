@@ -4940,11 +4940,23 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // Calculate week range (last 7 days from target date)
+            // Calculate week range (Monday to Sunday of the week containing target date)
             const targetDate = getTargetDate();
-            const endDate = new Date(targetDate);
+
+            // Get the day of week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+            const dayOfWeek = targetDate.getDay();
+
+            // Calculate days to subtract to get to Monday
+            // If Sunday (0), go back 6 days; if Monday (1), go back 0 days; etc.
+            const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+            // Start date is Monday of this week
             const startDate = new Date(targetDate);
-            startDate.setDate(startDate.getDate() - 6); // 7 days including target date
+            startDate.setDate(targetDate.getDate() - daysToMonday);
+
+            // End date is Sunday of this week (6 days after Monday)
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
 
             const formatDateDisplay = (date) => date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
             const weekRangeDisplay = `${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`;
