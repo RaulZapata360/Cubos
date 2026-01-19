@@ -78,6 +78,12 @@ async function loadMaterialsFromSupabase() {
             return [];
         }
 
+        // Show loading indicator
+        const loadingIndicator = document.getElementById('materialLoadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.classList.remove('hidden');
+        }
+
         const { data, error } = await supabase
             .from('materiales')
             .select('*')
@@ -88,10 +94,23 @@ async function loadMaterialsFromSupabase() {
 
         console.log(`📦 ${data?.length || 0} materiales cargados desde Supabase`);
         window.materials = data || [];
+
+        // Hide loading indicator
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
+
         return data || [];
     } catch (error) {
         console.error('❌ Error loading materials:', error);
         window.materials = [];
+
+        // Hide loading indicator on error
+        const loadingIndicator = document.getElementById('materialLoadingIndicator');
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
+
         return [];
     }
 }
