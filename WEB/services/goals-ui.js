@@ -75,13 +75,14 @@ window.dismissToast = function (button) {
 /**
  * Open goal creation modal
  */
+// ==================== GOAL MODAL SYSTEM ====================
+
+/**
+ * Open goal creation modal
+ */
 window.openGoalModal = function () {
     const modal = document.getElementById('goalModal');
     if (!modal) return;
-
-    // Set minimum date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('goalDeadline').min = today;
 
     // Reset form
     document.getElementById('goalForm').reset();
@@ -113,25 +114,26 @@ function updateGoalMaterials(type) {
     select.innerHTML = '<option value="" class="bg-slate-900 text-text-muted">Cualquier material...</option>';
 
     // Filter materials from global window.materials if available
+    // Ensure we are accessing the correct global variable
     const availableMaterials = window.materials || [];
     let filtered = [];
 
-    if (type === 'incoming') {
-        filtered = availableMaterials.filter(m => m.tipo === 'incoming');
-        // Fallback defaults if no materials loaded
-        if (filtered.length === 0) filtered = [{ nombre: 'Base Estabilizada' }, { nombre: 'Arena' }, { nombre: 'Relleno' }];
-    } else if (type === 'outgoing') {
-        filtered = availableMaterials.filter(m => m.tipo === 'outgoing');
-        // Fallback defaults
-        if (filtered.length === 0) filtered = [{ nombre: 'Escombro' }, { nombre: 'Basura' }, { nombre: 'Excedentes' }];
-    } else if (type === 'internal') {
-        filtered = availableMaterials.filter(m => m.tipo === 'internal');
-        // Fallback defaults
-        if (filtered.length === 0) filtered = [{ nombre: 'Tierra' }, { nombre: 'Ripio' }];
+    // The user explicitly requested to show available registered materials
+    // We filter them by type matching the goal type
+    if (availableMaterials.length > 0) {
+        filtered = availableMaterials.filter(m => m.tipo === type);
+    }
+
+    // Only use fallbacks if absolutely no materials found for that type
+    if (filtered.length === 0) {
+        if (type === 'incoming') filtered = [{ nombre: 'Base Estabilizada' }, { nombre: 'Arena' }, { nombre: 'Relleno' }];
+        else if (type === 'outgoing') filtered = [{ nombre: 'Escombro' }, { nombre: 'Basura' }, { nombre: 'Excedentes' }];
+        else if (type === 'internal') filtered = [{ nombre: 'Tierra' }, { nombre: 'Ripio' }];
     }
 
     filtered.forEach(mat => {
         const option = document.createElement('option');
+        // Use registred name exactly as is
         option.value = mat.nombre;
         option.textContent = mat.nombre;
         option.className = 'bg-slate-900 text-white';
@@ -146,16 +148,23 @@ if (document.getElementById('goalForm')) {
     document.getElementById('goalForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const nombre = document.getElementById('goalTitle').value.trim();
         const tipo = document.querySelector('input[name="goalType"]:checked').value;
         const descripcion = document.getElementById('goalDescription').value.trim();
         const m3_objetivo = parseFloat(document.getElementById('goalM3').value);
-        const fecha_limite = document.getElementById('goalDeadline').value;
-        const material_objetivo = document.getElementById('goalMaterial').value; // Optional
+        const dias_plazo = parseInt(document.getElementById('goalDeadlineDays').value);
+        const material_objetivo = document.getElementById('goalMaterial').value;
 
-        if (!descripcion || !m3_objetivo || !fecha_limite) {
-            showToast('error', 'Error', 'Por favor completa todos los campos');
+        if (!nombre || !descripcion || !m3_objetivo || !dias_plazo) {
+            showToast('error', 'Error', 'Por favor completa todos los campos requeridos');
             return;
         }
+
+        // Calculate Deadline Date: Today + Days
+        const today = new Date();
+        const deadlineDate = new Date(today);
+        deadlineDate.setDate(today.getDate() + dias_plazo);
+        const fecha_limite = deadlineDate.toISOString().split('T')[0];
 
         try {
             const obraId = window.currentObraId;
@@ -165,16 +174,17 @@ if (document.getElementById('goalForm')) {
             }
 
             const goalData = {
+                nombre, // New field
                 tipo,
                 descripcion,
                 m3_objetivo,
                 fecha_limite,
-                material_objetivo // Add material constraint
+                material_objetivo
             };
 
             await goalsService.createGoal(obraId, goalData);
 
-            showToast('success', 'Meta Creada', `Meta de ${m3_objetivo} m³ registrada`);
+            showToast('success', 'Meta Creada', `Meta "${nombre}" registrada`);
             closeAllModals();
 
             // Reload goals and update UI
