@@ -1514,10 +1514,11 @@
     <script type="module">
         import { authService } from './auth-service.js';
         import { obrasService } from './obras-service.js';
-        import { getUserProfile } from './supabase-client.js';
+        import { getUserProfile, supabaseClient } from './supabase-client.js';
 
         // Expose to global for other scripts
         window.getUserProfile = getUserProfile;
+        window.supabaseClient = supabaseClient;
 
         // Global session storage for UI usage
         window.currentSession = null;
