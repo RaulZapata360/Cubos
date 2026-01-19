@@ -5142,13 +5142,49 @@
                 materialTotals[material] += m3;
             });
 
+            // MATERIAL SUMMARY TABLE (MOVED TO THE BEGINNING)
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont("times", "bold");
+            doc.text("I. RESUMEN DE VOLÚMENES POR MATERIAL", 14, 48);
+
+            let yPos = 52;
+
+            const materialSummaryData = Object.entries(materialTotals)
+                .sort((a, b) => b[1] - a[1]) // Sort by volume descending
+                .map(([material, m3]) => [
+                    material,
+                    `${m3.toFixed(1)} m³`
+                ]);
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Material', 'Volumen Total']],
+                body: materialSummaryData,
+                theme: 'plain',
+                headStyles: commonHeadStyles,
+                styles: commonStyles,
+                columnStyles: {
+                    0: { halign: 'left' },
+                    1: { halign: 'right' }
+                },
+                didParseCell: (data) => {
+                    if (data.section === 'head' || data.section === 'body') {
+                        if (data.column.index === 1) data.cell.styles.halign = 'right';
+                    }
+                },
+                margin: { left: 14, right: 14 }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 15;
+
             // WEEKLY SUMMARY BY ACTIVITY TYPE AND MATERIAL
             doc.setFontSize(10);
             doc.setTextColor(80, 80, 80);
             doc.setFont("times", "bold");
-            doc.text("I. RESUMEN SEMANAL POR TIPO DE ACTIVIDAD", 14, 48);
+            doc.text("II. RESUMEN SEMANAL POR TIPO DE ACTIVIDAD", 14, yPos);
 
-            let yPos = 52;
+            yPos += 4;
 
             // Render each activity type with material breakdown
             ['Relleno', 'Excavación', 'Viaje Interno'].forEach(activityName => {
@@ -5181,10 +5217,17 @@
 
                 yPos += 7;
 
+                // Track total for this activity
+                let activityTotal = 0;
+
                 // Render each material within this activity
                 materialNames.forEach(materialName => {
                     const trucks = Object.values(materials[materialName]);
                     const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+
+                    // Calculate material subtotal
+                    const materialSubtotal = sortedTrucks.reduce((sum, t) => sum + t.totalM3, 0);
+                    activityTotal += materialSubtotal;
 
                     if (yPos > 240) {
                         doc.addPage();
@@ -5226,53 +5269,18 @@
                         margin: { left: 14, right: 14 }
                     });
 
-                    yPos = doc.lastAutoTable.finalY + 10;
+                    yPos = doc.lastAutoTable.finalY + 3;
+
+                    // Add subtotal for this material
+                    doc.setFontSize(9);
+                    doc.setTextColor(80, 80, 80);
+                    doc.setFont("times", "bold");
+                    doc.text(`Subtotal ${materialName}: ${materialSubtotal.toFixed(1)} m³`, 16, yPos);
+                    yPos += 7;
                 });
 
                 yPos += 6; // Extra space between activities
             });
-
-            // MATERIAL SUMMARY TABLE
-            if (yPos > 200) {
-                doc.addPage();
-                applyPageStyle();
-                yPos = 25;
-            }
-
-            yPos += 5;
-            doc.setFontSize(10);
-            doc.setTextColor(80, 80, 80);
-            doc.setFont("times", "bold");
-            doc.text("RESUMEN DE VOLÚMENES POR MATERIAL", 14, yPos);
-            yPos += 4;
-
-            const materialSummaryData = Object.entries(materialTotals)
-                .sort((a, b) => b[1] - a[1]) // Sort by volume descending
-                .map(([material, m3]) => [
-                    material,
-                    `${m3.toFixed(1)} m³`
-                ]);
-
-            doc.autoTable({
-                startY: yPos,
-                head: [['Material', 'Volumen Total']],
-                body: materialSummaryData,
-                theme: 'plain',
-                headStyles: commonHeadStyles,
-                styles: commonStyles,
-                columnStyles: {
-                    0: { halign: 'left' },
-                    1: { halign: 'right' }
-                },
-                didParseCell: (data) => {
-                    if (data.section === 'head' || data.section === 'body') {
-                        if (data.column.index === 1) data.cell.styles.halign = 'right';
-                    }
-                },
-                margin: { left: 14, right: 14 }
-            });
-
-            yPos = doc.lastAutoTable.finalY + 12;
 
             yPos += 3;
 
@@ -5280,7 +5288,7 @@
             doc.setFontSize(10);
             doc.setTextColor(80, 80, 80);
             doc.setFont("times", "bold");
-            doc.text("II. DESGLOSE DIARIO", 14, yPos);
+            doc.text("III. DESGLOSE DIARIO", 14, yPos);
             yPos += 6;
 
             // Group by date
@@ -5321,7 +5329,7 @@
 
                 yPos += 4;
 
-                // Group by activity type for this day
+                // Group by activity type and material for this day
                 const dayActivityStats = {
                     'Relleno': {},
                     'Excavación': {},
@@ -5330,11 +5338,17 @@
 
                 dayMovements.forEach(m => {
                     const activity = getActivityLabel(m);
+                    const material = m.material || 'Sin especificar';
                     const truckName = m.camiones?.nombre || 'Desconocido';
                     const plate = m.camiones?.patente || '-';
 
-                    if (!dayActivityStats[activity][truckName]) {
-                        dayActivityStats[activity][truckName] = {
+                    // Group by material within activity
+                    if (!dayActivityStats[activity][material]) {
+                        dayActivityStats[activity][material] = {};
+                    }
+
+                    if (!dayActivityStats[activity][material][truckName]) {
+                        dayActivityStats[activity][material][truckName] = {
                             nombre: truckName,
                             patente: plate,
                             vueltas: 0,
@@ -5342,17 +5356,16 @@
                         };
                     }
 
-                    dayActivityStats[activity][truckName].vueltas += 1;
-                    dayActivityStats[activity][truckName].totalM3 += parseFloat(m.capacidad || 0);
+                    dayActivityStats[activity][material][truckName].vueltas += 1;
+                    dayActivityStats[activity][material][truckName].totalM3 += parseFloat(m.capacidad || 0);
                 });
 
-                // Render each activity type for this day
+                // Render each activity type for this day with material breakdown
                 ['Relleno', 'Excavación', 'Viaje Interno'].forEach(activityName => {
-                    const trucks = Object.values(dayActivityStats[activityName]);
+                    const materials = dayActivityStats[activityName];
+                    const materialNames = Object.keys(materials);
 
-                    if (trucks.length === 0) return; // Skip if no movements
-
-                    const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+                    if (materialNames.length === 0) return; // Skip if no movements
 
                     if (yPos > 240) {
                         doc.addPage();
@@ -5365,35 +5378,56 @@
                     doc.setTextColor(130, 130, 130);
                     doc.setFont("times", "italic");
                     doc.text(activityName, 16, yPos);
-                    yPos += 2;
+                    yPos += 3;
 
-                    doc.autoTable({
-                        startY: yPos,
-                        head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
-                        body: sortedTrucks.map(t => [
-                            t.nombre,
-                            t.patente,
-                            t.vueltas,
-                            `${t.totalM3.toFixed(1)} m³`
-                        ]),
-                        theme: 'plain',
-                        headStyles: commonHeadStyles,
-                        styles: commonStyles,
-                        columnStyles: {
-                            0: { halign: 'left' },
-                            1: { halign: 'left' },
-                            2: { halign: 'center' },
-                            3: { halign: 'right' }
-                        },
-                        didParseCell: (data) => {
-                            if (data.section === 'head' || data.section === 'body') {
-                                if (data.column.index === 2) data.cell.styles.halign = 'center';
-                                if (data.column.index === 3) data.cell.styles.halign = 'right';
-                            }
-                        },
-                        margin: { left: 14, right: 14 }
+                    // Render each material within this activity
+                    materialNames.forEach(materialName => {
+                        const trucks = Object.values(materials[materialName]);
+                        const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+
+                        if (yPos > 240) {
+                            doc.addPage();
+                            applyPageStyle();
+                            yPos = 25;
+                        }
+
+                        // Material subheader
+                        doc.setFontSize(7);
+                        doc.setTextColor(150, 150, 150);
+                        doc.setFont("times", "bold");
+                        doc.text(`Material: ${materialName}`, 18, yPos);
+                        yPos += 3;
+
+                        doc.autoTable({
+                            startY: yPos,
+                            head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
+                            body: sortedTrucks.map(t => [
+                                t.nombre,
+                                t.patente,
+                                t.vueltas,
+                                `${t.totalM3.toFixed(1)} m³`
+                            ]),
+                            theme: 'plain',
+                            headStyles: commonHeadStyles,
+                            styles: commonStyles,
+                            columnStyles: {
+                                0: { halign: 'left' },
+                                1: { halign: 'left' },
+                                2: { halign: 'center' },
+                                3: { halign: 'right' }
+                            },
+                            didParseCell: (data) => {
+                                if (data.section === 'head' || data.section === 'body') {
+                                    if (data.column.index === 2) data.cell.styles.halign = 'center';
+                                    if (data.column.index === 3) data.cell.styles.halign = 'right';
+                                }
+                            },
+                            margin: { left: 14, right: 14 }
+                        });
+                        yPos = doc.lastAutoTable.finalY + 4;
                     });
-                    yPos = doc.lastAutoTable.finalY + 6;
+
+                    yPos += 2;
                 });
 
                 yPos += 6; // Extra space between days
