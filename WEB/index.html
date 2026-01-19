@@ -4989,10 +4989,9 @@
             const incVol = incMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
             const outVol = outMovs.reduce((sum, m) => sum + (m.capacidad || 0), 0);
 
-            document.getElementById('incomingCount').textContent = incMovs.length;
-            document.getElementById('outgoingCount').textContent = outMovs.length;
-            document.getElementById('incomingVolume').textContent = `${incVol.toFixed(1)} m³`;
-            document.getElementById('outgoingVolume').textContent = `${outVol.toFixed(1)} m³`;
+            // Update volume displays (removed count displays as they no longer exist)
+            document.getElementById('incomingVolume').textContent = incVol.toFixed(1);
+            document.getElementById('outgoingVolume').textContent = outVol.toFixed(1);
             document.getElementById('totalTrucks').textContent = trucks.length;
             document.getElementById('totalTrucksFooter').textContent = trucks.length;
             document.getElementById('totalVolume').textContent = `${(incVol + outVol).toFixed(1)} m³`;
