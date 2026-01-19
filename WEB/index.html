@@ -67,6 +67,45 @@
         });
     </script>
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase Function
+        (function () {
+            // Detect if we're in a preview/development environment
+            const isPreview = window.location.hostname.includes('git-feature') ||
+                window.location.hostname.includes('localhost') ||
+                window.location.hostname.includes('127.0.0.1');
+
+            // Production Supabase (main branch)
+            const PROD_CONFIG = {
+                url: 'https://rvnxnwotpieemwhbpoit.supabase.co',
+                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ2bnhud290cGllZW13aGJwb2l0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4NDg5MTcsImV4cCI6MjA4MjQyNDkxN30.PkYOjzHcS_Tx8e40YkhcQDHrsf5cvHZ0H7jjQH63mwk'
+            };
+
+            // Development Supabase (preview deployments)
+            const DEV_CONFIG = {
+                url: 'https://nevsvknqnzrkjngfbnxs.supabase.co',
+                anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ldnN2a25xbnpya2puZ2ZibnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1NTY3NjcsImV4cCI6MjA4MzEzMjc2N30.4YZ6o-mC0P2UIixKBwKjm9Vmr5gqH_EiYmPq5ovGdL0'
+            };
+
+            // Select configuration based on environment
+            const config = isPreview ? DEV_CONFIG : PROD_CONFIG;
+
+            console.log(`🔧 Supabase Environment: ${isPreview ? '🧪 DEVELOPMENT' : '🚀 PRODUCTION'}`);
+
+            // Create Global Client using the factory provided by the CDN
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                // The CDN exposes 'supabase' object with createClient method
+                // We re-assign window.supabase to be the ACTUAL client instance
+                window.supabase = window.supabase.createClient(config.url, config.anonKey);
+                console.log('✅ Supabase Client Initialized Globally');
+            } else {
+                console.error('❌ Supabase SDK not loaded properly from CDN. Check internet connection or CDN URL.');
+            }
+        })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <script src="avatar-icons.js"></script>
