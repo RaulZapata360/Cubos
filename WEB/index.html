@@ -5373,17 +5373,24 @@
                         yPos = 25;
                     }
 
-                    // Activity subtitle
-                    doc.setFontSize(7.5);
-                    doc.setTextColor(130, 130, 130);
-                    doc.setFont("times", "italic");
+                    // Activity subtitle - INCREASED SIZE
+                    doc.setFontSize(9);  // Increased from 7.5 to 9
+                    doc.setTextColor(80, 80, 80);  // Darker color (was 130)
+                    doc.setFont("times", "bold");  // Changed from italic to bold
                     doc.text(activityName, 16, yPos);
-                    yPos += 3;
+                    yPos += 4;  // Increased spacing
+
+                    // Track total for this activity on this day
+                    let activityDayTotal = 0;
 
                     // Render each material within this activity
                     materialNames.forEach(materialName => {
                         const trucks = Object.values(materials[materialName]);
                         const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+
+                        // Calculate material subtotal for this day
+                        const materialDaySubtotal = sortedTrucks.reduce((sum, t) => sum + t.totalM3, 0);
+                        activityDayTotal += materialDaySubtotal;
 
                         if (yPos > 240) {
                             doc.addPage();
@@ -5391,12 +5398,12 @@
                             yPos = 25;
                         }
 
-                        // Material subheader
-                        doc.setFontSize(7);
-                        doc.setTextColor(150, 150, 150);
+                        // Material subheader - INCREASED SIZE
+                        doc.setFontSize(8.5);  // Increased from 7 to 8.5
+                        doc.setTextColor(60, 60, 60);  // Much darker (was 150)
                         doc.setFont("times", "bold");
                         doc.text(`Material: ${materialName}`, 18, yPos);
-                        yPos += 3;
+                        yPos += 4;  // Increased spacing
 
                         doc.autoTable({
                             startY: yPos,
@@ -5424,7 +5431,14 @@
                             },
                             margin: { left: 14, right: 14 }
                         });
-                        yPos = doc.lastAutoTable.finalY + 4;
+                        yPos = doc.lastAutoTable.finalY + 2;
+
+                        // Add subtotal for this material on this day
+                        doc.setFontSize(8);
+                        doc.setTextColor(90, 90, 90);
+                        doc.setFont("times", "bold");
+                        doc.text(`Subtotal ${materialName}: ${materialDaySubtotal.toFixed(1)} m³`, 18, yPos);
+                        yPos += 5;
                     });
 
                     yPos += 2;
