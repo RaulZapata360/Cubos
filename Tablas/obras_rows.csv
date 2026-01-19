@@ -1,0 +1,4 @@
+id,nombre,ubicacion,descripcion,fecha_inicio,estado,created_at,updated_at,deleted_at,direccion,latitud,longitud
+88568d08-580e-410c-9838-b986a5500279,TEST,China,,2026-01-17,activa,2026-01-17 23:54:09.225609+00,2026-01-17 23:54:09.225609+00,,,,
+c4af1af6-d35d-4e70-96a3-0d6172dbf701,8 Oriente,Chiguayante - 8 Oriente,,2026-01-05,activa,2026-01-04 21:20:32.815056+00,2026-01-04 21:20:32.815056+00,,,,
+e4f64806-140d-453b-8b8e-d51544b8b02a,Torreones,Ubicación General,,2026-01-13,activa,2026-01-13 13:33:39.927432+00,2026-01-13 13:33:39.927432+00,,,,

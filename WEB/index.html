@@ -6092,6 +6092,9 @@
                     loadMovements(true)
                 ]);
 
+                // Update material breakdowns
+                await updateMaterialBreakdowns();
+
                 // Success feedback
                 alert(`✅ ${flashBatch.trucks.length} camiones registrados correctamente`);
                 if (navigator.vibrate) navigator.vibrate([10, 50, 10]);
@@ -6104,6 +6107,109 @@
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
+            }
+        }
+
+        // Update Material Breakdowns in Operation Cards
+        window.updateMaterialBreakdowns = async function () {
+            try {
+                const dateStr = formatDateYYYYMMDD(getTargetDate());
+
+                if (!currentObraId || currentObraId === 'null') {
+                    console.warn('No obra selected, skipping material breakdown update');
+                    return;
+                }
+
+                // Query movements for the current date and obra
+                const { data: movements, error } = await supabaseClient
+                    .from('movimientos')
+                    .select('tipo, material, capacidad')
+                    .eq('obra_id', currentObraId)
+                    .eq('fecha', dateStr)
+                    .eq('deleted', false);
+
+                if (error) {
+                    console.error('Error loading movements for breakdown:', error);
+                    return;
+                }
+
+                // Group movements by type and material
+                const breakdowns = {
+                    incoming: {},
+                    outgoing: {},
+                    internal: {}
+                };
+
+                movements.forEach(mov => {
+                    const tipo = mov.tipo || 'incoming';
+                    const material = mov.material || 'Sin especificar';
+                    const volumen = parseFloat(mov.capacidad) || 0;
+
+                    if (!breakdowns[tipo][material]) {
+                        breakdowns[tipo][material] = 0;
+                    }
+                    breakdowns[tipo][material] += volumen;
+                });
+
+                // Update Incoming Material Breakdown
+                const incomingContainer = document.getElementById('incomingMaterialBreakdown');
+                if (incomingContainer) {
+                    const materials = Object.entries(breakdowns.incoming);
+                    if (materials.length > 0) {
+                        incomingContainer.innerHTML = materials
+                            .sort((a, b) => b[1] - a[1]) // Sort by volume descending
+                            .map(([material, volumen]) => `
+                                <div class="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-1.5">
+                                    <span class="text-[10px] font-bold text-emerald-300 uppercase tracking-wide">${material}</span>
+                                    <span class="text-[10px] text-emerald-400/70">•</span>
+                                    <span class="text-[10px] font-black text-emerald-100">${volumen.toFixed(1)} m³</span>
+                                </div>
+                            `).join('');
+                    } else {
+                        incomingContainer.innerHTML = '<span class="text-[11px] text-white/40 italic">Sin movimientos registrados</span>';
+                    }
+                }
+
+                // Update Internal Material Breakdown
+                const internalContainer = document.getElementById('internalMaterialBreakdown');
+                if (internalContainer) {
+                    const materials = Object.entries(breakdowns.internal);
+                    if (materials.length > 0) {
+                        internalContainer.innerHTML = materials
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([material, volumen]) => `
+                                <div class="flex items-center justify-between bg-blue-600/10 border border-blue-600/20 rounded px-2 py-1">
+                                    <span class="text-[9px] font-bold text-blue-300 uppercase tracking-wide">${material}</span>
+                                    <span class="text-[9px] font-black text-blue-100">${volumen.toFixed(1)} m³</span>
+                                </div>
+                            `).join('');
+                    } else {
+                        internalContainer.innerHTML = '<span class="text-[10px] text-white/40 text-center italic">Sin registros</span>';
+                    }
+                }
+
+                // Update Outgoing Material Breakdown
+                const outgoingContainer = document.getElementById('outgoingMaterialBreakdown');
+                if (outgoingContainer) {
+                    const materials = Object.entries(breakdowns.outgoing);
+                    if (materials.length > 0) {
+                        outgoingContainer.innerHTML = materials
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([material, volumen]) => `
+                                <div class="flex items-center justify-between bg-rose-500/10 border border-rose-500/20 rounded px-2 py-1">
+                                    <span class="text-[9px] font-bold text-rose-300 uppercase tracking-wide">${material}</span>
+                                    <span class="text-[9px] font-black text-rose-100">${volumen.toFixed(1)} m³</span>
+                                </div>
+                            `).join('');
+                    } else {
+                        outgoingContainer.innerHTML = '<span class="text-[10px] text-white/40 text-center italic">Sin registros</span>';
+                    }
+                }
+
+                console.log('✅ Material breakdowns updated successfully');
+
+            } catch (err) {
+                console.error('❌ Error updating material breakdowns:', err);
             }
         }
 

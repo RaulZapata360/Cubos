@@ -1,0 +1,6 @@
+id,nombre_completo,rol,email,telefono,created_at,cargo,avatar_icon,deleted_at
+1c9ddce0-9633-4530-b00c-914d3cf3d9a7,"Marcel ",supervisor,marcel@demo.com,,2026-01-13 13:21:58.170282+00,,,
+4c091cd9-7ea4-4767-9e1f-7ae06f7f225a,Ayudante,contador,ayudante@demo.com,,2026-01-13 13:22:13.804174+00,,,
+78340529-4c58-4182-bb70-d5882d746675,Jack Price,jefe,jack@demo.com,,2026-01-04 20:49:20.638023+00,Gerente General,man_5,
+938f41d9-3365-4543-afd3-616332d4ed5e,Raúl,jefe,raulzapata1805@gmail.com,,2026-01-04 20:49:20.638023+00,Supervisor,man_1,
+fc5c6a1e-f1e2-468a-95fe-3283a39b7334,Mauricio,contador,mauricio@demo.com,,2026-01-04 20:49:20.638023+00,Supervisor,man_2,
