@@ -5327,11 +5327,10 @@
                 doc.setFont("times", "bold");
                 doc.text(dayDisplay, 14, yPos);
 
-                // Underline the full date text
-                const dateWidth = doc.getTextWidth(dayDisplay);
+                // Full-width underline across the entire page
                 doc.setDrawColor(70, 70, 70);  // Match text color
                 doc.setLineWidth(0.5);  // Thicker line
-                doc.line(14, yPos + 1, 14 + dateWidth, yPos + 1);
+                doc.line(14, yPos + 1, 196, yPos + 1);  // From left margin (14) to right margin (196)
 
                 yPos += 6;  // Increased spacing after date
 
