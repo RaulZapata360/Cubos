@@ -5089,20 +5089,30 @@
                 return m.tipo === 'incoming' ? 'Relleno' : 'Excavación';
             };
 
-            // Group movements by activity type and truck
+            // Group movements by activity type, material, and truck
             const activityStats = {
                 'Relleno': {},
                 'Excavación': {},
                 'Viaje Interno': {}
             };
 
+            // Also track material totals for final summary
+            const materialTotals = {};
+
             weekMovements.forEach(m => {
                 const activity = getActivityLabel(m);
+                const material = m.material || 'Sin especificar';
                 const truckName = m.camiones?.nombre || 'Desconocido';
                 const plate = m.camiones?.patente || '-';
+                const m3 = parseFloat(m.capacidad || 0);
 
-                if (!activityStats[activity][truckName]) {
-                    activityStats[activity][truckName] = {
+                // Group by material within activity
+                if (!activityStats[activity][material]) {
+                    activityStats[activity][material] = {};
+                }
+
+                if (!activityStats[activity][material][truckName]) {
+                    activityStats[activity][material][truckName] = {
                         nombre: truckName,
                         patente: plate,
                         vueltas: 0,
@@ -5110,11 +5120,17 @@
                     };
                 }
 
-                activityStats[activity][truckName].vueltas += 1;
-                activityStats[activity][truckName].totalM3 += parseFloat(m.capacidad || 0);
+                activityStats[activity][material][truckName].vueltas += 1;
+                activityStats[activity][material][truckName].totalM3 += m3;
+
+                // Track material totals
+                if (!materialTotals[material]) {
+                    materialTotals[material] = 0;
+                }
+                materialTotals[material] += m3;
             });
 
-            // WEEKLY SUMMARY BY ACTIVITY TYPE
+            // WEEKLY SUMMARY BY ACTIVITY TYPE AND MATERIAL
             doc.setFontSize(10);
             doc.setTextColor(80, 80, 80);
             doc.setFont("times", "bold");
@@ -5122,22 +5138,21 @@
 
             let yPos = 52;
 
-            // Render each activity type
+            // Render each activity type with material breakdown
             ['Relleno', 'Excavación', 'Viaje Interno'].forEach(activityName => {
-                const trucks = Object.values(activityStats[activityName]);
+                const materials = activityStats[activityName];
+                const materialNames = Object.keys(materials);
 
-                if (trucks.length === 0) return; // Skip if no movements
+                if (materialNames.length === 0) return; // Skip if no movements
 
-                // Sort by volume descending
-                const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
-
+                // Activity header
                 if (yPos > 240) {
                     doc.addPage();
                     applyPageStyle();
                     yPos = 25;
                 }
 
-                doc.setFontSize(8.5);
+                doc.setFontSize(9);
                 doc.setTextColor(110, 110, 110);
                 doc.setFont("times", "bold");
                 doc.text(activityName.toUpperCase(), 14, yPos);
@@ -5146,35 +5161,100 @@
                 doc.setLineWidth(0.4);
                 doc.line(14, yPos + 1.2, 18, yPos + 1.2);
 
-                doc.autoTable({
-                    startY: yPos + 4,
-                    head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
-                    body: sortedTrucks.map(t => [
-                        t.nombre,
-                        t.patente,
-                        t.vueltas,
-                        `${t.totalM3.toFixed(1)} m³`
-                    ]),
-                    theme: 'plain',
-                    headStyles: commonHeadStyles,
-                    styles: commonStyles,
-                    columnStyles: {
-                        0: { halign: 'left' },
-                        1: { halign: 'left' },
-                        2: { halign: 'center' },
-                        3: { halign: 'right' }
-                    },
-                    didParseCell: (data) => {
-                        if (data.section === 'head' || data.section === 'body') {
-                            if (data.column.index === 2) data.cell.styles.halign = 'center';
-                            if (data.column.index === 3) data.cell.styles.halign = 'right';
-                        }
-                    },
-                    margin: { left: 14, right: 14 }
+                yPos += 5;
+
+                // Render each material within this activity
+                materialNames.forEach(materialName => {
+                    const trucks = Object.values(materials[materialName]);
+                    const sortedTrucks = trucks.sort((a, b) => b.totalM3 - a.totalM3);
+
+                    if (yPos > 240) {
+                        doc.addPage();
+                        applyPageStyle();
+                        yPos = 25;
+                    }
+
+                    // Material subheader
+                    doc.setFontSize(8);
+                    doc.setTextColor(130, 130, 130);
+                    doc.setFont("times", "italic");
+                    doc.text(`Material: ${materialName}`, 16, yPos);
+                    yPos += 4;
+
+                    doc.autoTable({
+                        startY: yPos,
+                        head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
+                        body: sortedTrucks.map(t => [
+                            t.nombre,
+                            t.patente,
+                            t.vueltas,
+                            `${t.totalM3.toFixed(1)} m³`
+                        ]),
+                        theme: 'plain',
+                        headStyles: commonHeadStyles,
+                        styles: commonStyles,
+                        columnStyles: {
+                            0: { halign: 'left' },
+                            1: { halign: 'left' },
+                            2: { halign: 'center' },
+                            3: { halign: 'right' }
+                        },
+                        didParseCell: (data) => {
+                            if (data.section === 'head' || data.section === 'body') {
+                                if (data.column.index === 2) data.cell.styles.halign = 'center';
+                                if (data.column.index === 3) data.cell.styles.halign = 'right';
+                            }
+                        },
+                        margin: { left: 14, right: 14 }
+                    });
+
+                    yPos = doc.lastAutoTable.finalY + 8;
                 });
 
-                yPos = doc.lastAutoTable.finalY + 12;
+                yPos += 4; // Extra space between activities
             });
+
+            // MATERIAL SUMMARY TABLE
+            if (yPos > 200) {
+                doc.addPage();
+                applyPageStyle();
+                yPos = 25;
+            }
+
+            yPos += 5;
+            doc.setFontSize(10);
+            doc.setTextColor(80, 80, 80);
+            doc.setFont("times", "bold");
+            doc.text("RESUMEN DE VOLÚMENES POR MATERIAL", 14, yPos);
+            yPos += 4;
+
+            const materialSummaryData = Object.entries(materialTotals)
+                .sort((a, b) => b[1] - a[1]) // Sort by volume descending
+                .map(([material, m3]) => [
+                    material,
+                    `${m3.toFixed(1)} m³`
+                ]);
+
+            doc.autoTable({
+                startY: yPos,
+                head: [['Material', 'Volumen Total']],
+                body: materialSummaryData,
+                theme: 'plain',
+                headStyles: commonHeadStyles,
+                styles: commonStyles,
+                columnStyles: {
+                    0: { halign: 'left' },
+                    1: { halign: 'right' }
+                },
+                didParseCell: (data) => {
+                    if (data.section === 'head' || data.section === 'body') {
+                        if (data.column.index === 1) data.cell.styles.halign = 'right';
+                    }
+                },
+                margin: { left: 14, right: 14 }
+            });
+
+            yPos = doc.lastAutoTable.finalY + 12;
 
             yPos += 3;
 
