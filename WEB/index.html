@@ -419,26 +419,47 @@
             <!-- Tab: Resumen -->
 
             <div class="tab-content active" id="tab-resumen">
-                <!-- Quick Action Buttons - REDESIGNED WITH SOLID COLORS -->
+                <!-- OPERACIONES DISPONIBLES - SECTION TITLE -->
+                <section class="px-4 mb-4">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xs font-bold text-text-muted uppercase tracking-widest">Operaciones Disponibles
+                        </h2>
+                        <span class="text-[10px] text-text-muted">Selecciona el tipo de movimiento para registrar</span>
+                    </div>
+                </section>
+
+                <!-- Quick Action Buttons - STATUS CARDS WITH MATERIAL BREAKDOWN -->
                 <section class="px-4 mb-6 space-y-4">
-                    <!-- Incoming Trucks - FULL WIDTH GREEN CARD -->
+                    <!-- Incoming Material - FULL WIDTH GREEN CARD -->
                     <button id="incomingBtn" title="Presiona E"
                         class="w-full p-5 rounded-2xl bg-success text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-lg shadow-success/30">
                         <div class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
                             <span class="material-symbols-outlined text-6xl text-white">south_east</span>
                         </div>
                         <div class="relative z-10">
-                            <div class="flex items-center gap-2 mb-3">
-                                <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-white text-xl">south_east</span>
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-white text-xl">south_east</span>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-black text-white uppercase tracking-wide">Entrada de
+                                            Material</div>
+                                        <div class="text-[9px] text-white/70">Relleno de obra</div>
+                                    </div>
                                 </div>
-                                <div class="flex-1">
-                                    <div class="text-base font-black text-white uppercase tracking-wide">Entrada de
-                                        Material</div>
-                                    <div class="text-[10px] text-white/80">Material que ingresa a la obra</div>
+                                <div class="text-right">
+                                    <div class="text-4xl font-black text-white leading-none" id="incomingVolume">0</div>
+                                    <div class="text-[10px] text-white/80 uppercase tracking-wider">m³</div>
+                                    <div class="text-[9px] text-white/60 mt-1">Acumulado hoy</div>
                                 </div>
                             </div>
-                            <div class="text-4xl font-black text-white leading-none" id="incomingCount">0</div>
+                            <!-- Material Breakdown -->
+                            <div class="flex flex-wrap gap-2 mt-3 pt-3 border-t border-white/20"
+                                id="incomingMaterialBreakdown">
+                                <!-- Populated by JS -->
+                                <span class="text-[9px] text-white/60">Sin movimientos registrados</span>
+                            </div>
                         </div>
                     </button>
 
@@ -447,40 +468,55 @@
                         <!-- Internal Trips - BLUE CARD -->
                         <button onclick="openInternalTripSelector()"
                             class="p-4 rounded-2xl bg-primary text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/30">
-                            <div class="flex flex-col items-center justify-center gap-2 mb-3">
-                                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-white text-2xl">swap_horiz</span>
+                            <div class="flex flex-col gap-2 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-white text-lg">swap_horiz</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="text-xs font-black text-white uppercase tracking-wide">Viaje Interno
+                                        </div>
+                                        <div class="text-[8px] text-white/70">Movimiento local</div>
+                                    </div>
                                 </div>
-                                <div class="text-xs font-black text-white uppercase tracking-wide text-center">Viaje
-                                    Interno</div>
-                                <div class="text-[9px] text-white/80 text-center">Movimiento local</div>
+                                <div class="text-center py-2">
+                                    <div class="text-3xl font-black text-white leading-none" id="internalTripsVolume">0
+                                    </div>
+                                    <div class="text-[9px] text-white/70 uppercase">m³ acumulado</div>
+                                </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-white/20">
-                                <div class="text-center">
-                                    <div class="text-2xl font-black text-white leading-none mb-1"
-                                        id="internalTripsCount">0</div>
-                                    <div class="text-[8px] text-white/70 uppercase">Vueltas</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-black text-white leading-none mb-1"
-                                        id="internalTripsVolume">0</div>
-                                    <div class="text-[8px] text-white/70 uppercase">m³</div>
-                                </div>
+                            <!-- Material Breakdown -->
+                            <div class="flex flex-col gap-1 pt-2 border-t border-white/20"
+                                id="internalMaterialBreakdown">
+                                <!-- Populated by JS -->
+                                <span class="text-[8px] text-white/60 text-center">Sin registros</span>
                             </div>
                         </button>
 
-                        <!-- Outgoing Trucks - RED CARD -->
+                        <!-- Outgoing Material - RED CARD -->
                         <button id="outgoingBtn" title="Presiona S"
                             class="p-4 rounded-2xl bg-danger text-white relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-danger/30">
-                            <div class="flex flex-col items-center justify-center gap-2 mb-3">
-                                <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-white text-2xl">north_east</span>
+                            <div class="flex flex-col gap-2 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-white text-lg">north_east</span>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="text-xs font-black text-white uppercase tracking-wide">Salida
+                                            Material</div>
+                                        <div class="text-[8px] text-white/70">Excavación</div>
+                                    </div>
                                 </div>
-                                <div class="text-xs font-black text-white uppercase tracking-wide text-center">Salida de
-                                    Material</div>
-                                <div class="text-[9px] text-white/80 text-center">Excavación / Escombro</div>
+                                <div class="text-center py-2">
+                                    <div class="text-3xl font-black text-white leading-none" id="outgoingVolume">0</div>
+                                    <div class="text-[9px] text-white/70 uppercase">m³ acumulado</div>
+                                </div>
                             </div>
-                            <div class="text-3xl font-black text-white leading-none text-center" id="outgoingCount">0
+                            <!-- Material Breakdown -->
+                            <div class="flex flex-col gap-1 pt-2 border-t border-white/20"
+                                id="outgoingMaterialBreakdown">
+                                <!-- Populated by JS -->
+                                <span class="text-[8px] text-white/60 text-center">Sin registros</span>
                             </div>
                         </button>
                     </div>
