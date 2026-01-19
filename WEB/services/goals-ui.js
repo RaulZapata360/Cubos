@@ -70,6 +70,11 @@ window.dismissToast = function (button) {
 /**
  * Open goal creation modal
  */
+// ==================== GOAL MODAL SYSTEM ====================
+
+/**
+ * Open goal creation modal
+ */
 window.openGoalModal = function () {
     const modal = document.getElementById('goalModal');
     if (!modal) return;
@@ -82,8 +87,57 @@ window.openGoalModal = function () {
     document.getElementById('goalForm').reset();
     document.getElementById('charCount').textContent = '0/200';
 
+    // Initialize Material Select based on default checked type
+    const defaultType = document.querySelector('input[name="goalType"]:checked').value;
+    updateGoalMaterials(defaultType);
+
+    // Setup Goal Type Change Listeners
+    const typeInputs = document.querySelectorAll('input[name="goalType"]');
+    typeInputs.forEach(input => {
+        input.addEventListener('change', (e) => {
+            updateGoalMaterials(e.target.value);
+        });
+    });
+
     modal.classList.remove('hidden');
 };
+
+/**
+ * Update dynamic material selector based on goal type
+ * @param {string} type - incoming, outgoing, internal
+ */
+function updateGoalMaterials(type) {
+    const select = document.getElementById('goalMaterial');
+    if (!select) return;
+
+    select.innerHTML = '<option value="" class="bg-slate-900 text-text-muted">Cualquier material...</option>';
+
+    // Filter materials from global window.materials if available
+    const availableMaterials = window.materials || [];
+    let filtered = [];
+
+    if (type === 'incoming') {
+        filtered = availableMaterials.filter(m => m.tipo === 'incoming');
+        // Fallback defaults if no materials loaded
+        if (filtered.length === 0) filtered = [{ nombre: 'Base Estabilizada' }, { nombre: 'Arena' }, { nombre: 'Relleno' }];
+    } else if (type === 'outgoing') {
+        filtered = availableMaterials.filter(m => m.tipo === 'outgoing');
+        // Fallback defaults
+        if (filtered.length === 0) filtered = [{ nombre: 'Escombro' }, { nombre: 'Basura' }, { nombre: 'Excedentes' }];
+    } else if (type === 'internal') {
+        filtered = availableMaterials.filter(m => m.tipo === 'internal');
+        // Fallback defaults
+        if (filtered.length === 0) filtered = [{ nombre: 'Tierra' }, { nombre: 'Ripio' }];
+    }
+
+    filtered.forEach(mat => {
+        const option = document.createElement('option');
+        option.value = mat.nombre;
+        option.textContent = mat.nombre;
+        option.className = 'bg-slate-900 text-white';
+        select.appendChild(option);
+    });
+}
 
 /**
  * Handle goal form submission
@@ -96,6 +150,7 @@ if (document.getElementById('goalForm')) {
         const descripcion = document.getElementById('goalDescription').value.trim();
         const m3_objetivo = parseFloat(document.getElementById('goalM3').value);
         const fecha_limite = document.getElementById('goalDeadline').value;
+        const material_objetivo = document.getElementById('goalMaterial').value; // Optional
 
         if (!descripcion || !m3_objetivo || !fecha_limite) {
             showToast('error', 'Error', 'Por favor completa todos los campos');
@@ -113,7 +168,8 @@ if (document.getElementById('goalForm')) {
                 tipo,
                 descripcion,
                 m3_objetivo,
-                fecha_limite
+                fecha_limite,
+                material_objetivo // Add material constraint
             };
 
             await goalsService.createGoal(obraId, goalData);
@@ -144,10 +200,7 @@ if (document.getElementById('goalDescription')) {
 // ==================== PROGRESS BAR SYSTEM ====================
 
 /**
- * Render progress bar for a goal
- * @param {object} goal - Goal object
- * @param {object} progress - Progress data from calculateProgress
- * @returns {string} HTML string for progress bar
+ * Render progress bar for a goal (Small version for cards)
  */
 window.renderProgressBar = function (goal, progress) {
     if (!goal || !progress) return '';
@@ -157,34 +210,82 @@ window.renderProgressBar = function (goal, progress) {
     const hasDelay = progress.diasRetraso > 0;
 
     let barColor = 'bg-white';
-    if (isComplete) barColor = 'bg-success';
-    else if (hasDelay) barColor = 'bg-warning';
+    if (isComplete) barColor = 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+    else if (hasDelay) barColor = 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]';
+    else if (goal.tipo === 'incoming') barColor = 'bg-emerald-400';
+    else if (goal.tipo === 'outgoing') barColor = 'bg-rose-400';
+    else barColor = 'bg-blue-400';
 
     return `
-        <div class="mt-3 pt-3 border-t border-white/20">
-            <div class="flex items-center justify-between mb-1">
-                <span class="text-[11px] text-white/70">${goal.descripcion}</span>
-                <span class="text-[11px] font-bold text-white">${percentage}%</span>
+        <div class="mt-4 pt-3 border-t border-white/10">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] uppercase font-bold text-white/60 tracking-wider truncate max-w-[120px]">${goal.descripcion}</span>
+                <span class="text-[10px] font-black text-white">${percentage}%</span>
             </div>
-            <div class="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div class="${barColor} h-full transition-all duration-500" style="width: ${percentage}%"></div>
+            <div class="h-1.5 bg-slate-900/50 rounded-full overflow-hidden border border-white/5">
+                <div class="${barColor} h-full transition-all duration-1000 ease-out" style="width: ${percentage}%"></div>
             </div>
             ${isComplete ? `
-                <div class="flex items-center gap-1 mt-1">
-                    <span class="text-[11px] text-success">✅ Completada</span>
+                <div class="flex items-center gap-1 mt-1.5 justify-end">
+                    <span class="text-[9px] uppercase font-bold text-emerald-400 tracking-wider">Misión Completada</span>
                 </div>
             ` : hasDelay ? `
-                <div class="flex items-center gap-1 mt-1">
-                    <span class="text-[11px] text-warning">⚠️ ${progress.diasRetraso} día${progress.diasRetraso > 1 ? 's' : ''} de retraso</span>
+                <div class="flex items-center gap-1 mt-1.5 justify-end">
+                    <span class="text-[9px] uppercase font-bold text-amber-400 tracking-wider">⚠️ ${progress.diasRetraso} días retraso</span>
                 </div>
             ` : `
-                <div class="flex items-center gap-1 mt-1">
-                    <span class="text-[11px] text-white/60">${progress.m3Acumulados} / ${progress.m3Objetivo} m³</span>
+                <div class="flex items-center gap-1 mt-1.5 justify-end">
+                    <span class="text-[9px] font-medium text-white/40 tracking-wider">${progress.m3Acumulados} / ${progress.m3Objetivo} m³</span>
                 </div>
             `}
         </div>
     `;
 };
+
+/**
+ * Render Active Mission Card (Donut Chart)
+ */
+function renderMissionCard(goal, progress) {
+    const card = document.getElementById('activeMissionCard');
+    if (!card || !goal || !progress) {
+        if (card) card.classList.add('hidden');
+        return;
+    }
+
+    // Colors mapping
+    const themeColors = {
+        incoming: '#10b981', // emerald-500
+        outgoing: '#f43f5e', // rose-500
+        internal: '#3b82f6'  // blue-500
+    };
+    const color = themeColors[goal.tipo] || '#3b82f6';
+
+    // Update Texts
+    document.getElementById('missionTitle').textContent = goal.descripcion || 'MISIÓN ACTIVA';
+    document.getElementById('missionProgressM3').textContent = progress.m3Acumulados.toFixed(1);
+    document.getElementById('missionRemainingM3').textContent = Math.max(0, progress.m3Objetivo - progress.m3Acumulados).toFixed(1);
+    document.getElementById('missionPercent').textContent = `${Math.round(progress.porcentaje)}%`;
+
+    // Update Donut Chart Gradient
+    const chart = document.getElementById('missionDonutChart');
+    const p = Math.min(progress.porcentaje, 100);
+    chart.style.background = `conic-gradient(${color} 0% ${p}%, rgba(255,255,255,0.05) ${p}% 100%)`; // Conic gradient for industrial look
+
+    // Update Deadline Text
+    const deadlineEl = document.getElementById('missionDeadlineText');
+    if (progress.diasRetraso > 0) {
+        deadlineEl.innerHTML = `<span class="text-rose-500">RETRASO: ${progress.diasRetraso} DÍAS</span>`;
+    } else {
+        const today = new Date();
+        const deadline = new Date(goal.fecha_limite + 'T23:59:59'); // End of day
+        const diffTime = deadline - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        deadlineEl.innerHTML = `Plazo: <span class="text-white">${diffDays} días</span>`;
+    }
+
+    // Show Card
+    card.classList.remove('hidden');
+}
 
 /**
  * Load and display active goals
@@ -194,9 +295,11 @@ window.loadGoals = async function () {
         const obraId = window.currentObraId;
         if (!obraId) return;
 
-        const goals = await goalsService.getActiveGoals(obraId);
+        const goals = await goalsService.getActiveGoals(obraId); // Get active goals only
 
-        // Update progress bars for each operation type
+        let activeGoalForCard = null;
+
+        // Update progress bars for each operation type and find main active goal
         for (const tipo of ['incoming', 'internal', 'outgoing']) {
             const goal = goals.find(g => g.tipo === tipo);
             const containerId = `goalProgress-${tipo}`;
@@ -205,9 +308,26 @@ window.loadGoals = async function () {
             if (container && goal) {
                 const progress = goalsService.calculateProgress(goal, movements || []);
                 container.innerHTML = renderProgressBar(goal, progress);
+
+                // Prioritize finding an incomplete active goal for the big card
+                if (!activeGoalForCard || (activeGoalForCard.completada && !progress.completada)) {
+                    activeGoalForCard = { goal, progress };
+                }
             } else if (container) {
                 container.innerHTML = '';
             }
+        }
+
+        // Render the main Active Mission Card
+        if (activeGoalForCard) {
+            renderMissionCard(activeGoalForCard.goal, activeGoalForCard.progress);
+        } else if (goals.length > 0) {
+            // Fallback: Show the first one available even if complete
+            const firstGoal = goals[0];
+            const progress = goalsService.calculateProgress(firstGoal, movements || []);
+            renderMissionCard(firstGoal, progress);
+        } else {
+            renderMissionCard(null, null); // Hide card
         }
 
     } catch (error) {
