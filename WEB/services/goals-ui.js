@@ -84,7 +84,13 @@ async function loadMaterialsFromSupabase() {
             loadingIndicator.classList.remove('hidden');
         }
 
-        const { data, error } = await supabase
+        // Use window.supabase (the global Supabase client from index.html)
+        if (!window.supabase) {
+            console.error('❌ Supabase client not initialized');
+            return [];
+        }
+
+        const { data, error } = await window.supabase
             .from('materiales')
             .select('*')
             .eq('obra_id', obraId)
@@ -93,6 +99,7 @@ async function loadMaterialsFromSupabase() {
         if (error) throw error;
 
         console.log(`📦 ${data?.length || 0} materiales cargados desde Supabase`);
+        console.log('Materiales:', data); // Debug: ver los materiales cargados
         window.materials = data || [];
 
         // Hide loading indicator

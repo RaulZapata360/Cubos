@@ -13,7 +13,7 @@ class GoalsService {
      */
     async createGoal(obraId, goalData) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabase
                 .from(this.tableName)
                 .insert([{
                     obra_id: obraId,
@@ -44,7 +44,7 @@ class GoalsService {
      */
     async getActiveGoals(obraId) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabase
                 .from(this.tableName)
                 .select('*')
                 .eq('obra_id', obraId)
@@ -66,7 +66,7 @@ class GoalsService {
      */
     async getGoalByType(obraId, tipo) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabase
                 .from(this.tableName)
                 .select('*')
                 .eq('obra_id', obraId)
@@ -88,7 +88,7 @@ class GoalsService {
      */
     async updateGoal(goalId, updates) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await window.supabase
                 .from(this.tableName)
                 .update({
                     ...updates,
@@ -120,7 +120,7 @@ class GoalsService {
      */
     async deleteGoal(goalId) {
         try {
-            const { error } = await supabase
+            const { error } = await window.supabase
                 .from(this.tableName)
                 .delete()
                 .eq('id', goalId);
@@ -194,7 +194,7 @@ class GoalsService {
      */
     async getMaterialById(materialId) {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await window.supabase
             .from('materiales')
             .select('*')
             .eq('id', materialId)
