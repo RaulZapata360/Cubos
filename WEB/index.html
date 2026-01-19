@@ -5318,16 +5318,22 @@
                     yPos = 25;
                 }
 
-                doc.setFontSize(8.5);
-                doc.setTextColor(110, 110, 110);
+                // Add extra spacing before date
+                yPos += 3;
+
+                // Date header - larger, darker, and fully underlined
+                doc.setFontSize(9.5);  // Increased from 8.5
+                doc.setTextColor(70, 70, 70);  // Darker (was 110)
                 doc.setFont("times", "bold");
                 doc.text(dayDisplay, 14, yPos);
 
-                doc.setDrawColor(200);
-                doc.setLineWidth(0.4);
-                doc.line(14, yPos + 1.2, 18, yPos + 1.2);
+                // Underline the full date text
+                const dateWidth = doc.getTextWidth(dayDisplay);
+                doc.setDrawColor(70, 70, 70);  // Match text color
+                doc.setLineWidth(0.5);  // Thicker line
+                doc.line(14, yPos + 1, 14 + dateWidth, yPos + 1);
 
-                yPos += 4;
+                yPos += 6;  // Increased spacing after date
 
                 // Group by activity type and material for this day
                 const dayActivityStats = {
