@@ -22,6 +22,8 @@ class GoalsService {
                     m3_objetivo: goalData.m3_objetivo,
                     fecha_inicio: goalData.fecha_inicio || new Date().toISOString().split('T')[0],
                     fecha_limite: goalData.fecha_limite,
+                    material_objetivo: goalData.material_objetivo || null,
+                    material_objetivo_id: goalData.material_objetivo_id || null,
                     activa: true
                 }])
                 .select()
@@ -140,10 +142,24 @@ class GoalsService {
         if (!goal) return null;
 
         // Filtrar movimientos relevantes desde fecha_inicio
-        const relevantMovements = movements.filter(m =>
+        let relevantMovements = movements.filter(m =>
             m.tipo === goal.tipo &&
             m.fecha >= goal.fecha_inicio
         );
+
+        // Si la meta tiene un material específico, filtrar por material_id
+        if (goal.material_objetivo_id) {
+            relevantMovements = relevantMovements.filter(m =>
+                m.material_id === goal.material_objetivo_id
+            );
+        }
+        // Fallback: si no hay material_objetivo_id pero sí material_objetivo (nombre)
+        else if (goal.material_objetivo) {
+            relevantMovements = relevantMovements.filter(m =>
+                m.material === goal.material_objetivo
+            );
+        }
+        // Si no hay material especificado, contar todos los movimientos del tipo correcto
 
         // Calcular m³ acumulados
         const m3Acumulados = relevantMovements.reduce(
@@ -171,6 +187,27 @@ class GoalsService {
             fechaLimite: goal.fecha_limite
         };
     }
+}
+
+    /**
+     * Obtener material por ID desde la tabla materiales
+     */
+    async getMaterialById(materialId) {
+    try {
+        const { data, error } = await supabase
+            .from('materiales')
+            .select('*')
+            .eq('id', materialId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        return data || null;
+    } catch (error) {
+        console.error('❌ Error loading material:', error);
+        return null;
+    }
+}
 }
 
 // Inicializar servicio

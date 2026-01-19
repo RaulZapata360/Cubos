@@ -68,8 +68,34 @@ window.dismissToast = function (button) {
 // ==================== GOAL MODAL SYSTEM ====================
 
 /**
- * Open goal creation modal
+ * Load materials from Supabase for the current obra
  */
+async function loadMaterialsFromSupabase() {
+    try {
+        const obraId = window.currentObraId;
+        if (!obraId) {
+            console.warn('⚠️ No obra ID found, cannot load materials');
+            return [];
+        }
+
+        const { data, error } = await supabase
+            .from('materiales')
+            .select('*')
+            .eq('obra_id', obraId)
+            .order('nombre', { ascending: true });
+
+        if (error) throw error;
+
+        console.log(`📦 ${data?.length || 0} materiales cargados desde Supabase`);
+        window.materials = data || [];
+        return data || [];
+    } catch (error) {
+        console.error('❌ Error loading materials:', error);
+        window.materials = [];
+        return [];
+    }
+}
+
 // ==================== GOAL MODAL SYSTEM ====================
 
 /**
@@ -80,13 +106,24 @@ window.dismissToast = function (button) {
 /**
  * Open goal creation modal
  */
-window.openGoalModal = function () {
+// ==================== GOAL MODAL SYSTEM ====================
+
+/**
+ * Open goal creation modal
+ */
+/**
+ * Open goal creation modal
+ */
+window.openGoalModal = async function () {
     const modal = document.getElementById('goalModal');
     if (!modal) return;
 
     // Reset form
     document.getElementById('goalForm').reset();
     document.getElementById('charCount').textContent = '0/200';
+
+    // Load materials from Supabase
+    await loadMaterialsFromSupabase();
 
     // Initialize Material Select based on default checked type
     const defaultType = document.querySelector('input[name="goalType"]:checked').value;
@@ -113,28 +150,27 @@ function updateGoalMaterials(type) {
 
     select.innerHTML = '<option value="" class="bg-slate-900 text-text-muted">Cualquier material...</option>';
 
-    // Filter materials from global window.materials if available
-    // Ensure we are accessing the correct global variable
+    // Filter materials from global window.materials loaded from Supabase
     const availableMaterials = window.materials || [];
     let filtered = [];
 
-    // The user explicitly requested to show available registered materials
-    // We filter them by type matching the goal type
+    // Filter materials by type matching the goal type
     if (availableMaterials.length > 0) {
         filtered = availableMaterials.filter(m => m.tipo === type);
     }
 
     // Only use fallbacks if absolutely no materials found for that type
     if (filtered.length === 0) {
-        if (type === 'incoming') filtered = [{ nombre: 'Base Estabilizada' }, { nombre: 'Arena' }, { nombre: 'Relleno' }];
-        else if (type === 'outgoing') filtered = [{ nombre: 'Escombro' }, { nombre: 'Basura' }, { nombre: 'Excedentes' }];
-        else if (type === 'internal') filtered = [{ nombre: 'Tierra' }, { nombre: 'Ripio' }];
+        console.warn(`⚠️ No materials found for type "${type}", using fallback`);
+        if (type === 'incoming') filtered = [{ id: null, nombre: 'Base Estabilizada' }, { id: null, nombre: 'Arena' }, { id: null, nombre: 'Relleno' }];
+        else if (type === 'outgoing') filtered = [{ id: null, nombre: 'Escombro' }, { id: null, nombre: 'Basura' }, { id: null, nombre: 'Excedentes' }];
+        else if (type === 'internal') filtered = [{ id: null, nombre: 'Tierra' }, { id: null, nombre: 'Ripio' }];
     }
 
     filtered.forEach(mat => {
         const option = document.createElement('option');
-        // Use registred name exactly as is
-        option.value = mat.nombre;
+        // Use material ID as value, nombre as display text
+        option.value = mat.id || mat.nombre; // Fallback to nombre if no ID
         option.textContent = mat.nombre;
         option.className = 'bg-slate-900 text-white';
         select.appendChild(option);
@@ -153,7 +189,7 @@ if (document.getElementById('goalForm')) {
         const descripcion = document.getElementById('goalDescription').value.trim();
         const m3_objetivo = parseFloat(document.getElementById('goalM3').value);
         const dias_plazo = parseInt(document.getElementById('goalDeadlineDays').value);
-        const material_objetivo = document.getElementById('goalMaterial').value;
+        const materialSelectValue = document.getElementById('goalMaterial').value;
 
         if (!nombre || !descripcion || !m3_objetivo || !dias_plazo) {
             showToast('error', 'Error', 'Por favor completa todos los campos requeridos');
@@ -173,13 +209,33 @@ if (document.getElementById('goalForm')) {
                 return;
             }
 
+            // Determine if materialSelectValue is an ID (UUID) or a name (fallback)
+            let material_objetivo_id = null;
+            let material_objetivo = null;
+
+            if (materialSelectValue) {
+                // Check if it's a UUID (simple check: contains dashes and is 36 chars)
+                const isUUID = materialSelectValue.length === 36 && materialSelectValue.includes('-');
+
+                if (isUUID) {
+                    material_objetivo_id = materialSelectValue;
+                    // Find the material name from window.materials
+                    const material = window.materials?.find(m => m.id === materialSelectValue);
+                    material_objetivo = material?.nombre || null;
+                } else {
+                    // It's a fallback name
+                    material_objetivo = materialSelectValue;
+                }
+            }
+
             const goalData = {
-                nombre, // New field
+                nombre,
                 tipo,
                 descripcion,
                 m3_objetivo,
                 fecha_limite,
-                material_objetivo
+                material_objetivo,
+                material_objetivo_id
             };
 
             await goalsService.createGoal(obraId, goalData);

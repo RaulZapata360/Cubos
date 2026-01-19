@@ -18,7 +18,7 @@ class CounterService {
     }
 
     // Register a new movement
-    async registerMovement(camionId, tipo, capacidad, material = null) {
+    async registerMovement(camionId, tipo, capacidad, material = null, materialId = null) {
         try {
             const session = await supabaseClient.auth.getSession();
             const userId = session.data.session?.user?.id;
@@ -31,18 +31,25 @@ class CounterService {
             const timestamp = now.toISOString();
             const fecha = now.toISOString().split('T')[0];
 
+            const movementData = {
+                obra_id: this.currentObraId,
+                camion_id: camionId,
+                usuario_id: userId,
+                tipo: tipo,
+                capacidad: parseFloat(capacidad),
+                material: material,
+                timestamp: timestamp,
+                fecha: fecha
+            };
+
+            // Add material_id if provided (for goal tracking)
+            if (materialId) {
+                movementData.material_id = materialId;
+            }
+
             const { data, error } = await supabaseClient
                 .from('movimientos')
-                .insert([{
-                    obra_id: this.currentObraId,
-                    camion_id: camionId,
-                    usuario_id: userId,
-                    tipo: tipo,
-                    capacidad: parseFloat(capacidad),
-                    material: material,
-                    timestamp: timestamp,
-                    fecha: fecha
-                }])
+                .insert([movementData])
                 .select()
                 .single();
 
