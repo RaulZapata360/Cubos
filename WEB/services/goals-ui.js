@@ -3,6 +3,20 @@
  * Handles goal modal, toast notifications, and progress bars
  */
 
+// Helper function to get Supabase client
+function getSupabaseClient() {
+    // Try window.supabase first (initialized in index.html head)
+    if (window.supabase && typeof window.supabase.from === 'function') {
+        return window.supabase;
+    }
+    // Fallback to supabaseClient if available
+    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+        return window.supabaseClient;
+    }
+    console.error('❌ No Supabase client available');
+    return null;
+}
+
 // ==================== TOAST NOTIFICATION SYSTEM ====================
 
 /**
@@ -84,13 +98,15 @@ async function loadMaterialsFromSupabase() {
             loadingIndicator.classList.remove('hidden');
         }
 
-        // Use window.supabase (the global Supabase client from index.html)
-        if (!window.supabase) {
+        // Get Supabase client safely
+        const supabase = getSupabaseClient();
+        if (!supabase) {
             console.error('❌ Supabase client not initialized');
+            if (loadingIndicator) loadingIndicator.classList.add('hidden');
             return [];
         }
 
-        const { data, error } = await window.supabase
+        const { data, error } = await supabase
             .from('materiales')
             .select('*')
             .eq('obra_id', obraId)

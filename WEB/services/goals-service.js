@@ -3,6 +3,18 @@
  * Maneja CRUD de metas y cálculo de progreso
  */
 
+// Helper function to get Supabase client
+function getSupabaseClient() {
+    if (window.supabase && typeof window.supabase.from === 'function') {
+        return window.supabase;
+    }
+    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+        return window.supabaseClient;
+    }
+    console.error('❌ No Supabase client available');
+    return null;
+}
+
 class GoalsService {
     constructor() {
         this.tableName = 'metas_obra';
@@ -13,7 +25,7 @@ class GoalsService {
      */
     async createGoal(obraId, goalData) {
         try {
-            const { data, error } = await window.supabase
+            const { data, error } = await getSupabaseClient()
                 .from(this.tableName)
                 .insert([{
                     obra_id: obraId,
@@ -44,7 +56,7 @@ class GoalsService {
      */
     async getActiveGoals(obraId) {
         try {
-            const { data, error } = await window.supabase
+            const { data, error } = await getSupabaseClient()
                 .from(this.tableName)
                 .select('*')
                 .eq('obra_id', obraId)
@@ -66,7 +78,7 @@ class GoalsService {
      */
     async getGoalByType(obraId, tipo) {
         try {
-            const { data, error } = await window.supabase
+            const { data, error } = await getSupabaseClient()
                 .from(this.tableName)
                 .select('*')
                 .eq('obra_id', obraId)
@@ -88,7 +100,7 @@ class GoalsService {
      */
     async updateGoal(goalId, updates) {
         try {
-            const { data, error } = await window.supabase
+            const { data, error } = await getSupabaseClient()
                 .from(this.tableName)
                 .update({
                     ...updates,
@@ -120,7 +132,7 @@ class GoalsService {
      */
     async deleteGoal(goalId) {
         try {
-            const { error } = await window.supabase
+            const { error } = await getSupabaseClient()
                 .from(this.tableName)
                 .delete()
                 .eq('id', goalId);
@@ -194,7 +206,7 @@ class GoalsService {
      */
     async getMaterialById(materialId) {
     try {
-        const { data, error } = await window.supabase
+        const { data, error } = await getSupabaseClient()
             .from('materiales')
             .select('*')
             .eq('id', materialId)
