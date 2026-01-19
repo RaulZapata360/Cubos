@@ -424,7 +424,11 @@
                     <div class="flex items-center justify-between">
                         <h2 class="text-xs font-bold text-text-muted uppercase tracking-widest">Operaciones Disponibles
                         </h2>
-                        <span class="text-[10px] text-text-muted">Selecciona el tipo de movimiento para registrar</span>
+                        <button onclick="openGoalModal()"
+                            class="text-xs text-primary hover:text-accent transition-colors font-bold flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">add_circle</span>
+                            Nueva Meta
+                        </button>
                     </div>
                 </section>
 
@@ -1690,6 +1694,111 @@
             input.value = newValue;
         };
     </script>
+
+    <!-- GOAL/MISSION MODAL -->
+    <div id="goalModal" class="fixed inset-0 z-[80] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAllModals()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div
+                class="glass-card w-full max-w-lg neon-shadow animate-in fade-in zoom-in duration-300 border border-border">
+                <div class="p-6 space-y-6">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-xl font-black text-main">Nueva Meta</h2>
+                        <button onclick="closeAllModals()" class="text-text-muted hover:text-main transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+
+                    <form id="goalForm" class="space-y-6">
+                        <!-- Tipo de Meta -->
+                        <div>
+                            <label class="text-xs font-bold text-text-muted uppercase mb-3 block tracking-widest">Tipo
+                                de Meta</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="goalType" value="incoming" class="peer sr-only" checked>
+                                    <div
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-success peer-checked:ring-2 peer-checked:ring-success/30 peer-checked:bg-success/10 transition-all hover:border-success/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-2xl">🟢</div>
+                                        <span
+                                            class="text-[11px] font-bold text-text-muted peer-checked:text-success uppercase tracking-wider text-center">Entrada</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="goalType" value="internal" class="peer sr-only">
+                                    <div
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-primary peer-checked:ring-2 peer-checked:ring-primary/30 peer-checked:bg-primary/10 transition-all hover:border-primary/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-2xl">🔵</div>
+                                        <span
+                                            class="text-[11px] font-bold text-text-muted peer-checked:text-primary uppercase tracking-wider text-center">Interno</span>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="goalType" value="outgoing" class="peer sr-only">
+                                    <div
+                                        class="glass-card p-4 rounded-2xl border border-white/10 peer-checked:border-danger peer-checked:ring-2 peer-checked:ring-danger/30 peer-checked:bg-danger/10 transition-all hover:border-danger/50 active:scale-95 flex flex-col items-center justify-center gap-2">
+                                        <div class="text-2xl">🔴</div>
+                                        <span
+                                            class="text-[11px] font-bold text-text-muted peer-checked:text-danger uppercase tracking-wider text-center">Salida</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div>
+                            <label
+                                class="text-xs font-bold text-text-muted uppercase mb-2 block tracking-widest">Descripción
+                                de la Meta</label>
+                            <textarea id="goalDescription" rows="3" maxlength="200" required
+                                class="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none"
+                                placeholder="Ej: Completar relleno sector norte"></textarea>
+                            <div class="text-[11px] text-text-muted mt-1 text-right" id="charCount">0/200</div>
+                        </div>
+
+                        <!-- M³ Objetivo y Fecha Límite -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- M³ Objetivo -->
+                            <div>
+                                <label class="text-xs font-bold text-text-muted uppercase mb-2 block tracking-widest">M³
+                                    Objetivo</label>
+                                <input type="number" id="goalM3" min="1" step="0.5" required
+                                    class="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white placeholder-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    placeholder="500">
+                            </div>
+
+                            <!-- Fecha Límite -->
+                            <div>
+                                <label
+                                    class="text-xs font-bold text-text-muted uppercase mb-2 block tracking-widest">Fecha
+                                    Límite</label>
+                                <input type="date" id="goalDeadline" required
+                                    class="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-xl text-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="flex gap-3">
+                            <button type="button" onclick="closeAllModals()"
+                                class="flex-1 px-6 py-3 rounded-xl border border-white/10 text-text-muted hover:bg-white/5 transition-all">
+                                Cancelar
+                            </button>
+                            <button type="submit"
+                                class="flex-1 px-6 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/30">
+                                Crear Meta
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed top-20 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+        <!-- Toasts will be inserted here dynamically -->
+    </div>
 
     <!-- Modal for Frequent Trucks -->
     <div id="frequentTrucksModal" class="fixed inset-0 z-[80] hidden">
