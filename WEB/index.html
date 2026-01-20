@@ -429,6 +429,13 @@
                             <span
                                 class="material-symbols-outlined text-text-muted group-hover:text-primary transition-colors text-base">calendar_month</span>
                         </button>
+                        <button onclick="toggleTheme()" id="themeToggleBtn"
+                            class="p-2 bg-item hover:bg-white/10 rounded-lg transition-all border border-border group"
+                            title="Modo Día/Noche">
+                            <span
+                                class="material-symbols-outlined text-text-muted group-hover:text-warning transition-colors text-base"
+                                id="themeIcon">light_mode</span>
+                        </button>
                         <button id="installAppBtn" onclick="installPWA()"
                             class="p-2 bg-item hover:bg-white/10 rounded-lg transition-all border border-border group hidden"
                             title="Instalar App">
@@ -7184,6 +7191,35 @@
             await authService.logout();
             window.location.href = 'login.html';
         };
+
+        window.toggleTheme = function () {
+            const body = document.body;
+            body.classList.toggle('light-theme');
+            const isLight = body.classList.contains('light-theme');
+
+            // Icon
+            const icon = document.getElementById('themeIcon');
+            if (icon) icon.textContent = isLight ? 'dark_mode' : 'light_mode';
+
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
+
+            // Feedback (remove once CSS is fully implemented)
+            if (isLight && !document.getElementById('light-mode-style')) {
+                // Inject minimal light mode CSS if not exists
+                const style = document.createElement('style');
+                style.id = 'light-mode-style';
+                style.textContent = `
+                    .light-theme { filter: invert(1) hue-rotate(180deg); }
+                    .light-theme img, .light-theme video { filter: invert(1) hue-rotate(180deg); }
+                 `;
+                document.head.appendChild(style);
+            }
+        };
+
+        // Init theme on load
+        if (localStorage.getItem('theme') === 'light') {
+            window.toggleTheme();
+        }
 
         setupEventListeners();
         init();
