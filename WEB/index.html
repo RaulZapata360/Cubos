@@ -482,13 +482,14 @@
                     </div>
                 </section>
 
-                <!-- Quick Action Buttons - UNIFIED GRID -->
-                <section class="px-4 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Quick Action Buttons - UNIFIED GRID (Carousel on Mobile) -->
+                <section class="mb-6">
+                    <div
+                        class="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-visible px-4 pb-4 md:pb-0 snap-x snap-mandatory hide-scrollbar">
 
                         <!-- Incoming Material - GREEN CARD -->
                         <button id="incomingBtn" title="Presiona E"
-                            class="p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-emerald-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-emerald-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_50%)]">
@@ -538,7 +539,7 @@
 
                         <!-- Internal Trips - BLUE CARD -->
                         <button onclick="openInternalTripSelector()"
-                            class="p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-blue-600/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(37,99,235,0.15)] hover:shadow-[0_0_30px_rgba(37,99,235,0.25)]">
+                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-blue-600/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(37,99,235,0.15)] hover:shadow-[0_0_30px_rgba(37,99,235,0.25)]">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.1),transparent_60%)]">
@@ -587,7 +588,7 @@
 
                         <!-- Outgoing Material - RED CARD -->
                         <button id="outgoingBtn" title="Presiona S"
-                            class="p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-rose-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:shadow-[0_0_30px_rgba(244,63,94,0.25)]">
+                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-rose-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:shadow-[0_0_30px_rgba(244,63,94,0.25)]">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.1),transparent_60%)]">
