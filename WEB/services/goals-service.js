@@ -199,27 +199,25 @@ class GoalsService {
             fechaLimite: goal.fecha_limite
         };
     }
-}
-
     /**
      * Obtener material por ID desde la tabla materiales
      */
     async getMaterialById(materialId) {
-    try {
-        const { data, error } = await getSupabaseClient()
-            .from('materiales')
-            .select('*')
-            .eq('id', materialId)
-            .single();
+        try {
+            const { data, error } = await getSupabaseClient()
+                .from('materiales')
+                .select('*')
+                .eq('id', materialId)
+                .single();
 
-        if (error && error.code !== 'PGRST116') throw error;
+            if (error && error.code !== 'PGRST116') throw error;
 
-        return data || null;
-    } catch (error) {
-        console.error('❌ Error loading material:', error);
-        return null;
+            return data || null;
+        } catch (error) {
+            console.error('❌ Error loading material:', error);
+            return null;
+        }
     }
-}
 }
 
 // Inicializar servicio

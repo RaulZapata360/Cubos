@@ -4280,10 +4280,13 @@
                     if (cached && cached.data) {
                         console.log('📦 Using cached movements');
                         movements = cached.data;
-                        renderMovementLog();
-                        renderAnalytics();
-                        updateSummary();
                         if (!cached.expired) {
+                            renderMovementLog();
+                            renderInternalTrips();
+                            renderAnalytics();
+                            updateSummary();
+                            renderTruckList();
+                            if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns(); // ✨ Ahora actualiza con caché
                             loadingState.movements = true;
                             updateLoadingItem('movements', 'done');
                             checkIfReady();
