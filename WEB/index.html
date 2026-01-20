@@ -482,55 +482,56 @@
                     </div>
                 </section>
 
-                <!-- Quick Action Buttons - UNIFIED GRID (Carousel on Mobile) -->
-                <section class="mb-6">
-                    <div
-                        class="flex md:grid md:grid-cols-3 gap-4 overflow-x-auto md:overflow-visible px-4 pb-4 md:pb-0 snap-x snap-mandatory hide-scrollbar">
+                <!-- Quick Action Buttons - COMPACT GRID ON MOBILE -->
+                <section class="mb-4 md:mb-6">
+                    <div class="grid grid-cols-3 gap-2 px-2 md:gap-4 md:px-4">
 
                         <!-- Incoming Material - GREEN CARD -->
                         <button id="incomingBtn" title="Presiona E"
-                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-emerald-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_30px_rgba(16,185,129,0.25)]">
+                            class="p-2 md:p-5 rounded-xl md:rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-emerald-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-center md:text-left shadow-[0_0_20px_rgba(16,185,129,0.15)] hover:shadow-[0_0_30px_rgba(16,185,129,0.25)] h-full flex flex-col justify-between">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.1),transparent_50%)]">
                             </div>
 
+                            <!-- Background Icon (Desktop Only) -->
                             <div
-                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity hidden md:block">
                                 <span class="material-symbols-outlined text-6xl text-emerald-400">south_east</span>
                             </div>
 
-                            <div class="relative z-10 flex flex-col h-full">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-3">
+                            <div class="relative z-10 w-full">
+                                <div class="flex flex-col md:flex-row items-center md:justify-between mb-2 md:mb-4">
+                                    <div class="flex flex-col md:flex-row items-center gap-1 md:gap-3">
                                         <div
-                                            class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                                            class="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(16,185,129,0.2)] shrink-0">
                                             <span
-                                                class="material-symbols-outlined text-emerald-400 text-2xl">south_east</span>
+                                                class="material-symbols-outlined text-emerald-400 text-sm md:text-2xl">south_east</span>
                                         </div>
                                         <div>
-                                            <div class="text-xs font-black text-emerald-100 uppercase tracking-[0.2em]">
+                                            <div
+                                                class="text-[9px] md:text-xs font-black text-emerald-100 uppercase tracking-widest md:tracking-[0.2em] leading-tight">
                                                 Entrada</div>
                                             <div
-                                                class="text-[10px] text-emerald-400/70 font-medium tracking-wide uppercase">
+                                                class="text-[10px] text-emerald-400/70 font-medium tracking-wide uppercase hidden md:block">
                                                 Relleno</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="text-center py-2 flex-1 flex flex-col justify-center">
-                                    <div class="text-5xl font-extrabold text-white leading-none tracking-tight"
+                                <div class="text-center py-1 md:py-2">
+                                    <div class="text-xl md:text-5xl font-extrabold text-white leading-none tracking-tight break-all"
                                         id="incomingVolume">0.0</div>
                                     <div
-                                        class="text-[10px] text-emerald-400/80 font-bold uppercase tracking-widest mt-2">
-                                        Metros Cúbicos</div>
+                                        class="text-[8px] md:text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider mt-1 md:mt-2">
+                                        M³<span class="hidden md:inline"> Totales</span></div>
                                 </div>
 
                                 <!-- Goal Progress -->
-                                <div id="goalProgress-incoming" class="mt-4"></div>
+                                <div id="goalProgress-incoming" class="mt-2 md:mt-4 w-full"></div>
 
-                                <!-- Material Breakdown -->
-                                <div class="flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5"
+                                <!-- Material Breakdown (Desktop Only) -->
+                                <div class="hidden md:flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5 w-full"
                                     id="incomingMaterialBreakdown">
                                     <span class="text-[11px] text-white/40 italic">Sin movimientos registrados</span>
                                 </div>
@@ -539,47 +540,49 @@
 
                         <!-- Internal Trips - BLUE CARD -->
                         <button onclick="openInternalTripSelector()"
-                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-blue-600/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(37,99,235,0.15)] hover:shadow-[0_0_30px_rgba(37,99,235,0.25)]">
+                            class="p-2 md:p-5 rounded-xl md:rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-blue-600/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-center md:text-left shadow-[0_0_20px_rgba(37,99,235,0.15)] hover:shadow-[0_0_30px_rgba(37,99,235,0.25)] h-full flex flex-col justify-between">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.1),transparent_60%)]">
                             </div>
 
                             <div
-                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity hidden md:block">
                                 <span class="material-symbols-outlined text-6xl text-blue-400">swap_horiz</span>
                             </div>
 
-                            <div class="relative z-10 flex flex-col h-full">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-3">
+                            <div class="relative z-10 w-full">
+                                <div class="flex flex-col md:flex-row items-center md:justify-between mb-2 md:mb-4">
+                                    <div class="flex flex-col md:flex-row items-center gap-1 md:gap-3">
                                         <div
-                                            class="w-12 h-12 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center shadow-[0_0_10px_rgba(37,99,235,0.2)]">
+                                            class="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center shadow-[0_0_10px_rgba(37,99,235,0.2)] shrink-0">
                                             <span
-                                                class="material-symbols-outlined text-blue-400 text-2xl">swap_horiz</span>
+                                                class="material-symbols-outlined text-blue-400 text-sm md:text-2xl">swap_horiz</span>
                                         </div>
                                         <div>
-                                            <div class="text-xs font-black text-blue-100 uppercase tracking-[0.2em]">
+                                            <div
+                                                class="text-[9px] md:text-xs font-black text-blue-100 uppercase tracking-widest md:tracking-[0.2em] leading-tight">
                                                 Interno</div>
                                             <div
-                                                class="text-[10px] text-blue-400/70 font-medium tracking-wide uppercase">
+                                                class="text-[10px] text-blue-400/70 font-medium tracking-wide uppercase hidden md:block">
                                                 Movimiento</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="text-center py-2 flex-1 flex flex-col justify-center">
-                                    <div class="text-5xl font-extrabold text-white leading-none tracking-tight"
+                                <div class="text-center py-1 md:py-2">
+                                    <div class="text-xl md:text-5xl font-extrabold text-white leading-none tracking-tight break-all"
                                         id="internalTripsVolume">0.0</div>
-                                    <div class="text-[10px] text-blue-400/80 font-bold uppercase tracking-widest mt-2">
-                                        Metros Cúbicos</div>
+                                    <div
+                                        class="text-[8px] md:text-[10px] text-blue-400/80 font-bold uppercase tracking-wider mt-1 md:mt-2">
+                                        M³<span class="hidden md:inline"> Totales</span></div>
                                 </div>
 
                                 <!-- Goal Progress -->
-                                <div id="goalProgress-internal" class="mt-4"></div>
+                                <div id="goalProgress-internal" class="mt-2 md:mt-4 w-full"></div>
 
-                                <!-- Material Breakdown -->
-                                <div class="flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5"
+                                <!-- Material Breakdown (Desktop Only) -->
+                                <div class="hidden md:flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5 w-full"
                                     id="internalMaterialBreakdown">
                                     <span class="text-[11px] text-white/40 italic text-center">Sin registros</span>
                                 </div>
@@ -588,47 +591,49 @@
 
                         <!-- Outgoing Material - RED CARD -->
                         <button id="outgoingBtn" title="Presiona S"
-                            class="min-w-[85vw] md:min-w-0 snap-center p-5 rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-rose-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-left shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:shadow-[0_0_30px_rgba(244,63,94,0.25)]">
+                            class="p-2 md:p-5 rounded-xl md:rounded-2xl bg-slate-900/60 backdrop-blur-[24px] border border-rose-500/50 relative overflow-hidden group hover:scale-[1.02] active:scale-[0.98] transition-all text-center md:text-left shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:shadow-[0_0_30px_rgba(244,63,94,0.25)] h-full flex flex-col justify-between">
                             <!-- Radial Gradient Overlay -->
                             <div
                                 class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(244,63,94,0.1),transparent_60%)]">
                             </div>
 
                             <div
-                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+                                class="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity hidden md:block">
                                 <span class="material-symbols-outlined text-6xl text-rose-400">north_east</span>
                             </div>
 
-                            <div class="relative z-10 flex flex-col h-full">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-3">
+                            <div class="relative z-10 w-full">
+                                <div class="flex flex-col md:flex-row items-center md:justify-between mb-2 md:mb-4">
+                                    <div class="flex flex-col md:flex-row items-center gap-1 md:gap-3">
                                         <div
-                                            class="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(244,63,94,0.2)]">
+                                            class="w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-[0_0_10px_rgba(244,63,94,0.2)] shrink-0">
                                             <span
-                                                class="material-symbols-outlined text-rose-400 text-2xl">north_east</span>
+                                                class="material-symbols-outlined text-rose-400 text-sm md:text-2xl">north_east</span>
                                         </div>
                                         <div>
-                                            <div class="text-xs font-black text-rose-100 uppercase tracking-[0.2em]">
+                                            <div
+                                                class="text-[9px] md:text-xs font-black text-rose-100 uppercase tracking-widest md:tracking-[0.2em] leading-tight">
                                                 Salida</div>
                                             <div
-                                                class="text-[10px] text-rose-400/70 font-medium tracking-wide uppercase">
+                                                class="text-[10px] text-rose-400/70 font-medium tracking-wide uppercase hidden md:block">
                                                 Excavación</div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="text-center py-2 flex-1 flex flex-col justify-center">
-                                    <div class="text-5xl font-extrabold text-white leading-none tracking-tight"
+                                <div class="text-center py-1 md:py-2">
+                                    <div class="text-xl md:text-5xl font-extrabold text-white leading-none tracking-tight break-all"
                                         id="outgoingVolume">0.0</div>
-                                    <div class="text-[10px] text-rose-400/80 font-bold uppercase tracking-widest mt-2">
-                                        Metros Cúbicos</div>
+                                    <div
+                                        class="text-[8px] md:text-[10px] text-rose-400/80 font-bold uppercase tracking-wider mt-1 md:mt-2">
+                                        M³<span class="hidden md:inline"> Totales</span></div>
                                 </div>
 
                                 <!-- Goal Progress -->
-                                <div id="goalProgress-outgoing" class="mt-4"></div>
+                                <div id="goalProgress-outgoing" class="mt-2 md:mt-4 w-full"></div>
 
-                                <!-- Material Breakdown -->
-                                <div class="flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5"
+                                <!-- Material Breakdown (Desktop Only) -->
+                                <div class="hidden md:flex flex-wrap justify-center gap-2 mt-4 pt-4 border-t border-white/5 w-full"
                                     id="outgoingMaterialBreakdown">
                                     <span class="text-[11px] text-white/40 italic text-center">Sin registros</span>
                                 </div>
