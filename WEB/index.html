@@ -1602,7 +1602,7 @@
         window.loadObraName = async function () {
             try {
                 // Get obra ID from obrasService
-                let obraId = currentObraId;
+                let obraId = window.currentObraId;
 
                 // If not available, try from obrasService
                 if (!obraId && window.obrasService) {
@@ -4232,12 +4232,6 @@
             await openTruckSelector('internal');
         };
 
-        function switchTab(tabId) {
-            const now = new Date();
-            const targetDate = new Date(now);
-            targetDate.setDate(now.getDate() + currentCounterDayOffset);
-            return targetDate;
-        }
 
         function getTargetDate() {
             const now = new Date();
@@ -4805,9 +4799,11 @@
                 `;
             }).join('');
 
-            // Update pills - exclude internal trips
-            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
-            const regularMovements = movements.filter(m => !isInternalTrip(m));
+            // Update pills - exclude internal trips (reuse function from filter)
+            const regularMovements = movements.filter(m => {
+                const isInternal = (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+                return !isInternal;
+            });
             document.getElementById('movementIncomingCount').textContent = regularMovements.filter(m => m.tipo === 'incoming').length;
             document.getElementById('movementOutgoingCount').textContent = regularMovements.filter(m => m.tipo === 'outgoing').length;
         }
