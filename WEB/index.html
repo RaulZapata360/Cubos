@@ -4288,7 +4288,24 @@
                 if (error) throw error;
 
                 // movements para el log debe ser solo del día seleccionado
-                const freshMovements = (data || []).filter(m => m.fecha === selectedDateStr);
+                let freshMovements = (data || []).filter(m => m.fecha === selectedDateStr);
+
+                // FALLBACK: Si no hay movimientos y es día pasado, buscar en historial
+                if (freshMovements.length === 0 && currentCounterDayOffset !== 0) {
+                    console.log('⚠️ No active movements found for past day. Checking archive for:', selectedDateStr);
+                    const { data: archivedData } = await supabaseClient
+                        .from('historial_diario')
+                        .select('datos_completos')
+                        .eq('obra_id', currentObraId)
+                        .eq('fecha', selectedDateStr)
+                        .single();
+
+                    if (archivedData && archivedData.datos_completos && archivedData.datos_completos.movements) {
+                        console.log('📦 Recovered movements from archive:', archivedData.datos_completos.movements.length);
+                        freshMovements = archivedData.datos_completos.movements;
+                        // Marcar como "desde archivo" para UI si quisiéramos (opcional)
+                    }
+                }
 
                 // Compare with current movements to avoid redundant renders
                 if (JSON.stringify(freshMovements) !== JSON.stringify(movements)) {
