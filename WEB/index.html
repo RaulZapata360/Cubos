@@ -4524,6 +4524,13 @@
                                      <span class="text-[11px] text-warning font-bold uppercase">Sal</span>
                                      <span class="text-sm font-black text-white">${out}</span>
                                  </div>
+                                 ${(internal > 0 || regType === 'internal') ? `
+                                     <div class="w-px h-6 bg-white/10"></div>
+                                     <div class="flex flex-col items-center">
+                                         <span class="text-[11px] text-primary font-bold uppercase">Int</span>
+                                         <span class="text-sm font-black text-white">${internal}</span>
+                                     </div>
+                                 ` : ''}
                              </div>
                         </div>
 
