@@ -855,6 +855,22 @@
                         </div>
                     </div>
 
+                    <!-- Movement Type Filters -->
+                    <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                        <button onclick="filterMovements('all')"
+                            class="movement-filter-btn active px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/5 bg-white/5 text-text-muted hover:bg-white/10 transition-all whitespace-nowrap"
+                            data-filter="all">TODOS</button>
+                        <button onclick="filterMovements('incoming')"
+                            class="movement-filter-btn px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-success/20 text-success hover:bg-success/10 transition-all whitespace-nowrap"
+                            data-filter="incoming">RELLENO</button>
+                        <button onclick="filterMovements('outgoing')"
+                            class="movement-filter-btn px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-warning/20 text-warning hover:bg-warning/10 transition-all whitespace-nowrap"
+                            data-filter="outgoing">EXCAVACIÓN</button>
+                        <button onclick="filterMovements('internal')"
+                            class="movement-filter-btn px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-primary/20 text-primary hover:bg-primary/10 transition-all whitespace-nowrap"
+                            data-filter="internal">INTERNOS</button>
+                    </div>
+
                     <!-- Log -->
                     <div class="space-y-2" id="movementLog">
                         <div class="text-center py-10 text-text-muted">
@@ -4660,30 +4676,80 @@
             document.getElementById('truckModal').classList.add('active');
         }
 
+        // Global filter state for movements
+        let currentMovementFilter = 'all';
+
+        // Filter movements by type
+        window.filterMovements = function (filterType) {
+            currentMovementFilter = filterType;
+
+            // Update button states
+            document.querySelectorAll('.movement-filter-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-white/5');
+                if (btn.dataset.filter === filterType) {
+                    btn.classList.add('active', 'bg-white/5');
+                }
+            });
+
+            // Re-render movement log with filter
+            renderMovementLog();
+        };
+
         function renderMovementLog() {
             const container = document.getElementById('movementLog');
             if (!container) return;
 
             const targetDate = getTargetDate();
             const dateStr = formatDateYYYYMMDD(targetDate);
-            const dailyMovements = movements.filter(m => m.fecha === dateStr);
+            let dailyMovements = movements.filter(m => m.fecha === dateStr);
+
+            // Apply movement type filter
+            const isInternalTrip = (m) => (m.destino && m.destino.toLowerCase() === 'interno') || (m.origen && m.origen.toLowerCase() === 'interno');
+
+            if (currentMovementFilter !== 'all') {
+                if (currentMovementFilter === 'internal') {
+                    dailyMovements = dailyMovements.filter(m => isInternalTrip(m));
+                } else {
+                    // Filter by incoming/outgoing and exclude internal trips
+                    dailyMovements = dailyMovements.filter(m =>
+                        !isInternalTrip(m) && m.tipo === currentMovementFilter
+                    );
+                }
+            }
 
             if (dailyMovements.length === 0) {
+                const filterText = currentMovementFilter === 'all' ? '' :
+                    currentMovementFilter === 'incoming' ? ' de relleno' :
+                        currentMovementFilter === 'outgoing' ? ' de excavación' : ' internos';
                 container.innerHTML = `
                    <div class="text-center py-10 text-text-muted">
                         <span class="material-symbols-outlined text-4xl mb-2 opacity-50">history</span>
-                        <p class="text-sm">No hay movimientos registrados hoy</p>
+                        <p class="text-sm">No hay movimientos${filterText} registrados hoy</p>
                     </div>
                 `;
                 return;
             }
 
             container.innerHTML = dailyMovements.map(mov => {
-                const isIncoming = mov.tipo === 'incoming';
-                const borderColor = isIncoming ? 'border-l-success' : 'border-l-warning';
-                const icon = isIncoming ? 'south_east' : 'north_east';
-                const iconColor = isIncoming ? 'text-success' : 'text-warning';
-                const typeLabel = isIncoming ? 'Relleno' : 'Excavación';
+                // Check if it's an internal trip
+                const isInternal = (mov.destino && mov.destino.toLowerCase() === 'interno') ||
+                    (mov.origen && mov.origen.toLowerCase() === 'interno');
+
+                // Set colors and labels based on trip type
+                let borderColor, icon, iconColor, typeLabel;
+
+                if (isInternal) {
+                    borderColor = 'border-l-primary';
+                    icon = 'swap_horiz';
+                    iconColor = 'text-primary';
+                    typeLabel = 'Viaje Interno';
+                } else {
+                    const isIncoming = mov.tipo === 'incoming';
+                    borderColor = isIncoming ? 'border-l-success' : 'border-l-warning';
+                    icon = isIncoming ? 'south_east' : 'north_east';
+                    iconColor = isIncoming ? 'text-success' : 'text-warning';
+                    typeLabel = isIncoming ? 'Relleno' : 'Excavación';
+                }
 
                 return `
                     <div class="glass-card p-3 rounded-xl border-l-4 ${borderColor} flex items-center justify-between group hover:bg-white/5 transition-all relative">
