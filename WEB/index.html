@@ -6206,13 +6206,13 @@
                     return;
                 }
 
-                // Query movements for the current date and obra
+                // Query movements for the current date and obra - FIX: use deleted_at instead of deleted
                 const { data: movements, error } = await supabaseClient
                     .from('movimientos')
                     .select('tipo, material, capacidad')
                     .eq('obra_id', currentObraId)
                     .eq('fecha', dateStr)
-                    .eq('deleted', false);
+                    .is('deleted_at', null);
 
                 if (error) {
                     console.error('Error loading movements for breakdown:', error);
