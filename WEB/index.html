@@ -4336,6 +4336,7 @@
                     renderAnalytics();
                     updateSummary();
                     renderTruckList();
+                    if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
                 }
 
                 loadingState.movements = true;
@@ -6236,16 +6237,31 @@
                     internal: {}
                 };
 
+                console.log('📊 updateMaterialBreakdowns - Raw Movements:', movements);
+
                 movements.forEach(mov => {
-                    const tipo = mov.tipo || 'incoming';
+                    let rawType = (mov.tipo || 'incoming').toLowerCase();
+                    let tipo = 'incoming'; // default
+
+                    // Normalize types
+                    if (rawType.includes('relleno') || rawType === 'incoming' || rawType === 'ent') tipo = 'incoming';
+                    else if (rawType.includes('excav') || rawType === 'outgoing' || rawType === 'sal') tipo = 'outgoing';
+                    else if (rawType.includes('intern') || rawType === 'internal') tipo = 'internal';
+
                     const material = mov.material || 'Sin especificar';
                     const volumen = parseFloat(mov.capacidad) || 0;
 
-                    if (!breakdowns[tipo][material]) {
-                        breakdowns[tipo][material] = 0;
+                    if (breakdowns[tipo]) {
+                        if (!breakdowns[tipo][material]) {
+                            breakdowns[tipo][material] = 0;
+                        }
+                        breakdowns[tipo][material] += volumen;
+                    } else {
+                        console.warn('⚠️ Unknown breakdown type:', rawType, 'mapped to:', tipo);
                     }
-                    breakdowns[tipo][material] += volumen;
                 });
+
+                console.log('📊 updateMaterialBreakdowns - Processed:', breakdowns);
 
                 // Update Incoming Material Breakdown
                 const incomingContainer = document.getElementById('incomingMaterialBreakdown');
