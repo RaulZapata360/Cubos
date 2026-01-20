@@ -766,14 +766,19 @@
                             Excav. (<span id="countOutgoing">0</span>)
                         </button>
                         <button
-                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
                             data-type="incoming" onclick="filterTrucksByType('incoming')">
                             Relleno (<span id="countIncoming">0</span>)
                         </button>
                         <button
-                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
                             data-type="mixed" onclick="filterTrucksByType('mixed')">
                             Mixtos (<span id="countMixed">0</span>)
+                        </button>
+                        <button
+                            class="truck-filter-tab-new flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all text-text-muted hover:text-main"
+                            data-type="internal" onclick="filterTrucksByType('internal')">
+                            Int. (<span id="countInternal">0</span>)
                         </button>
                     </div>
 
@@ -4463,16 +4468,19 @@
                 const regularMovs = truckDayMovs.filter(m => !isInternalTrip(m));
                 const inc = regularMovs.filter(m => m.tipo === 'incoming').length;
                 const out = regularMovs.filter(m => m.tipo === 'outgoing').length;
+                const internal = truckDayMovs.filter(m => isInternalTrip(m)).length; // Count internal trips
 
                 const regType = (truck.tipo_registrado || 'outgoing').toLowerCase();
 
-                let borderColor = 'border-l-primary'; // Mixed
+                let borderColor = 'border-l-gray-500'; // Default/Unknown
                 if (regType === 'incoming') borderColor = 'border-l-success';
-                if (regType === 'outgoing') borderColor = 'border-l-warning';
+                else if (regType === 'outgoing') borderColor = 'border-l-warning';
+                else if (regType === 'mixed') borderColor = 'border-l-purple-500'; // Distinct color for mixed
+                else if (regType === 'internal') borderColor = 'border-l-primary';
 
                 return `
                     <div class="truck-card-new glass-card p-4 rounded-xl border-l-4 ${borderColor} relative group transition-all hover:translate-x-1" 
-                         data-reg-type="${regType}" data-inc="${inc}" data-out="${out}">
+                         data-reg-type="${regType}" data-inc="${inc}" data-out="${out}" data-internal="${internal}">
                         <div class="flex justify-between items-start mb-3">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-lg font-black text-white/50">
@@ -4541,28 +4549,20 @@
             }).join('');
 
             // Update filter counts based on registration OR activity
-            const countIncoming = trucks.filter(t => {
-                const reg = (t.tipo_registrado || '').toLowerCase();
-                const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
-                return reg === 'incoming' || reg === 'mixed' || hasAct;
-            }).length;
+            const countIncoming = trucks.filter(t => (t.tipo_registrado || '').toLowerCase() === 'incoming').length;
+            const countInternal = trucks.filter(t => (t.tipo_registrado || '').toLowerCase() === 'internal').length;
+            const countMixed = trucks.filter(t => (t.tipo_registrado || '').toLowerCase() === 'mixed').length;
 
+            // Outgoing catch-all fallback for legacy data (null/undefined -> outgoing)
             const countOutgoing = trucks.filter(t => {
-                const reg = (t.tipo_registrado || '').toLowerCase();
-                const hasAct = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
-                return reg === 'outgoing' || reg === 'mixed' || hasAct;
-            }).length;
-
-            const countMixed = trucks.filter(t => {
-                const reg = (t.tipo_registrado || '').toLowerCase();
-                const hasInc = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'incoming');
-                const hasOut = (movements || []).some(m => m.camion_id === t.id && m.tipo === 'outgoing');
-                return reg === 'mixed' || (hasInc && hasOut);
+                const type = (t.tipo_registrado || 'outgoing').toLowerCase();
+                return type === 'outgoing';
             }).length;
 
             document.getElementById('countIncoming').textContent = countIncoming;
             document.getElementById('countOutgoing').textContent = countOutgoing;
             document.getElementById('countMixed').textContent = countMixed;
+            document.getElementById('countInternal').textContent = countInternal;
 
             // Maintain current filter
             const activeTab = document.querySelector('.truck-filter-tab-new.text-main');
