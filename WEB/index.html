@@ -5612,14 +5612,14 @@
                     month: 'long'
                 }).toUpperCase();
 
-                if (yPos > 250) {
+                if (yPos > 230) { // Keep with next: Ensure enough space for Date + at least one table
                     doc.addPage();
                     applyPageStyle();
                     yPos = 25;
                 }
 
-                // Add extra spacing before date (Airy layout)
-                yPos += 5;
+                // Add extra spacing before date (18pt ~ 6.35mm)
+                yPos += 6.5;
 
                 // Date header - 14pt, Bold, Uppercase
                 doc.setFontSize(14);
@@ -5632,7 +5632,7 @@
                 doc.setLineWidth(0.5);
                 doc.line(14, yPos + 1.5, 196, yPos + 1.5);
 
-                yPos += 10;  // Increased spacing after date
+                yPos += 5;  // Spacing after date (reduced to roughly 2mm effectively)
 
                 // Group by activity type and material for this day
                 const dayActivityStats = {
@@ -5681,19 +5681,19 @@
                         // Calculate material subtotal for this day
                         const materialDaySubtotal = sortedTrucks.reduce((sum, t) => sum + t.totalM3, 0);
 
-                        if (yPos > 240) {
+                        // Orphan check: Ensure space for Title + Table Header + 1 Row (~25mm)
+                        if (yPos > 255) {
                             doc.addPage();
                             applyPageStyle();
                             yPos = 25;
                         }
 
-                        // Add breathable spacing before each new table block
-                        // 12pt approx 4-5mm. 
-                        yPos += 6;
+                        // Add breathable spacing before each new table block (12pt ~ 4mm)
+                        yPos += 4.5;
 
-                        // Hierarchy: ACTIVITY > Material
-                        // We format this as: **ACTIVITY** > *Material: Name*
-                        doc.setFont("times", "bold");
+                        // Hierarchy: ACTIVITY (Sans) > Material (Serif)
+                        // ACTION: Use Helvetica for Activity (Sans-serif) for contrast
+                        doc.setFont("helvetica", "bold");
                         doc.setFontSize(11);
                         doc.setTextColor(30, 30, 30);
                         const activityLabel = activityName.toUpperCase();
@@ -5714,10 +5714,12 @@
                         doc.setTextColor(80, 80, 80);
                         doc.text(`Material: ${materialName}`, 14 + activityWidth + separatorWidth, yPos);
 
-                        yPos += 2; // Small gap between title 'line' and table top (approx 6pt total with autoTable margin)
+                        // Table starts immediately (minimal gap, just enough for font descent)
+                        // 4pt after title ~ 1.5mm (User requested "Sin espacio") but we need small gap for descent
+                        yPos += 1.5;
 
                         doc.autoTable({
-                            startY: yPos + 1, // +1 for that tight "glued" feel
+                            startY: yPos,
                             head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
                             body: sortedTrucks.map(t => [
                                 t.nombre,
@@ -5726,6 +5728,7 @@
                                 `${t.totalM3.toFixed(1)} m³`
                             ]),
                             theme: 'plain',
+                            showHead: 'everyPage', // Repeat headers on new pages
                             headStyles: {
                                 textColor: [80, 80, 80],
                                 fontSize: 10,
@@ -5750,18 +5753,19 @@
                             margin: { left: 14, right: 14 }
                         });
 
-                        yPos = doc.lastAutoTable.finalY + 2;
+                        yPos = doc.lastAutoTable.finalY;
 
-                        // Subtotal with breathing room (5mm approx 14 units, but let's use 6-7 units for tight visual group, user asked for 5mm margin top)
-                        yPos += 5;
+                        // Subtotal Spacing: 6pt before ~ 2mm
+                        yPos += 3;
 
                         // Subtotal aligned left
+                        doc.setFont("times", "bold");
                         doc.setFontSize(10);
                         doc.setTextColor(30, 30, 30);
-                        doc.setFont("times", "bold");
                         doc.text(`Subtotal ${materialName}: ${materialDaySubtotal.toFixed(1)} m³`, 14, yPos);
 
-                        yPos += 8; // Space before next block
+                        // Large spacing after section: 24pt ~ 8.5mm
+                        yPos += 8.5;
                     });
                 });
 
