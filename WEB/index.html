@@ -5276,7 +5276,7 @@
                         archivedMovements = archived.flatMap(day => {
                             try {
                                 const dayData = typeof day.data === 'string' ? JSON.parse(day.data) : day.data;
-                                return dayData.movements || [];
+                                return (dayData && dayData.movements) ? dayData.movements : [];
                             } catch (e) {
                                 console.warn('Error parsing archived data for', day.fecha, e);
                                 return [];
@@ -5680,7 +5680,6 @@
 
                         // Calculate material subtotal for this day
                         const materialDaySubtotal = sortedTrucks.reduce((sum, t) => sum + t.totalM3, 0);
-                        activityDayTotal += materialDaySubtotal;
 
                         if (yPos > 240) {
                             doc.addPage();
