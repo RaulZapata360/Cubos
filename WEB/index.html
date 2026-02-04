@@ -5578,12 +5578,18 @@
 
             yPos += 3;
 
-            // DAILY BREAKDOWN
-            doc.setFontSize(10);
-            doc.setTextColor(80, 80, 80);
+            // DAILY BREAKDOWN - MAJOR TITLE
+            doc.setFontSize(16);
+            doc.setTextColor(30, 30, 30);
             doc.setFont("times", "bold");
             doc.text("III. DESGLOSE DIARIO", 14, yPos);
-            yPos += 6;
+
+            // Thick underline for major title
+            doc.setDrawColor(30, 30, 30);
+            doc.setLineWidth(0.7);
+            doc.line(14, yPos + 1.5, 196, yPos + 1.5);
+
+            yPos += 14; // Improved spacing (User requested "Aire Visual")
 
             // Group by date
             const dateGroups = {};
@@ -5612,21 +5618,21 @@
                     yPos = 25;
                 }
 
-                // Add extra spacing before date
-                yPos += 3;
+                // Add extra spacing before date (Airy layout)
+                yPos += 5;
 
-                // Date header - larger, darker, and fully underlined
-                doc.setFontSize(9.5);  // Increased from 8.5
-                doc.setTextColor(70, 70, 70);  // Darker (was 110)
+                // Date header - 14pt, Bold, Uppercase
+                doc.setFontSize(14);
+                doc.setTextColor(40, 40, 40);
                 doc.setFont("times", "bold");
                 doc.text(dayDisplay, 14, yPos);
 
                 // Full-width underline across the entire page
-                doc.setDrawColor(70, 70, 70);  // Match text color
-                doc.setLineWidth(0.5);  // Thicker line
-                doc.line(14, yPos + 1, 196, yPos + 1);  // From left margin (14) to right margin (196)
+                doc.setDrawColor(180, 180, 180); // Lighter gray for date separator
+                doc.setLineWidth(0.5);
+                doc.line(14, yPos + 1.5, 196, yPos + 1.5);
 
-                yPos += 6;  // Increased spacing after date
+                yPos += 10;  // Increased spacing after date
 
                 // Group by activity type and material for this day
                 const dayActivityStats = {
@@ -5660,27 +5666,12 @@
                 });
 
                 // Render each activity type for this day with material breakdown
+                // Render each activity type for this day with material breakdown
                 ['Relleno', 'Excavación', 'Viaje Interno'].forEach(activityName => {
                     const materials = dayActivityStats[activityName];
                     const materialNames = Object.keys(materials);
 
                     if (materialNames.length === 0) return; // Skip if no movements
-
-                    if (yPos > 240) {
-                        doc.addPage();
-                        applyPageStyle();
-                        yPos = 25;
-                    }
-
-                    // Activity subtitle - INCREASED SIZE
-                    doc.setFontSize(9);  // Increased from 7.5 to 9
-                    doc.setTextColor(80, 80, 80);  // Darker color (was 130)
-                    doc.setFont("times", "bold");  // Changed from italic to bold
-                    doc.text(activityName, 16, yPos);
-                    yPos += 4;  // Increased spacing
-
-                    // Track total for this activity on this day
-                    let activityDayTotal = 0;
 
                     // Render each material within this activity
                     materialNames.forEach((materialName, index) => {
@@ -5697,26 +5688,37 @@
                             yPos = 25;
                         }
 
-                        // Add extra spacing if not the first material to separate groups clearly
-                        if (index > 0) {
-                            yPos += 8;
-                        }
+                        // Add breathable spacing before each new table block
+                        // 12pt approx 4-5mm. 
+                        yPos += 6;
 
-                        // Material subheader - INCREASED SIZE AND BETTER FORMATTING
-                        doc.setFontSize(8.5);  // Increased from 7 to 8.5
-                        doc.setTextColor(50, 50, 50);  // Darker
+                        // Hierarchy: ACTIVITY > Material
+                        // We format this as: **ACTIVITY** > *Material: Name*
                         doc.setFont("times", "bold");
+                        doc.setFontSize(11);
+                        doc.setTextColor(30, 30, 30);
+                        const activityLabel = activityName.toUpperCase();
+                        doc.text(activityLabel, 14, yPos);
 
-                        // Add a small indicator bullet or line for the material
-                        doc.setDrawColor(180, 180, 180);
-                        doc.setLineWidth(0.5);
-                        doc.line(16, yPos - 1, 16, yPos + 2); // Vertical small line marker
+                        const activityWidth = doc.getTextWidth(activityLabel);
 
-                        doc.text(`Material: ${materialName}`, 18, yPos);
-                        yPos += 4;  // Increased spacing
+                        // Separator ">"
+                        doc.setFont("times", "normal");
+                        doc.setTextColor(150, 150, 150);
+                        doc.text(" > ", 14 + activityWidth, yPos);
+
+                        const separatorWidth = doc.getTextWidth(" > ");
+
+                        // Material Name
+                        doc.setFont("times", "italic"); // Italic as requested
+                        doc.setFontSize(11); // Slightly smaller/different style
+                        doc.setTextColor(80, 80, 80);
+                        doc.text(`Material: ${materialName}`, 14 + activityWidth + separatorWidth, yPos);
+
+                        yPos += 2; // Small gap between title 'line' and table top (approx 6pt total with autoTable margin)
 
                         doc.autoTable({
-                            startY: yPos,
+                            startY: yPos + 1, // +1 for that tight "glued" feel
                             head: [['Operador', 'Patente', 'Vueltas', 'Metros Cúbicos']],
                             body: sortedTrucks.map(t => [
                                 t.nombre,
@@ -5725,7 +5727,14 @@
                                 `${t.totalM3.toFixed(1)} m³`
                             ]),
                             theme: 'plain',
-                            headStyles: commonHeadStyles,
+                            headStyles: {
+                                textColor: [80, 80, 80],
+                                fontSize: 10,
+                                fontStyle: 'bold',
+                                font: 'times',
+                                fillColor: [248, 248, 248], // Very light gray background for headers
+                                halign: 'left'
+                            },
                             styles: commonStyles,
                             columnStyles: {
                                 0: { halign: 'left' },
@@ -5741,20 +5750,23 @@
                             },
                             margin: { left: 14, right: 14 }
                         });
+
                         yPos = doc.lastAutoTable.finalY + 2;
 
-                        // Add subtotal for this material on this day
-                        doc.setFontSize(8);
-                        doc.setTextColor(70, 70, 70);
-                        doc.setFont("times", "bolditalic"); // Added italic for differentiation
-                        doc.text(`Subtotal ${materialName}: ${materialDaySubtotal.toFixed(1)} m³`, 18, yPos);
+                        // Subtotal with breathing room (5mm approx 14 units, but let's use 6-7 units for tight visual group, user asked for 5mm margin top)
                         yPos += 5;
-                    });
 
-                    yPos += 2;
+                        // Subtotal aligned left
+                        doc.setFontSize(10);
+                        doc.setTextColor(30, 30, 30);
+                        doc.setFont("times", "bold");
+                        doc.text(`Subtotal ${materialName}: ${materialDaySubtotal.toFixed(1)} m³`, 14, yPos);
+
+                        yPos += 8; // Space before next block
+                    });
                 });
 
-                yPos += 6; // Extra space between days
+                yPos += 4; // Extra space between days
             });
 
             // FOOTER
