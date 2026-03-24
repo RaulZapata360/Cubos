@@ -564,7 +564,7 @@
 
                     <!-- Action Buttons Grid -->
                     <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="window.location.reload()"
+                        <button onclick="refreshAllData()"
                             class="p-2 bg-item hover:bg-white/10 rounded-lg transition-all border border-border group"
                             title="Actualizar">
                             <span
@@ -3664,6 +3664,47 @@
         };
 
         // ============================================
+        // MANUAL REFRESH FUNCTION
+        // ============================================
+        window.refreshAllData = async function () {
+            const btn = document.activeElement;
+            const originalHTML = btn ? btn.innerHTML : '';
+            
+            if (btn) {
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span>';
+            }
+
+            try {
+                // Clear all caches
+                DataCache.clearAll();
+
+                // Reload all data
+                await Promise.all([
+                    window.loadTrucks ? window.loadTrucks(true) : Promise.resolve(),
+                    window.loadMovements ? window.loadMovements(true) : Promise.resolve(),
+                    window.loadMaterials ? window.loadMaterials(true) : Promise.resolve(),
+                    window.loadDestinos ? window.loadDestinos(true) : Promise.resolve(),
+                    window.loadOrigenes ? window.loadOrigenes(true) : Promise.resolve()
+                ]);
+
+                // Force re-render all UI components
+                if (window.renderMovementLog) window.renderMovementLog();
+                if (window.renderInternalTrips) window.renderInternalTrips();
+                if (window.renderAnalytics) window.renderAnalytics();
+                if (window.updateSummary) window.updateSummary();
+                if (window.renderTruckList) window.renderTruckList();
+                if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
+
+                console.log('✅ Data refreshed successfully');
+            } catch (err) {
+                console.error('Error refreshing data:', err);
+                alert('Error al actualizar datos');
+            } finally {
+                if (btn) btn.innerHTML = originalHTML;
+            }
+        };
+
+        // ============================================
         // SKELETON RENDERERS (Plan C)
         // ============================================
         function renderSkeletons(containerId, count = 3, type = 'card') {
@@ -4998,16 +5039,43 @@
 
                 if (error) throw error;
 
-                // Success notification (using alert for simplicity, consistent with other parts)
-                alert('✅ Viaje eliminado exitosamente');
+                console.log('✅ Movement deleted in DB, refreshing UI...');
 
-                // Reload movements to refresh the UI
-                if (window.loadMovements) {
-                    await window.loadMovements(true);
-                } else {
-                    // Fallback
-                    location.reload();
-                }
+                // Get current date
+                const targetDate = getTargetDate();
+                const dateStr = formatDateYYYYMMDD(targetDate);
+                
+                // Clear caches
+                DataCache.remove(`movements_${dateStr}`);
+                DataCache.remove(`trucks_${dateStr}`);
+
+                // Fetch fresh data directly to ensure we have the latest
+                const { data: freshData, error: fetchError } = await supabaseClient
+                    .from('movimientos')
+                    .select('*, camiones (nombre, patente, capacidad, tipo_registrado)')
+                    .eq('obra_id', currentObraId)
+                    .eq('fecha', dateStr)
+                    .is('deleted_at', null)
+                    .order('timestamp', { ascending: false });
+
+                if (fetchError) throw fetchError;
+
+                // Update global movements array
+                movements = freshData || [];
+                console.log('📦 Updated movements array:', movements.length, 'items');
+
+                // Force re-render all UI components immediately
+                renderMovementLog();
+                renderInternalTrips();
+                renderAnalytics();
+                updateSummary();
+                renderTruckList();
+                if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
+
+                // Also reload trucks in background
+                if (window.loadTrucks) window.loadTrucks(true);
+
+                alert('✅ Viaje eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar viaje:', error);
                 alert('❌ Error al eliminar el viaje: ' + error.message);
@@ -6717,10 +6785,10 @@
             list.innerHTML = html;
 
             // Helper to handle flow
-            window.registerAndClose = async (cid, t, cap, matName) => {
+        window.registerAndClose = async (cid, t, cap, matName) => {
                 const loc = null; // Ubicación removida del flujo
 
-                if (isInternalTripFlow) {
+                if (isInternalTripFlow || t === 'internal') {
                     await registerMovement(cid, 'outgoing', cap, matName, 'Interno');
                     isInternalTripFlow = false;
                     closeAllModals();
