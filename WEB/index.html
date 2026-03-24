@@ -5039,28 +5039,43 @@
 
                 if (error) throw error;
 
-                // Success notification (using alert for simplicity, consistent with other parts)
-                alert('✅ Viaje eliminado exitosamente');
+                console.log('✅ Movement deleted in DB, refreshing UI...');
 
-                // Clear cache explicitly before reloading
+                // Get current date
                 const targetDate = getTargetDate();
                 const dateStr = formatDateYYYYMMDD(targetDate);
+                
+                // Clear caches
                 DataCache.remove(`movements_${dateStr}`);
                 DataCache.remove(`trucks_${dateStr}`);
 
-                // Reload movements and trucks to refresh the UI
-                await Promise.all([
-                    window.loadTrucks ? window.loadTrucks(true) : Promise.resolve(),
-                    window.loadMovements ? window.loadMovements(true) : Promise.resolve()
-                ]);
+                // Fetch fresh data directly to ensure we have the latest
+                const { data: freshData, error: fetchError } = await supabaseClient
+                    .from('movimientos')
+                    .select('*, camiones (nombre, patente, capacidad, tipo_registrado)')
+                    .eq('obra_id', currentObraId)
+                    .eq('fecha', dateStr)
+                    .is('deleted_at', null)
+                    .order('timestamp', { ascending: false });
 
-                // Force re-render all UI components
-                if (window.renderMovementLog) window.renderMovementLog();
-                if (window.renderInternalTrips) window.renderInternalTrips();
-                if (window.renderAnalytics) window.renderAnalytics();
-                if (window.updateSummary) window.updateSummary();
-                if (window.renderTruckList) window.renderTruckList();
+                if (fetchError) throw fetchError;
+
+                // Update global movements array
+                movements = freshData || [];
+                console.log('📦 Updated movements array:', movements.length, 'items');
+
+                // Force re-render all UI components immediately
+                renderMovementLog();
+                renderInternalTrips();
+                renderAnalytics();
+                updateSummary();
+                renderTruckList();
                 if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
+
+                // Also reload trucks in background
+                if (window.loadTrucks) window.loadTrucks(true);
+
+                alert('✅ Viaje eliminado exitosamente');
             } catch (error) {
                 console.error('Error al eliminar viaje:', error);
                 alert('❌ Error al eliminar el viaje: ' + error.message);
