@@ -6717,10 +6717,10 @@
             list.innerHTML = html;
 
             // Helper to handle flow
-            window.registerAndClose = async (cid, t, cap, matName) => {
+        window.registerAndClose = async (cid, t, cap, matName) => {
                 const loc = null; // Ubicación removida del flujo
 
-                if (isInternalTripFlow) {
+                if (isInternalTripFlow || t === 'internal') {
                     await registerMovement(cid, 'outgoing', cap, matName, 'Interno');
                     isInternalTripFlow = false;
                     closeAllModals();
