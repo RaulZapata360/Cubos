@@ -564,7 +564,7 @@
 
                     <!-- Action Buttons Grid -->
                     <div class="grid grid-cols-2 gap-1.5">
-                        <button onclick="window.location.reload()"
+                        <button onclick="refreshAllData()"
                             class="p-2 bg-item hover:bg-white/10 rounded-lg transition-all border border-border group"
                             title="Actualizar">
                             <span
@@ -3664,6 +3664,47 @@
         };
 
         // ============================================
+        // MANUAL REFRESH FUNCTION
+        // ============================================
+        window.refreshAllData = async function () {
+            const btn = document.activeElement;
+            const originalHTML = btn ? btn.innerHTML : '';
+            
+            if (btn) {
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span>';
+            }
+
+            try {
+                // Clear all caches
+                DataCache.clearAll();
+
+                // Reload all data
+                await Promise.all([
+                    window.loadTrucks ? window.loadTrucks(true) : Promise.resolve(),
+                    window.loadMovements ? window.loadMovements(true) : Promise.resolve(),
+                    window.loadMaterials ? window.loadMaterials(true) : Promise.resolve(),
+                    window.loadDestinos ? window.loadDestinos(true) : Promise.resolve(),
+                    window.loadOrigenes ? window.loadOrigenes(true) : Promise.resolve()
+                ]);
+
+                // Force re-render all UI components
+                if (window.renderMovementLog) window.renderMovementLog();
+                if (window.renderInternalTrips) window.renderInternalTrips();
+                if (window.renderAnalytics) window.renderAnalytics();
+                if (window.updateSummary) window.updateSummary();
+                if (window.renderTruckList) window.renderTruckList();
+                if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
+
+                console.log('✅ Data refreshed successfully');
+            } catch (err) {
+                console.error('Error refreshing data:', err);
+                alert('Error al actualizar datos');
+            } finally {
+                if (btn) btn.innerHTML = originalHTML;
+            }
+        };
+
+        // ============================================
         // SKELETON RENDERERS (Plan C)
         // ============================================
         function renderSkeletons(containerId, count = 3, type = 'card') {
@@ -5001,13 +5042,25 @@
                 // Success notification (using alert for simplicity, consistent with other parts)
                 alert('✅ Viaje eliminado exitosamente');
 
-                // Reload movements to refresh the UI
-                if (window.loadMovements) {
-                    await window.loadMovements(true);
-                } else {
-                    // Fallback
-                    location.reload();
-                }
+                // Clear cache explicitly before reloading
+                const targetDate = getTargetDate();
+                const dateStr = formatDateYYYYMMDD(targetDate);
+                DataCache.remove(`movements_${dateStr}`);
+                DataCache.remove(`trucks_${dateStr}`);
+
+                // Reload movements and trucks to refresh the UI
+                await Promise.all([
+                    window.loadTrucks ? window.loadTrucks(true) : Promise.resolve(),
+                    window.loadMovements ? window.loadMovements(true) : Promise.resolve()
+                ]);
+
+                // Force re-render all UI components
+                if (window.renderMovementLog) window.renderMovementLog();
+                if (window.renderInternalTrips) window.renderInternalTrips();
+                if (window.renderAnalytics) window.renderAnalytics();
+                if (window.updateSummary) window.updateSummary();
+                if (window.renderTruckList) window.renderTruckList();
+                if (window.updateMaterialBreakdowns) window.updateMaterialBreakdowns();
             } catch (error) {
                 console.error('Error al eliminar viaje:', error);
                 alert('❌ Error al eliminar el viaje: ' + error.message);
